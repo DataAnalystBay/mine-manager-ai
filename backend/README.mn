@@ -1,0 +1,29 @@
+# Backend
+
+## Technology
+
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- OpenAI API
+
+## Run
+
+```bash
+uvicorn app.main:app --reload
+```
+
+## Environment
+
+Copy
+
+```bash
+cp .env.example .env
+```
+
+Edit
+
+```
+OPENAI_API_KEY=
+DATABASE_URL=
+```
