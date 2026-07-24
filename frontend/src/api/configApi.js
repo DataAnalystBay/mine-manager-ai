@@ -1,6 +1,8 @@
-import axios from "axios";
+cd /Users/Booboo/mine-manager-ai
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+cat > frontend/src/api/configApi.js <<'EOF'
+import axios from "axios";
+import { API_BASE_URL } from "../config/apiConfig";
 
 // ======================================================
 // Company Configuration
@@ -51,6 +53,14 @@ export const getKpiTargets = async () => {
   return response.data;
 };
 
+export const updateKpiTarget = async (kpiId, data) => {
+  const response = await axios.put(
+    `${API_BASE_URL}/api/config/kpi-targets/${kpiId}`,
+    data
+  );
+  return response.data;
+};
+
 // ======================================================
 // Alert Thresholds
 // ======================================================
@@ -59,6 +69,15 @@ export const getAlertThresholds = async () => {
   const response = await axios.get(
     `${API_BASE_URL}/api/config/alert-thresholds`
   );
+  return response.data;
+};
+
+export const updateAlertThreshold = async (alertId, data) => {
+  const response = await axios.put(
+    `${API_BASE_URL}/api/config/alert-thresholds/${alertId}`,
+    data
+  );
+
   return response.data;
 };
 
@@ -91,21 +110,6 @@ export const getFullConfig = async () => {
   );
   return response.data;
 };
-export const updateKpiTarget = async (kpiId, data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/kpi-targets/${kpiId}`,
-    data
-  );
-  return response.data;
-};
-export const updateAlertThreshold = async (alertId, data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/alert-thresholds/${alertId}`,
-    data
-  );
-
-  return response.data;
-};
 
 // ======================================================
 // Company Logo Upload
@@ -131,3 +135,4 @@ export const uploadLogo = async (file) => {
 
   return response.data;
 };
+EOF

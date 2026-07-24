@@ -11,9 +11,7 @@ import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import DescriptionIcon from "@mui/icons-material/Description";
 import SettingsIcon from "@mui/icons-material/Settings";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../config/apiConfig";
 
 const navItems = [
   {

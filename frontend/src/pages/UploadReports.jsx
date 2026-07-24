@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import * as XLSX from "xlsx";
+import { API_BASE_URL } from "../config/apiConfig";
 import {
   FaIndustry,
   FaTruckMoving,
@@ -14,7 +15,6 @@ import {
 } from "react-icons/fa";
 import "./UploadReports.css";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
 
 const REPORT_CONFIG = {
   production: {

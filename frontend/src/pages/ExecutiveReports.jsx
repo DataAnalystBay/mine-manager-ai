@@ -1,5 +1,6 @@
 import React from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config/apiConfig";
 
 import { Box, Grid } from "@mui/material";
 
@@ -11,7 +12,6 @@ import ReportHeader from "../components/reports/ReportHeader";
 import ReportCard from "../components/reports/ReportCard";
 import ExportCard from "../components/reports/ExportCard";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
 
 function ExecutiveReports() {
   const downloadFile = async (endpoint, filename, mimeType) => {

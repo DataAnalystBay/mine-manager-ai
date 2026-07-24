@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 
 import { useConfig } from "../context/ConfigContext";
+import { API_BASE_URL } from "../config/apiConfig";
 
 import {
   updateCompany,
@@ -29,7 +30,6 @@ import {
   uploadLogo,
 } from "../api/configApi";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
 
 const themePresets = [
   { name: "Green Theme", primary: "#16A34A", secondary: "#1E293B" },
