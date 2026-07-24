@@ -1,62 +1,44 @@
-# ==========================================
-# Python
-# ==========================================
+# Environment variables
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Python cache
 __pycache__/
 *.py[cod]
-*$py.class
+.pytest_cache/
+.mypy_cache/
 
 # Virtual environments
 venv/
 .venv/
 backend/venv/
+backend/.venv/
 
-# Environment variables
-.env
-backend/.env
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
 
-# ==========================================
-# VS Code
-# ==========================================
-.vscode/
-
-# ==========================================
-# macOS
-# ==========================================
-.DS_Store
-
-# ==========================================
-# Windows
-# ==========================================
-Thumbs.db
-
-# ==========================================
-# Logs
-# ==========================================
-*.log
-
-# ==========================================
-# Temporary files
-# ==========================================
-*.tmp
-
-# ==========================================
-# Jupyter
-# ==========================================
-.ipynb_checkpoints/
-
-# ==========================================
-# Build
-# ==========================================
+# Build and coverage
 dist/
 build/
-
-# ==========================================
-# Testing
-# ==========================================
-.pytest_cache/
-
-# ==========================================
-# Coverage
-# ==========================================
-.coverage
+coverage/
 htmlcov/
+
+# VS Code and IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*

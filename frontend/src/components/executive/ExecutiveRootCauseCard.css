@@ -1,0 +1,537 @@
+/* =====================================================
+   Mine Manager AI
+   Collapsible Executive Root Cause Analysis
+   ===================================================== */
+
+.executive-root-cause-card {
+  margin-top: 22px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+}
+
+.executive-root-cause-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  background: #fffaf5;
+  border-bottom: 1px solid #fed7aa;
+}
+
+.executive-root-cause-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.executive-root-cause-title > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: #ea580c;
+  background: #ffedd5;
+  border-radius: 12px;
+}
+
+.executive-root-cause-title svg {
+  width: 19px;
+  height: 19px;
+}
+
+.executive-root-cause-title small {
+  display: block;
+  margin-bottom: 3px;
+  color: #c2410c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.executive-root-cause-title h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.executive-root-cause-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.executive-root-cause-toggle-all {
+  padding: 7px 10px;
+  color: #9a3412;
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.executive-root-cause-toggle-all:hover {
+  background: #fff7ed;
+  border-color: #fdba74;
+  transform: translateY(-1px);
+}
+
+.executive-root-cause-toggle-all:focus-visible {
+  outline: 3px solid rgba(234, 88, 12, 0.18);
+  outline-offset: 2px;
+}
+
+.executive-root-cause-count {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  color: #9a3412;
+  background: #ffedd5;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.executive-root-cause-list {
+  padding: 0;
+}
+
+.executive-root-cause-item {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.executive-root-cause-item:last-child {
+  border-bottom: none;
+}
+
+.executive-root-cause-item.expanded {
+  background: #ffffff;
+}
+
+.executive-root-cause-item.collapsed {
+  background: #ffffff;
+}
+
+.executive-root-cause-summary {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 44px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.executive-root-cause-summary:hover {
+  background: #fffdf9;
+}
+
+.executive-root-cause-summary:focus-visible {
+  outline: 3px solid rgba(234, 88, 12, 0.16);
+  outline-offset: -3px;
+}
+
+.executive-root-cause-priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 34px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.executive-root-cause-priority.priority-1 {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.executive-root-cause-priority.priority-2 {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.executive-root-cause-priority.priority-3 {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.executive-root-cause-summary-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.executive-root-cause-summary-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.executive-root-cause-summary-topline > strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.executive-root-cause-impact {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.executive-root-cause-impact.high {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.executive-root-cause-impact.medium {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.executive-root-cause-impact.low {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.executive-root-cause-impact.neutral {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.executive-root-cause-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+}
+
+.executive-root-cause-summary-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.executive-root-cause-summary-meta svg {
+  width: 13px;
+  height: 13px;
+  color: #16a34a;
+}
+
+.executive-root-cause-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 220ms ease;
+}
+
+.executive-root-cause-chevron svg {
+  width: 17px;
+  height: 17px;
+}
+
+.executive-root-cause-chevron.expanded {
+  color: #c2410c;
+  background: #fff7ed;
+  border-color: #fed7aa;
+  transform: rotate(180deg);
+}
+
+.executive-root-cause-details {
+  overflow: hidden;
+}
+
+.executive-root-cause-details-inner {
+  padding: 0 22px 22px 80px;
+  animation: executive-root-cause-details-in 180ms ease-out;
+}
+
+@keyframes executive-root-cause-details-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.executive-root-cause-evidence,
+.executive-root-cause-expected-impact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border-radius: 12px;
+}
+
+.executive-root-cause-evidence {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.executive-root-cause-expected-impact {
+  margin-top: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.executive-root-cause-evidence > svg,
+.executive-root-cause-expected-impact > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.executive-root-cause-evidence > svg {
+  color: #64748b;
+}
+
+.executive-root-cause-expected-impact > svg {
+  color: #ea580c;
+}
+
+.executive-root-cause-evidence small,
+.executive-root-cause-expected-impact small {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.executive-root-cause-evidence small {
+  color: #64748b;
+}
+
+.executive-root-cause-expected-impact small {
+  color: #c2410c;
+}
+
+.executive-root-cause-evidence p {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.executive-root-cause-expected-impact strong {
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.executive-root-cause-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  align-items: center;
+  gap: 22px;
+  margin-top: 15px;
+}
+
+.executive-root-cause-owner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.executive-root-cause-owner svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+.executive-root-cause-owner strong {
+  color: #334155;
+  font-weight: 800;
+}
+
+.executive-root-cause-confidence {
+  min-width: 0;
+}
+
+.executive-root-cause-confidence-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.executive-root-cause-confidence-heading span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.executive-root-cause-confidence-heading strong {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.executive-root-cause-confidence-track {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 7px;
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.executive-root-cause-confidence-track span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #16a34a,
+    #4ade80
+  );
+  border-radius: inherit;
+  transition: width 350ms ease;
+}
+
+.executive-root-cause-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 22px;
+}
+
+.executive-root-cause-empty > svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #16a34a;
+}
+
+.executive-root-cause-empty h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.executive-root-cause-empty p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+  .executive-root-cause-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .executive-root-cause-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .executive-root-cause-summary {
+    grid-template-columns: 38px minmax(0, 1fr) 30px;
+    gap: 10px;
+    padding: 17px 18px;
+  }
+
+  .executive-root-cause-priority {
+    width: 34px;
+    height: 32px;
+  }
+
+  .executive-root-cause-summary-topline {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .executive-root-cause-details-inner {
+    padding: 0 18px 20px 66px;
+  }
+
+  .executive-root-cause-footer {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .executive-root-cause-confidence {
+    max-width: 260px;
+  }
+}
+
+@media (max-width: 480px) {
+  .executive-root-cause-summary {
+    grid-template-columns: 34px minmax(0, 1fr) 28px;
+    padding: 16px;
+  }
+
+  .executive-root-cause-summary-meta {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .executive-root-cause-details-inner {
+    padding: 0 16px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .executive-root-cause-details-inner {
+    animation: none;
+  }
+
+  .executive-root-cause-chevron,
+  .executive-root-cause-confidence-track span,
+  .executive-root-cause-toggle-all {
+    transition: none;
+  }
+}
