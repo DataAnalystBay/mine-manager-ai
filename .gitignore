@@ -1,16 +1,44 @@
 # Environment variables
+.env
+.env.*
+!.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
 
-# Virtual environment
+# Virtual environments
 venv/
 .venv/
+backend/venv/
+backend/.venv/
 
-# VS Code
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Build and coverage
+dist/
+build/
+coverage/
+htmlcov/
+
+# VS Code and IDE
 .vscode/
+.idea/
 
 # macOS
 .DS_Store
+
+# Logs
+*.log
+npm-debug.log*
