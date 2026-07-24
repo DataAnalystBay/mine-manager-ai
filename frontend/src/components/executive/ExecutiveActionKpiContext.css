@@ -1,0 +1,147 @@
+.executive-kpi-context {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.executive-kpi-context:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.08),
+    0 3px 10px rgba(15, 23, 42, 0.04);
+}
+
+.executive-kpi-context .context-label {
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.executive-kpi-context .context-value {
+  color: #0f172a;
+  font-size: clamp(24px, 2.3vw, 34px);
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.executive-kpi-context .MuiChip-root {
+  min-height: 32px;
+  border-radius: 10px;
+}
+
+.executive-kpi-context .MuiChip-label {
+  padding-right: 12px;
+  padding-left: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.executive-kpi-context .MuiChip-icon {
+  margin-left: 8px;
+  font-size: 18px;
+}
+
+.executive-kpi-context .MuiDivider-root {
+  border-color: #e2e8f0;
+}
+
+.executive-kpi-context .MuiButton-root {
+  min-height: 42px;
+  border-radius: 10px;
+  padding-right: 18px;
+  padding-left: 18px;
+  box-shadow: none;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.executive-kpi-context .MuiButton-root:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(15, 23, 42, 0.1);
+}
+
+.executive-kpi-context .MuiButton-contained {
+  box-shadow: 0 7px 16px rgba(15, 23, 42, 0.1);
+}
+
+.executive-kpi-context .MuiButton-outlined {
+  border-color: #cbd5e1;
+  color: #334155;
+  background: #ffffff;
+}
+
+.executive-kpi-context .MuiButton-outlined:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.executive-kpi-context .MuiButton-root.Mui-disabled {
+  border-color: #e2e8f0;
+  color: #64748b;
+  background: #f8fafc;
+  opacity: 1;
+}
+
+.executive-kpi-context .MuiSvgIcon-root {
+  flex-shrink: 0;
+}
+
+@media (max-width: 899px) {
+  .executive-kpi-context {
+    border-radius: 18px;
+  }
+
+  .executive-kpi-context .context-value {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 599px) {
+  .executive-kpi-context:hover {
+    transform: none;
+  }
+
+  .executive-kpi-context .context-label {
+    font-size: 11px;
+  }
+
+  .executive-kpi-context .context-value {
+    font-size: 26px;
+  }
+
+  .executive-kpi-context .MuiButton-root {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .executive-kpi-context .MuiButton-root:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .executive-kpi-context,
+  .executive-kpi-context .MuiButton-root {
+    transition: none;
+  }
+
+  .executive-kpi-context:hover,
+  .executive-kpi-context .MuiButton-root:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,346 @@
+.dashboard-loading-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 20px;
+}
+
+.dashboard-skeleton-block {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #e8edf4;
+}
+
+.dashboard-skeleton-block::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.7),
+    transparent
+  );
+  animation: dashboard-skeleton-shimmer 1.45s infinite;
+}
+
+@keyframes dashboard-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.dashboard-loading-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.dashboard-loading-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.dashboard-loading-title {
+  width: 340px;
+  max-width: 70%;
+  height: 36px;
+}
+
+.dashboard-loading-subtitle {
+  width: 250px;
+  max-width: 55%;
+  height: 14px;
+}
+
+.dashboard-loading-scenario {
+  width: 150px;
+  height: 13px;
+}
+
+.dashboard-loading-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 100px 100px 90px;
+  gap: 10px;
+}
+
+.dashboard-loading-controls > div {
+  height: 58px;
+  border-radius: 14px;
+}
+
+.dashboard-loading-config {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 16px;
+  padding: 15px;
+  border: 1px solid #e8edf4;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.dashboard-loading-config-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 14px;
+  border-right: 1px solid #e8edf4;
+}
+
+.dashboard-loading-config-item:last-child {
+  border-right: 0;
+}
+
+.dashboard-loading-label {
+  width: 58px;
+  height: 8px;
+}
+
+.dashboard-loading-value {
+  width: 95px;
+  max-width: 90%;
+  height: 12px;
+}
+
+.dashboard-loading-health {
+  display: grid;
+  grid-template-columns: 1.05fr 0.72fr 1.2fr;
+  gap: 18px;
+  min-height: 190px;
+  margin-bottom: 16px;
+  padding: 24px 28px;
+  border-radius: 22px;
+  background: #173b86;
+}
+
+.dashboard-loading-health .dashboard-skeleton-block {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.dashboard-loading-health-label {
+  width: 130px;
+  height: 10px;
+}
+
+.dashboard-loading-health-name {
+  width: 200px;
+  height: 18px;
+  margin-top: 14px;
+}
+
+.dashboard-loading-score {
+  width: 115px;
+  height: 54px;
+  margin-top: 10px;
+}
+
+.dashboard-loading-pill {
+  width: 115px;
+  height: 30px;
+  margin-top: 14px;
+  border-radius: 999px;
+}
+
+.dashboard-loading-status {
+  width: 100%;
+  height: 100%;
+  min-height: 142px;
+  border-radius: 18px;
+}
+
+.dashboard-loading-chart-title {
+  width: 180px;
+  height: 11px;
+}
+
+.dashboard-loading-chart {
+  width: 100%;
+  height: 120px;
+  margin-top: 18px;
+}
+
+.dashboard-loading-kpi-section {
+  margin-bottom: 16px;
+}
+
+.dashboard-loading-section-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.dashboard-loading-section-title {
+  width: 230px;
+  height: 18px;
+}
+
+.dashboard-loading-link {
+  width: 90px;
+  height: 12px;
+}
+
+.dashboard-loading-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-loading-kpi-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 228px;
+  padding: 16px;
+  border: 1px solid #e8edf4;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.dashboard-loading-icon {
+  align-self: flex-start;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.dashboard-loading-kpi-name {
+  width: 105px;
+  height: 14px;
+  margin-top: 15px;
+}
+
+.dashboard-loading-badge {
+  width: 62px;
+  height: 22px;
+  margin-top: 13px;
+  border-radius: 999px;
+}
+
+.dashboard-loading-kpi-value {
+  width: 90px;
+  height: 34px;
+  margin-top: 15px;
+}
+
+.dashboard-loading-trend {
+  width: 110px;
+  height: 11px;
+  margin-top: 12px;
+}
+
+.dashboard-loading-progress {
+  width: 100%;
+  height: 5px;
+  margin-top: auto;
+  border-radius: 999px;
+}
+
+.dashboard-loading-panels {
+  display: grid;
+  grid-template-columns: 1.06fr 0.96fr 0.92fr;
+  gap: 14px;
+}
+
+.dashboard-loading-panel {
+  min-height: 240px;
+  padding: 17px;
+  border: 1px solid #e8edf4;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.dashboard-loading-panel-title {
+  width: 180px;
+  height: 16px;
+  margin-bottom: 28px;
+}
+
+.dashboard-loading-panel-line {
+  width: 100%;
+  height: 12px;
+  margin-bottom: 14px;
+}
+
+.dashboard-loading-panel-line.short {
+  width: 62%;
+}
+
+.dashboard-loading-panel-line.medium {
+  width: 78%;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-loading-health {
+    grid-template-columns: 1fr 0.8fr;
+  }
+
+  .dashboard-loading-health > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-loading-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-loading-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-loading-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-loading-controls > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-loading-config {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-loading-config-item {
+    padding: 10px 0;
+    border-right: 0;
+    border-bottom: 1px solid #e8edf4;
+  }
+
+  .dashboard-loading-config-item:last-child {
+    border-bottom: 0;
+  }
+
+  .dashboard-loading-health {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-loading-health > div:last-child {
+    grid-column: auto;
+  }
+
+  .dashboard-loading-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-loading-controls,
+  .dashboard-loading-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-loading-controls > div:first-child {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-skeleton-block::after {
+    animation: none;
+  }
+}

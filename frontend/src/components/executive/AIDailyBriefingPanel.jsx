@@ -1,3 +1,5 @@
+import { memo, useMemo } from "react";
+
 import {
   Card,
   CardContent,
@@ -11,156 +13,340 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
+const EMPTY_LIST = Object.freeze([]);
+
+function normalizeText(value, fallback) {
+  const normalizedValue = String(value ?? "").trim();
+
+  return normalizedValue || fallback;
+}
+
+function normalizeList(value) {
+  if (!Array.isArray(value)) {
+    return EMPTY_LIST;
+  }
+
+  return value
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean);
+}
+
 function AIDailyBriefingPanel({ briefing }) {
-  const briefingText =
-    briefing?.briefing || "Waiting for AI Daily Briefing...";
+  const briefingText = useMemo(
+    () =>
+      normalizeText(
+        briefing?.briefing,
+        "Waiting for AI Daily Briefing..."
+      ),
+    [briefing?.briefing]
+  );
 
-  const actions = briefing?.priority_actions || [];
+  const actions = useMemo(
+    () => normalizeList(briefing?.priority_actions),
+    [briefing?.priority_actions]
+  );
 
-  const risks = briefing?.risks || [];
+  const risks = useMemo(
+    () => normalizeList(briefing?.risks),
+    [briefing?.risks]
+  );
+
+  const hasLiveBriefing = Boolean(
+    briefing?.briefing ||
+      actions.length > 0 ||
+      risks.length > 0
+  );
 
   return (
     <Card
       sx={{
-        borderRadius: 4,
         height: "100%",
-        boxShadow: 3,
+        overflow: "hidden",
+        borderRadius: 4,
+        border: "1px solid #e5e7eb",
+        backgroundColor: "#ffffff",
+        boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
       }}
     >
-      <CardContent>
+      <CardContent
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          p: 3,
 
-        {/* Header */}
-
+          "&:last-child": {
+            pb: 3,
+          },
+        }}
+      >
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
+            gap: 1,
             mb: 2,
           }}
         >
-          <AutoAwesomeIcon color="primary" />
-
-          <Typography
-            variant="h6"
-            fontWeight={700}
-            sx={{ ml: 1 }}
+          <Box
+            sx={{
+              display: "grid",
+              placeItems: "center",
+              width: 38,
+              height: 38,
+              flexShrink: 0,
+              borderRadius: 2.5,
+              color: "#2563eb",
+              backgroundColor: "#eff6ff",
+            }}
           >
-            AI Daily Briefing
-          </Typography>
+            <AutoAwesomeIcon fontSize="small" />
+          </Box>
+
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                color: "#0f172a",
+                fontWeight: 800,
+                lineHeight: 1.25,
+              }}
+            >
+              AI Daily Briefing
+            </Typography>
+
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#94a3b8",
+                fontWeight: 600,
+              }}
+            >
+              Executive operational summary
+            </Typography>
+          </Box>
 
           <Chip
-            label="Live"
-            color="success"
+            label={hasLiveBriefing ? "Live" : "Waiting"}
+            color={hasLiveBriefing ? "success" : "default"}
             size="small"
-            sx={{ ml: "auto" }}
+            sx={{
+              ml: "auto",
+              flexShrink: 0,
+              fontWeight: 800,
+            }}
           />
         </Box>
 
-        {/* AI Briefing */}
-
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mb: 3 }}
+        <Box
+          sx={{
+            p: 2,
+            mb: 2.5,
+            borderRadius: 3,
+            border: "1px solid #dbeafe",
+            backgroundColor: "#f8fbff",
+          }}
         >
-          {briefingText}
-        </Typography>
-
-        <Divider sx={{ mb: 2 }} />
-
-        {/* Priority Actions */}
-
-        <Box sx={{ mb: 3 }}>
           <Typography
-            variant="subtitle1"
-            fontWeight={700}
-            gutterBottom
+            variant="body2"
+            sx={{
+              color: "#475569",
+              lineHeight: 1.7,
+              whiteSpace: "pre-line",
+            }}
           >
-            Priority Actions
+            {briefingText}
           </Typography>
+        </Box>
+
+        <Divider sx={{ mb: 2.5 }} />
+
+        <Box sx={{ mb: 2.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 1,
+              mb: 1.5,
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              sx={{
+                color: "#0f172a",
+                fontWeight: 800,
+              }}
+            >
+              Priority Actions
+            </Typography>
+
+            <Chip
+              size="small"
+              label={actions.length}
+              color={actions.length > 0 ? "success" : "default"}
+              variant="outlined"
+              sx={{
+                minWidth: 34,
+                fontWeight: 800,
+              }}
+            />
+          </Box>
 
           {actions.length === 0 ? (
             <Typography
               variant="body2"
-              color="text.secondary"
+              sx={{
+                color: "#94a3b8",
+              }}
             >
               No priority actions.
             </Typography>
           ) : (
-            actions.map((action, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  mb: 1,
-                }}
-              >
-                <CheckCircleIcon
-                  color="success"
+            <Box
+              component="ul"
+              sx={{
+                display: "grid",
+                gap: 1.25,
+                p: 0,
+                m: 0,
+                listStyle: "none",
+              }}
+            >
+              {actions.map((action, index) => (
+                <Box
+                  component="li"
+                  key={`${action}-${index}`}
                   sx={{
-                    mr: 1,
-                    mt: "2px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
                   }}
-                />
+                >
+                  <CheckCircleIcon
+                    color="success"
+                    sx={{
+                      mt: "2px",
+                      flexShrink: 0,
+                      fontSize: 20,
+                    }}
+                  />
 
-                <Typography variant="body2">
-                  {action}
-                </Typography>
-              </Box>
-            ))
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#475569",
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {action}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           )}
         </Box>
 
-        <Divider sx={{ mb: 2 }} />
-
-        {/* Risks */}
+        <Divider sx={{ mb: 2.5 }} />
 
         <Box>
-          <Typography
-            variant="subtitle1"
-            fontWeight={700}
-            gutterBottom
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 1,
+              mb: 1.5,
+            }}
           >
-            Operational Risks
-          </Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                color: "#0f172a",
+                fontWeight: 800,
+              }}
+            >
+              Operational Risks
+            </Typography>
+
+            <Chip
+              size="small"
+              label={risks.length}
+              color={risks.length > 0 ? "warning" : "default"}
+              variant="outlined"
+              sx={{
+                minWidth: 34,
+                fontWeight: 800,
+              }}
+            />
+          </Box>
 
           {risks.length === 0 ? (
             <Typography
               variant="body2"
-              color="text.secondary"
+              sx={{
+                color: "#94a3b8",
+              }}
             >
               No operational risks.
             </Typography>
           ) : (
-            risks.map((risk, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  mb: 1,
-                }}
-              >
-                <WarningAmberIcon
-                  color="warning"
+            <Box
+              component="ul"
+              sx={{
+                display: "grid",
+                gap: 1.25,
+                p: 0,
+                m: 0,
+                listStyle: "none",
+              }}
+            >
+              {risks.map((risk, index) => (
+                <Box
+                  component="li"
+                  key={`${risk}-${index}`}
                   sx={{
-                    mr: 1,
-                    mt: "2px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
                   }}
-                />
+                >
+                  <WarningAmberIcon
+                    color="warning"
+                    sx={{
+                      mt: "2px",
+                      flexShrink: 0,
+                      fontSize: 20,
+                    }}
+                  />
 
-                <Typography variant="body2">
-                  {risk}
-                </Typography>
-              </Box>
-            ))
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#475569",
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {risk}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           )}
         </Box>
-
       </CardContent>
     </Card>
   );
 }
 
-export default AIDailyBriefingPanel;
+function areAIDailyBriefingPanelPropsEqual(
+  previousProps,
+  nextProps
+) {
+  return previousProps.briefing === nextProps.briefing;
+}
+
+export default memo(
+  AIDailyBriefingPanel,
+  areAIDailyBriefingPanelPropsEqual
+);

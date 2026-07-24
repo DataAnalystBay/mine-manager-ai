@@ -106,13 +106,21 @@ export const updateAlertThreshold = async (alertId, data) => {
 
   return response.data;
 };
-export const uploadLogo = async (file) => {
-  const formData = new FormData();
 
+// ======================================================
+// Company Logo Upload
+// ======================================================
+
+export const uploadLogo = async (file) => {
+  if (!file) {
+    throw new Error("Please select a logo file.");
+  }
+
+  const formData = new FormData();
   formData.append("file", file);
 
   const response = await axios.post(
-    `${API_BASE_URL}/api/config/logo`,
+    `${API_BASE_URL}/api/config/upload-logo`,
     formData,
     {
       headers: {

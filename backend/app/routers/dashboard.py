@@ -6,6 +6,11 @@ from app.database import SessionLocal
 
 from app.services.analytics_engine_service import get_shared_analytics
 
+from fastapi import HTTPException, Query
+
+from app.schemas.kpi_detail import KpiDetailResponse
+from app.services.kpi_detail_service import get_kpi_detail
+
 from app.services.kpi_calculation_service import (
     safe_percentage,
     calculate_fleet_score,
@@ -746,3 +751,29 @@ def shared_analytics(
         mine_name=mine_name,
         days=days,
     )
+
+@router.get(
+    "/kpi-detail",
+    response_model=KpiDetailResponse,
+)
+def read_kpi_detail(
+    mine_name: str = Query(...),
+    kpi_name: str = Query(...),
+    days: int = Query(7, ge=2, le=30),
+):
+    try:
+        return get_kpi_detail(
+            mine_name=mine_name,
+            kpi_name=kpi_name,
+            days=days,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from error
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to generate KPI detail.",
+        ) from error

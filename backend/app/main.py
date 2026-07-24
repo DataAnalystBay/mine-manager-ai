@@ -16,12 +16,15 @@ from app.routers import (
     auth,
     config,
     demo,
+    executive_actions,
 )
 
 # --------------------------------------------------
 # Create Database Tables
 # --------------------------------------------------
 
+# Alembic now manages database schema changes.
+# Keep create_all disabled to avoid unexpected schema changes.
 # models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -73,6 +76,7 @@ app.include_router(auth.router)
 app.include_router(config.router)
 app.include_router(demo.router)
 app.include_router(reports.router)
+app.include_router(executive_actions.router)
 
 # --------------------------------------------------
 # Root Endpoint
@@ -115,6 +119,8 @@ def api_information():
             "AI Daily Briefing",
             "Upload Center",
             "Executive Dashboard",
+            "Executive Actions",
+            "Executive Reports",
             "Configuration",
             "Static Logo Hosting",
         ],

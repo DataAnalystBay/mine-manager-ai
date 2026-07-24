@@ -61,3 +61,57 @@ export const getTrendAnalysis = async (mineName) => {
 
   return response.data;
 };
+
+/**
+ * Shared Analytics Engine
+ * Used by:
+ * - Executive Dashboard
+ * - KPI Trend Cards
+ * - Executive Reports
+ * - AI Briefing
+ */
+export const getSharedAnalytics = async (
+  mineName = "Oyu Tolgoi Surface",
+  days = 7
+) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/shared-analytics`,
+      {
+        params: {
+          mine_name: mineName,
+          days,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Failed to load shared analytics:", error);
+    throw error;
+  }
+};
+
+export const getKpiDetail = async (
+  mineName,
+  kpiName,
+  days = 7
+) => {
+  try {
+    const response = await axios.get(
+      "/api/dashboard/kpi-detail",
+      {
+        params: {
+          mine_name: mineName,
+          kpi_name: kpiName,
+          days,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Failed to load KPI detail:", error);
+    throw error;
+  }
+};
