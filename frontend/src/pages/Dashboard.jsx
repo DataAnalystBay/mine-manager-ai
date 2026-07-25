@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { loadDemoData, resetDemoData } from "../api/demoApi";
-import "./dashboard.css";
+import "./Dashboard.css";
 import { useConfig } from "../context/ConfigContext";
 import { getSharedAnalytics } from "../services/dashboardApi";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
