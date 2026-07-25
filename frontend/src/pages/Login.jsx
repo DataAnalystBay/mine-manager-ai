@@ -33,8 +33,14 @@ function Login() {
       });
 
       navigate("/");
-    } catch {
-      setError("Invalid email or password");
+    } catch (error) {
+      console.error("Login flow failed:", error);
+
+      setError(
+        error?.response?.data?.detail ||
+          error?.message ||
+          "Unable to sign in"
+      );
     } finally {
       setLoading(false);
     }
