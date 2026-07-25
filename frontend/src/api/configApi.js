@@ -1,6 +1,4 @@
-cd /Users/Booboo/mine-manager-ai
 
-cat > frontend/src/api/configApi.js <<'EOF'
 import axios from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 
@@ -135,4 +133,3 @@ export const uploadLogo = async (file) => {
 
   return response.data;
 };
-EOF
