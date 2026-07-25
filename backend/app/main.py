@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import os
 
 from app.database import engine
 from app import models
@@ -47,16 +48,27 @@ app.mount(
 # CORS
 # --------------------------------------------------
 
+cors_origins_raw = os.getenv(
+    "CORS_ORIGINS",
+    (
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        "http://localhost:5174,"
+        "http://127.0.0.1:5174,"
+        "http://localhost:5175,"
+        "http://127.0.0.1:5175"
+    ),
+)
+
+cors_origins = [
+    origin.strip()
+    for origin in cors_origins_raw.split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
