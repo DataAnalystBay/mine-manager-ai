@@ -24,9 +24,13 @@ from app.routers import (
 # Create Database Tables
 # --------------------------------------------------
 
-# Alembic now manages database schema changes.
+# Alembic manages database schema changes.
 # Keep create_all disabled to avoid unexpected schema changes.
 # models.Base.metadata.create_all(bind=engine)
+
+# --------------------------------------------------
+# FastAPI Application
+# --------------------------------------------------
 
 app = FastAPI(
     title="Mine Manager AI API",
@@ -48,20 +52,23 @@ app.mount(
 # CORS
 # --------------------------------------------------
 
+default_cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "https://mine-manager-ai-zeta.vercel.app",
+]
+
 cors_origins_raw = os.getenv(
     "CORS_ORIGINS",
-    (
-        "http://localhost:5173,"
-        "http://127.0.0.1:5173,"
-        "http://localhost:5174,"
-        "http://127.0.0.1:5174,"
-        "http://localhost:5175,"
-        "http://127.0.0.1:5175"
-    ),
+    ",".join(default_cors_origins),
 )
 
 cors_origins = [
-    origin.strip()
+    origin.strip().rstrip("/")
     for origin in cors_origins_raw.split(",")
     if origin.strip()
 ]
@@ -69,9 +76,13 @@ cors_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    # Allows Vercel preview deployments such as:
+    # https://mine-manager-ai-abc123.vercel.app
+    allow_origin_regex=r"https://mine-manager-ai-[a-zA-Z0-9-]+\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 # --------------------------------------------------
@@ -94,6 +105,7 @@ app.include_router(executive_actions.router)
 # Root Endpoint
 # --------------------------------------------------
 
+
 @app.get("/")
 def root():
     return {
@@ -107,16 +119,18 @@ def root():
 # Health Check
 # --------------------------------------------------
 
+
 @app.get("/health")
 def health():
     return {
-        "status": "healthy"
+        "status": "healthy",
     }
 
 
 # --------------------------------------------------
 # API Information
 # --------------------------------------------------
+
 
 @app.get("/api")
 def api_information():
