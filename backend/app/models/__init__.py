@@ -7,6 +7,8 @@ from app.models.kpi_target import KpiTarget
 from app.models.alert_threshold import AlertThreshold
 from app.models.shift_pattern import ShiftPattern
 from app.models.executive_action import ExecutiveAction
+from app.models.report_history import ReportHistory
+from app.models.audit_log import AuditLog
 
 
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "AlertThreshold",
     "ShiftPattern",
     "ExecutiveAction",
+    "ReportHistory",
+    "AuditLog",
 ]

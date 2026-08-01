@@ -1945,3 +1945,154 @@
     display: block;
   }
 }
+
+.kpi-export-pdf-button {
+  min-height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.kpi-export-pdf-button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #16a34a;
+  color: #15803d;
+  transform: translateY(-1px);
+}
+
+.kpi-export-pdf-button:focus-visible {
+  outline: 3px solid rgba(22, 163, 74, 0.2);
+  outline-offset: 2px;
+}
+
+.kpi-export-pdf-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.kpi-export-pdf-button svg {
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
+.kpi-export-error {
+  margin: 12px 20px 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.kpi-export-error span {
+  flex: 1;
+}
+
+.kpi-export-error button {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kpi-export-error button:hover {
+  background: rgba(185, 28, 28, 0.08);
+}
+
+@media (max-width: 760px) {
+  .kpi-dialog-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .kpi-export-pdf-button span {
+    display: none;
+  }
+
+  .kpi-export-pdf-button {
+    width: 38px;
+    padding: 0;
+  }
+}
+
+.kpi-export-success {
+  margin: 12px 20px 0;
+  padding: 10px 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+
+  background: #f0fdf4;
+  color: #166534;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.kpi-export-success > svg {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.kpi-export-success span {
+  flex: 1;
+}
+
+.kpi-export-success button {
+  width: 28px;
+  height: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+  color: inherit;
+
+  cursor: pointer;
+}
+
+.kpi-export-success button:hover {
+  background: rgba(22, 101, 52, 0.08);
+}
+
+@media (max-width: 720px) {
+  .kpi-export-success,
+  .kpi-export-error {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+}

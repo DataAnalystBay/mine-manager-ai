@@ -1,12 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   FiAlertCircle,
   FiCheckCircle,
+  FiDownload,
   FiTarget,
   FiTrendingDown,
   FiTrendingUp,
   FiX,
 } from "react-icons/fi";
+
+import { exportExecutiveKpiPdf } from "../../api/executivePdfApi";
+import { useConfig } from "../../context/ConfigContext";
 
 import ExecutiveAiInsightCard from "./ExecutiveAiInsightCard";
 import ExecutiveKpiSkeleton from "./ExecutiveKpiSkeleton";
@@ -282,6 +286,96 @@ export default function ExecutiveKpiDetailDialog({
   onRetry,
   onOpenActionCenter,
 }) {
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [exportSuccess, setExportSuccess] = useState("");
+
+  const { company, mine } = useConfig();
+
+  const configuredCompanyName =
+    company?.company_name ||
+    data?.company_name ||
+    "Mine Manager AI";
+
+  const configuredMineName =
+    mine?.mine_name ||
+    data?.mine_name ||
+    "Configured Mine";
+
+  const handleExportPdf = async () => {
+    const selectedKpiKey = kpiKey || data?.kpi_key;
+
+    if (!selectedKpiKey || exportingPdf) {
+      return;
+    }
+
+    setExportingPdf(true);
+    setExportError("");
+    setExportSuccess("");
+
+    try {
+      const { blob, filename } = await exportExecutiveKpiPdf({
+        kpiKey: selectedKpiKey,
+        mineName: configuredMineName,
+        companyName: configuredCompanyName,
+        days: 14,
+        actionLimit: 5,
+        includeCompletedActions: true,
+      });
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+
+      downloadLink.href = downloadUrl;
+      downloadLink.download = filename;
+
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setExportSuccess(
+        "Executive KPI Analysis PDF downloaded successfully."
+      );
+
+      window.setTimeout(() => {
+        setExportSuccess("");
+      }, 4000);
+    } catch (exportException) {
+      setExportSuccess("");
+
+      console.error(
+        "Unable to export Executive KPI PDF:",
+        exportException
+      );
+
+      const responseData = exportException?.response?.data;
+
+      if (responseData instanceof Blob) {
+        try {
+          const errorText = await responseData.text();
+          const parsedError = JSON.parse(errorText);
+
+          setExportError(
+            parsedError?.detail ||
+              "Unable to generate the Executive KPI PDF."
+          );
+        } catch {
+          setExportError(
+            "Unable to generate the Executive KPI PDF."
+          );
+        }
+      } else {
+        setExportError(
+          responseData?.detail ||
+            "Unable to generate the Executive KPI PDF."
+        );
+      }
+    } finally {
+      setExportingPdf(false);
+    }
+  };
   if (!open) {
     return null;
   }
@@ -381,6 +475,24 @@ export default function ExecutiveKpiDetailDialog({
 
             <button
               type="button"
+              className="kpi-export-pdf-button"
+              onClick={handleExportPdf}
+              disabled={
+                exportingPdf ||
+                loading ||
+                Boolean(error) ||
+                !data ||
+                !(kpiKey || data?.kpi_key)
+              }
+            >
+              <FiDownload />
+              <span>
+                {exportingPdf ? "Generating..." : "Export PDF"}
+              </span>
+            </button>
+
+            <button
+              type="button"
               className="kpi-dialog-close"
               onClick={onClose}
               aria-label="Close KPI detail"
@@ -389,6 +501,37 @@ export default function ExecutiveKpiDetailDialog({
             </button>
           </div>
         </header>
+
+        {exportSuccess && (
+          <div className="kpi-export-success" role="status">
+            <FiCheckCircle />
+
+            <span>{exportSuccess}</span>
+
+            <button
+              type="button"
+              onClick={() => setExportSuccess("")}
+              aria-label="Dismiss export success message"
+            >
+              <FiX />
+            </button>
+          </div>
+        )}
+
+        {exportError && (
+          <div className="kpi-export-error" role="alert">
+            <FiAlertCircle />
+            <span>{exportError}</span>
+
+            <button
+              type="button"
+              onClick={() => setExportError("")}
+              aria-label="Dismiss export error"
+            >
+              <FiX />
+            </button>
+          </div>
+        )}
 
         {loading && (
           <div className="kpi-dialog-content">

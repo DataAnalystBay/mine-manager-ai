@@ -1,5 +1,9 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -9,14 +13,33 @@ import MainLayout from "./layout/MainLayout";
 
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const UploadReports = lazy(() => import("./pages/UploadReports"));
-const Production = lazy(() => import("./pages/Production"));
+const UploadReports = lazy(() =>
+  import("./pages/UploadReports")
+);
+const Production = lazy(() =>
+  import("./pages/Production")
+);
 const Fleet = lazy(() => import("./pages/Fleet"));
 const Plant = lazy(() => import("./pages/Plant"));
 const Safety = lazy(() => import("./pages/Safety"));
-const Settings = lazy(() => import("./pages/Settings"));
-const ExecutiveReports = lazy(() => import("./pages/ExecutiveReports"));
-const ExecutiveActions = lazy(() => import("./pages/ExecutiveActions"));
+const Settings = lazy(() =>
+  import("./pages/Settings")
+);
+const ExecutiveReports = lazy(() =>
+  import("./pages/ExecutiveReports")
+);
+const ExecutiveActions = lazy(() =>
+  import("./pages/ExecutiveActions")
+);
+const SystemHealth = lazy(() =>
+  import("./pages/SystemHealth")
+);
+const UserManagement = lazy(() =>
+  import("./pages/UserManagement")
+);
+const AuditTrail = lazy(() =>
+  import("./pages/AuditTrail")
+);
 
 function PageLoader() {
   return (
@@ -58,8 +81,13 @@ function PageLoader() {
 
         <style>{`
           @keyframes spin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+            from {
+              transform: rotate(0deg);
+            }
+
+            to {
+              transform: rotate(360deg);
+            }
           }
         `}</style>
       </div>
@@ -73,7 +101,14 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            {/* ---------- Public Routes ---------- */}
+
+            <Route
+              path="/login"
+              element={<Login />}
+            />
+
+            {/* ---------- Protected Routes ---------- */}
 
             <Route
               element={
@@ -82,17 +117,66 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/upload" element={<UploadReports />} />
-              <Route path="/production" element={<Production />} />
-              <Route path="/fleet" element={<Fleet />} />
-              <Route path="/plant" element={<Plant />} />
-              <Route path="/safety" element={<Safety />} />
-              <Route path="/reports" element={<ExecutiveReports />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route
+                path="/"
+                element={<Dashboard />}
+              />
+
+              <Route
+                path="/upload"
+                element={<UploadReports />}
+              />
+
+              <Route
+                path="/production"
+                element={<Production />}
+              />
+
+              <Route
+                path="/fleet"
+                element={<Fleet />}
+              />
+
+              <Route
+                path="/plant"
+                element={<Plant />}
+              />
+
+              <Route
+                path="/safety"
+                element={<Safety />}
+              />
+
+              <Route
+                path="/reports"
+                element={<ExecutiveReports />}
+              />
+
               <Route
                 path="/executive-actions"
                 element={<ExecutiveActions />}
+              />
+
+              {/* ---------- Administration ---------- */}
+
+              <Route
+                path="/users"
+                element={<UserManagement />}
+              />
+
+              <Route
+                path="/audit-trail"
+                element={<AuditTrail />}
+              />
+
+              <Route
+                path="/system-health"
+                element={<SystemHealth />}
+              />
+
+              <Route
+                path="/settings"
+                element={<Settings />}
               />
             </Route>
           </Routes>

@@ -1,0 +1,175 @@
+.audit-trail-page {
+  width: 100%;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+.audit-trail-header {
+  margin-bottom: 24px;
+}
+
+.audit-trail-title-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #166534;
+  background: #dcfce7;
+}
+
+.audit-trail-title-icon svg {
+  font-size: 25px;
+}
+
+.audit-trail-title {
+  font-weight: 750 !important;
+  color: #111827;
+  letter-spacing: -0.02em !important;
+}
+
+.audit-trail-subtitle {
+  margin-top: 8px !important;
+  color: #6b7280;
+}
+
+.audit-trail-alert {
+  margin-bottom: 20px;
+  border-radius: 10px !important;
+}
+
+.audit-trail-card {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px !important;
+  background: #ffffff;
+}
+
+.audit-trail-card-header {
+  min-height: 76px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.audit-trail-card-title {
+  font-weight: 700 !important;
+  color: #111827;
+}
+
+.audit-trail-record-count {
+  margin-top: 4px !important;
+  color: #6b7280;
+}
+
+.audit-trail-card .MuiTableHead-root {
+  background: #f9fafb;
+}
+
+.audit-trail-card .MuiTableHead-root .MuiTableCell-root {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  color: #4b5563;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.audit-trail-card .MuiTableBody-root .MuiTableCell-root {
+  padding-top: 17px;
+  padding-bottom: 17px;
+  vertical-align: middle;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.audit-date-cell {
+  min-width: 180px;
+  white-space: nowrap;
+  color: #4b5563 !important;
+  font-size: 0.875rem !important;
+}
+
+.audit-actor-name,
+.audit-entity-name {
+  color: #111827;
+  font-weight: 650 !important;
+}
+
+.audit-actor-email,
+.audit-entity-type {
+  display: block;
+  margin-top: 3px;
+  color: #6b7280;
+}
+
+.audit-description-cell {
+  min-width: 300px;
+  max-width: 460px;
+  line-height: 1.5 !important;
+}
+
+.audit-trail-loading {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #6b7280;
+}
+
+.audit-trail-empty {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.audit-trail-empty svg {
+  margin-bottom: 6px;
+  font-size: 42px;
+  color: #9ca3af;
+}
+
+.audit-trail-empty h6 {
+  color: #374151;
+  font-weight: 700;
+}
+
+.audit-trail-card .MuiTablePagination-root {
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 900px) {
+  .audit-trail-page {
+    padding: 20px;
+  }
+
+  .audit-trail-title {
+    font-size: 1.75rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .audit-trail-page {
+    padding: 16px;
+  }
+
+  .audit-trail-title-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .audit-trail-card-header {
+    padding: 18px;
+  }
+}

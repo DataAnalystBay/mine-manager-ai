@@ -452,3 +452,341 @@ def generate_weekly_operations_pdf():
         story=story,
         report_name=report_name,
     )
+
+def generate_monthly_kpi_pdf():
+    report_name = "Monthly KPI Pack"
+
+    generated_at = datetime.now()
+    report_period = generated_at.strftime("%B %Y")
+
+    story = []
+
+    story.extend(
+        create_report_header(
+            report_title=report_name,
+            mine_name="OT Surface Operations",
+            company_name="Mine Manager AI",
+            report_period=report_period,
+            generated_at=generated_at,
+        )
+    )
+
+    story.append(
+        create_section_heading(
+            "Executive Summary"
+        )
+    )
+
+    story.append(
+        create_body_paragraph(
+            "This monthly KPI pack provides mine leadership with a consolidated "
+            "view of mine health, production performance, fleet effectiveness, "
+            "plant performance, safety exposure, key risks, and management actions."
+        )
+    )
+
+    story.append(
+        create_vertical_space(10)
+    )
+
+    story.append(
+        create_kpi_callouts(
+            [
+                {
+                    "label": "Mine Health",
+                    "value": "87",
+                },
+                {
+                    "label": "Ore Achievement",
+                    "value": "100.5%",
+                },
+                {
+                    "label": "Waste Achievement",
+                    "value": "100.2%",
+                },
+                {
+                    "label": "Safety Events",
+                    "value": "0",
+                },
+            ]
+        )
+    )
+
+    story.append(
+        create_vertical_space(16)
+    )
+
+    story.append(
+        create_section_heading(
+            "Monthly KPI Summary"
+        )
+    )
+
+    monthly_kpi_data = [
+        [
+            "KPI",
+            "Target",
+            "Actual",
+            "Variance",
+            "Status",
+        ],
+        [
+            "Mine Health Score",
+            "85",
+            "87",
+            "+2",
+            "On Track",
+        ],
+        [
+            "Ore Achievement",
+            "100%",
+            "100.5%",
+            "+0.5%",
+            "On Track",
+        ],
+        [
+            "Waste Achievement",
+            "100%",
+            "100.2%",
+            "+0.2%",
+            "On Track",
+        ],
+        [
+            "Fleet Availability",
+            "90%",
+            "91%",
+            "+1.0%",
+            "On Track",
+        ],
+        [
+            "Plant Throughput",
+            "100%",
+            "104%",
+            "+4.0%",
+            "Above Target",
+        ],
+        [
+            "Safety Events",
+            "0",
+            "0",
+            "0",
+            "On Track",
+        ],
+    ]
+
+    story.append(
+        create_standard_table(
+            data=monthly_kpi_data,
+            column_widths=[
+                47 * mm,
+                27 * mm,
+                27 * mm,
+                27 * mm,
+                31 * mm,
+            ],
+            header_color=PRIMARY_COLOR,
+        )
+    )
+
+    story.append(
+        create_vertical_space(16)
+    )
+
+    story.append(
+        create_section_heading(
+            "Production Performance"
+        )
+    )
+
+    production_data = [
+        [
+            "Metric",
+            "Monthly Plan",
+            "Monthly Actual",
+            "Achievement",
+            "Management Commentary",
+        ],
+        [
+            "Ore Movement",
+            "3,000,000 t",
+            "3,015,000 t",
+            "100.5%",
+            "Ore movement remained slightly above the monthly plan.",
+        ],
+        [
+            "Waste Movement",
+            "3,600,000 t",
+            "3,607,200 t",
+            "100.2%",
+            "Waste movement remained aligned with the planned mining sequence.",
+        ],
+    ]
+
+    story.append(
+        create_standard_table(
+            data=production_data,
+            column_widths=[
+                31 * mm,
+                31 * mm,
+                31 * mm,
+                27 * mm,
+                39 * mm,
+            ],
+            header_color=BLUE_COLOR,
+        )
+    )
+
+    story.append(
+        create_vertical_space(16)
+    )
+
+    story.append(
+        create_section_heading(
+            "Department Performance"
+        )
+    )
+
+    department_data = [
+        [
+            "Department",
+            "Performance",
+            "Status",
+            "Executive Commentary",
+        ],
+        [
+            "Mining",
+            "100.4%",
+            "Stable",
+            "Production delivery remained close to plan during the month.",
+        ],
+        [
+            "Fleet",
+            "91%",
+            "Watch",
+            "Utilization and maintenance delays require continued attention.",
+        ],
+        [
+            "Plant",
+            "104%",
+            "Strong",
+            "Plant throughput supported the overall monthly performance.",
+        ],
+        [
+            "Safety",
+            "0 events",
+            "Stable",
+            "No recordable events, but critical controls must remain active.",
+        ],
+    ]
+
+    story.append(
+        create_standard_table(
+            data=department_data,
+            column_widths=[
+                32 * mm,
+                31 * mm,
+                27 * mm,
+                69 * mm,
+            ],
+            header_color=PRIMARY_COLOR,
+        )
+    )
+
+    story.append(
+        create_vertical_space(16)
+    )
+
+    story.append(
+        create_section_heading(
+            "Key Risks and Opportunities"
+        )
+    )
+
+    risk_data = [
+        [
+            "Item",
+            "Level",
+            "Potential Impact",
+            "Management Response",
+        ],
+        [
+            "Fleet utilization below target",
+            "Medium",
+            "Reduced hauling capacity and lower production flexibility.",
+            "Review dispatch allocation and maintenance response time.",
+        ],
+        [
+            "Maintenance backlog",
+            "Medium",
+            "Potential reduction in equipment availability.",
+            "Prioritize critical work orders and confirm resource coverage.",
+        ],
+        [
+            "Strong plant throughput",
+            "Opportunity",
+            "Potential to recover short-term mining shortfalls.",
+            "Align stockpile strategy and plant feed priorities.",
+        ],
+    ]
+
+    story.append(
+        create_standard_table(
+            data=risk_data,
+            column_widths=[
+                42 * mm,
+                27 * mm,
+                45 * mm,
+                45 * mm,
+            ],
+            header_color=BLUE_COLOR,
+        )
+    )
+
+    story.append(
+        create_vertical_space(16)
+    )
+
+    story.append(
+        create_section_heading(
+            "Management Actions"
+        )
+    )
+
+    management_actions = [
+        "Review fleet utilization and equipment-delay trends with operations and maintenance.",
+        "Confirm the next-month production sequence and recovery opportunities.",
+        "Escalate high-priority maintenance backlog items affecting critical equipment.",
+        "Maintain focus on safety-critical controls and leading indicators.",
+        "Prepare updated KPI commentary for the monthly leadership review.",
+    ]
+
+    story.extend(
+        create_bullet_list(
+            management_actions
+        )
+    )
+
+    story.append(
+        create_vertical_space(14)
+    )
+
+    story.append(
+        create_section_heading(
+            "Executive Commentary"
+        )
+    )
+
+    story.append(
+        create_body_paragraph(
+            "Overall monthly performance remains stable, with production and plant "
+            "delivery meeting or exceeding plan. Leadership attention should remain "
+            "focused on fleet utilization, maintenance execution, and sustaining "
+            "critical safety controls. The operation is positioned to maintain its "
+            "current performance if identified actions are completed."
+        )
+    )
+
+    return build_pdf(
+        story=story,
+        report_name=report_name,
+    )

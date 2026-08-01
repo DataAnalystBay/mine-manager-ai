@@ -10,8 +10,13 @@ import FactoryIcon from "@mui/icons-material/Factory";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import DescriptionIcon from "@mui/icons-material/Description";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import HistoryIcon from "@mui/icons-material/History";
+import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import SettingsIcon from "@mui/icons-material/Settings";
+
 import { API_BASE_URL } from "../config/apiConfig";
+
 
 const navItems = [
   {
@@ -55,20 +60,43 @@ const navItems = [
     icon: DescriptionIcon,
   },
   {
+    label: "User Management",
+    path: "/users",
+    icon: ManageAccountsIcon,
+  },
+  {
+    label: "Audit Trail",
+    path: "/audit-trail",
+    icon: HistoryIcon,
+  },
+  {
+    label: "System Health",
+    path: "/system-health",
+    icon: MonitorHeartIcon,
+  },
+  {
     label: "Settings",
     path: "/settings",
     icon: SettingsIcon,
   },
 ];
 
+
 function Sidebar() {
   const { company, mine } = useConfig();
 
-  const companyName = company?.company_name || "Mine Manager AI";
-  const mineName = mine?.mine_name || "Demo Mine";
+  const companyName =
+    company?.company_name || "Mine Manager AI";
 
-  const primaryColor = company?.primary_color || "#16A34A";
-  const secondaryColor = company?.secondary_color || "#1E293B";
+  const mineName =
+    mine?.mine_name || "Demo Mine";
+
+  const primaryColor =
+    company?.primary_color || "#16A34A";
+
+  const secondaryColor =
+    company?.secondary_color || "#1E293B";
+
 
   const getLogoUrl = () => {
     const configuredLogo = company?.logo_url;
@@ -91,12 +119,15 @@ function Sidebar() {
     return configuredLogo;
   };
 
+
   const logoUrl = getLogoUrl();
+
 
   const handleLogoError = (event) => {
     event.currentTarget.onerror = null;
     event.currentTarget.src = "/images/logo.png";
   };
+
 
   return (
     <Box
@@ -114,11 +145,30 @@ function Sidebar() {
         py: 3,
         display: "flex",
         flexDirection: "column",
-        borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+        borderRight:
+          "1px solid rgba(255, 255, 255, 0.08)",
         boxSizing: "border-box",
+
+        "&::-webkit-scrollbar": {
+          width: 6,
+        },
+
+        "&::-webkit-scrollbar-track": {
+          background: "transparent",
+        },
+
+        "&::-webkit-scrollbar-thumb": {
+          background: "rgba(255, 255, 255, 0.16)",
+          borderRadius: 999,
+        },
+
+        "&::-webkit-scrollbar-thumb:hover": {
+          background: "rgba(255, 255, 255, 0.25)",
+        },
       }}
     >
-      {/* Company identity */}
+      {/* ---------- Company Identity ---------- */}
+
       <Box
         sx={{
           mb: 5,
@@ -184,7 +234,9 @@ function Sidebar() {
         </Box>
       </Box>
 
-      {/* Navigation */}
+
+      {/* ---------- Navigation ---------- */}
+
       <Box
         component="nav"
         aria-label="Main navigation"
@@ -229,7 +281,8 @@ function Sidebar() {
                 },
 
                 "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.07)",
+                  bgcolor:
+                    "rgba(255, 255, 255, 0.07)",
                   color: "#ffffff",
                   transform: "translateX(3px)",
 
@@ -242,7 +295,8 @@ function Sidebar() {
                   bgcolor: `${primaryColor}22`,
                   color: "#ffffff",
                   borderLeftColor: primaryColor,
-                  boxShadow: `0 12px 28px ${primaryColor}30`,
+                  boxShadow:
+                    `0 12px 28px ${primaryColor}30`,
 
                   "& svg": {
                     color: primaryColor,
@@ -273,7 +327,9 @@ function Sidebar() {
         })}
       </Box>
 
-      {/* MVP status */}
+
+      {/* ---------- MVP Status ---------- */}
+
       <Box
         sx={{
           mt: "auto",
@@ -284,54 +340,78 @@ function Sidebar() {
           sx={{
             p: 2,
             borderRadius: "18px",
-            bgcolor: "rgba(255, 255, 255, 0.06)",
-            border: `1px solid ${primaryColor}33`,
+            bgcolor:
+              "rgba(255, 255, 255, 0.06)",
+            border:
+              `1px solid ${primaryColor}33`,
           }}
         >
-          <Typography
+          <Box
             sx={{
-              fontSize: 13,
-              fontWeight: 800,
-              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1,
             }}
           >
-            Commercial MVP
-          </Typography>
+            <Typography
+              sx={{
+                fontSize: 13,
+                fontWeight: 800,
+                color: "#ffffff",
+              }}
+            >
+              Commercial MVP
+            </Typography>
+
+            <Box
+              sx={{
+                width: 9,
+                height: 9,
+                flexShrink: 0,
+                borderRadius: "50%",
+                bgcolor: primaryColor,
+                boxShadow:
+                  `0 0 0 4px ${primaryColor}20`,
+              }}
+            />
+          </Box>
 
           <Typography
             sx={{
-              mt: 0.7,
-              fontSize: 12,
+              mt: 0.75,
+              fontSize: 11.5,
               lineHeight: 1.5,
-              color: "#cbd5e1",
+              color: "#94a3b8",
             }}
           >
-            Configurable for pilot deployment
+            Executive operations intelligence
+            platform
           </Typography>
 
           <Box
             sx={{
               mt: 1.5,
-              height: 4,
-              width: "100%",
-              overflow: "hidden",
-              borderRadius: "999px",
-              bgcolor: `${primaryColor}33`,
+              pt: 1.5,
+              borderTop:
+                "1px solid rgba(255, 255, 255, 0.08)",
             }}
           >
-            <Box
+            <Typography
               sx={{
-                width: "95%",
-                height: "100%",
-                borderRadius: "999px",
-                bgcolor: primaryColor,
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#cbd5e1",
               }}
-            />
+            >
+              Mine Manager AI · Version 1.0
+            </Typography>
           </Box>
         </Box>
       </Box>
     </Box>
   );
 }
+
 
 export default Sidebar;
