@@ -1,0 +1,13 @@
+Mine Manager AI Backup Test
+============================
+
+Test date: 
+2026-08-05T14:12:17+08:00
+Backup file: 
+C:\Projects\mine-manager-ai\backups\database\mine_manager_ai_20260805_140953.backup
+Backup size: 
+87593
+ bytes
+Archive verification: PASSED
+Database: mine_manager_ai
+PostgreSQL client: 17.10

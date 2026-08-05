@@ -1,0 +1,267 @@
+;
+; Archive created at 2026-08-05 14:09:53
+;     dbname: mine_manager_ai
+;     TOC Entries: 256
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.10
+;     Dumped by pg_dump version: 17.10
+;
+;
+; Selected TOC Entries:
+;
+8; 2615 24767 SCHEMA - ai mineadmin
+7; 2615 24766 SCHEMA - analytics mineadmin
+6; 2615 24765 SCHEMA - operations mineadmin
+5; 2615 2200 SCHEMA - public azure_pg_admin
+4385; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_advance(text, pg_lsn) azuresu
+4386; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_create(text) azuresu
+4387; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_drop(text) azuresu
+4388; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_oid(text) azuresu
+4389; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_progress(text, boolean) azuresu
+4390; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_session_is_setup() azuresu
+4391; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_session_progress(boolean) azuresu
+4392; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_session_reset() azuresu
+4393; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_session_setup(text) azuresu
+4394; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_xact_reset() azuresu
+4395; 0 0 ACL pg_catalog FUNCTION pg_replication_origin_xact_setup(pg_lsn, timestamp with time zone) azuresu
+4396; 0 0 ACL pg_catalog FUNCTION pg_show_replication_origin_status(OUT local_id oid, OUT external_id text, OUT remote_lsn pg_lsn, OUT local_lsn pg_lsn) azuresu
+4397; 0 0 ACL pg_catalog FUNCTION pg_stat_reset() azuresu
+4398; 0 0 ACL pg_catalog FUNCTION pg_stat_reset_shared(target text) azuresu
+4399; 0 0 ACL pg_catalog FUNCTION pg_stat_reset_single_function_counters(oid) azuresu
+4400; 0 0 ACL pg_catalog FUNCTION pg_stat_reset_single_table_counters(oid) azuresu
+227; 1259 24793 TABLE ai daily_briefings mineadmin
+226; 1259 24792 SEQUENCE ai daily_briefings_id_seq mineadmin
+4401; 0 0 SEQUENCE OWNED BY ai daily_briefings_id_seq mineadmin
+223; 1259 24777 TABLE operations equipment_daily mineadmin
+222; 1259 24776 SEQUENCE operations equipment_daily_id_seq mineadmin
+4402; 0 0 SEQUENCE OWNED BY operations equipment_daily_id_seq mineadmin
+229; 1259 24812 TABLE operations fleet_daily mineadmin
+228; 1259 24811 SEQUENCE operations fleet_daily_id_seq mineadmin
+4403; 0 0 SEQUENCE OWNED BY operations fleet_daily_id_seq mineadmin
+221; 1259 24769 TABLE operations production_daily mineadmin
+220; 1259 24768 SEQUENCE operations production_daily_id_seq mineadmin
+4404; 0 0 SEQUENCE OWNED BY operations production_daily_id_seq mineadmin
+225; 1259 24785 TABLE operations safety_daily mineadmin
+224; 1259 24784 SEQUENCE operations safety_daily_id_seq mineadmin
+4405; 0 0 SEQUENCE OWNED BY operations safety_daily_id_seq mineadmin
+4406; 0 0 ACL pg_catalog COLUMN pg_config.name azuresu
+4407; 0 0 ACL pg_catalog COLUMN pg_config.setting azuresu
+4408; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.line_number azuresu
+4409; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.type azuresu
+4410; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.database azuresu
+4411; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.user_name azuresu
+4412; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.address azuresu
+4413; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.netmask azuresu
+4414; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.auth_method azuresu
+4415; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.options azuresu
+4416; 0 0 ACL pg_catalog COLUMN pg_hba_file_rules.error azuresu
+4417; 0 0 ACL pg_catalog COLUMN pg_replication_origin_status.local_id azuresu
+4418; 0 0 ACL pg_catalog COLUMN pg_replication_origin_status.external_id azuresu
+4419; 0 0 ACL pg_catalog COLUMN pg_replication_origin_status.remote_lsn azuresu
+4420; 0 0 ACL pg_catalog COLUMN pg_replication_origin_status.local_lsn azuresu
+4421; 0 0 ACL pg_catalog COLUMN pg_shmem_allocations.name azuresu
+4422; 0 0 ACL pg_catalog COLUMN pg_shmem_allocations.off azuresu
+4423; 0 0 ACL pg_catalog COLUMN pg_shmem_allocations.size azuresu
+4424; 0 0 ACL pg_catalog COLUMN pg_shmem_allocations.allocated_size azuresu
+4425; 0 0 ACL pg_catalog COLUMN pg_statistic.starelid azuresu
+4426; 0 0 ACL pg_catalog COLUMN pg_statistic.staattnum azuresu
+4427; 0 0 ACL pg_catalog COLUMN pg_statistic.stainherit azuresu
+4428; 0 0 ACL pg_catalog COLUMN pg_statistic.stanullfrac azuresu
+4429; 0 0 ACL pg_catalog COLUMN pg_statistic.stawidth azuresu
+4430; 0 0 ACL pg_catalog COLUMN pg_statistic.stadistinct azuresu
+4431; 0 0 ACL pg_catalog COLUMN pg_statistic.stakind1 azuresu
+4432; 0 0 ACL pg_catalog COLUMN pg_statistic.stakind2 azuresu
+4433; 0 0 ACL pg_catalog COLUMN pg_statistic.stakind3 azuresu
+4434; 0 0 ACL pg_catalog COLUMN pg_statistic.stakind4 azuresu
+4435; 0 0 ACL pg_catalog COLUMN pg_statistic.stakind5 azuresu
+4436; 0 0 ACL pg_catalog COLUMN pg_statistic.staop1 azuresu
+4437; 0 0 ACL pg_catalog COLUMN pg_statistic.staop2 azuresu
+4438; 0 0 ACL pg_catalog COLUMN pg_statistic.staop3 azuresu
+4439; 0 0 ACL pg_catalog COLUMN pg_statistic.staop4 azuresu
+4440; 0 0 ACL pg_catalog COLUMN pg_statistic.staop5 azuresu
+4441; 0 0 ACL pg_catalog COLUMN pg_statistic.stacoll1 azuresu
+4442; 0 0 ACL pg_catalog COLUMN pg_statistic.stacoll2 azuresu
+4443; 0 0 ACL pg_catalog COLUMN pg_statistic.stacoll3 azuresu
+4444; 0 0 ACL pg_catalog COLUMN pg_statistic.stacoll4 azuresu
+4445; 0 0 ACL pg_catalog COLUMN pg_statistic.stacoll5 azuresu
+4446; 0 0 ACL pg_catalog COLUMN pg_statistic.stanumbers1 azuresu
+4447; 0 0 ACL pg_catalog COLUMN pg_statistic.stanumbers2 azuresu
+4448; 0 0 ACL pg_catalog COLUMN pg_statistic.stanumbers3 azuresu
+4449; 0 0 ACL pg_catalog COLUMN pg_statistic.stanumbers4 azuresu
+4450; 0 0 ACL pg_catalog COLUMN pg_statistic.stanumbers5 azuresu
+4451; 0 0 ACL pg_catalog COLUMN pg_statistic.stavalues1 azuresu
+4452; 0 0 ACL pg_catalog COLUMN pg_statistic.stavalues2 azuresu
+4453; 0 0 ACL pg_catalog COLUMN pg_statistic.stavalues3 azuresu
+4454; 0 0 ACL pg_catalog COLUMN pg_statistic.stavalues4 azuresu
+4455; 0 0 ACL pg_catalog COLUMN pg_statistic.stavalues5 azuresu
+4456; 0 0 ACL pg_catalog COLUMN pg_subscription.oid azuresu
+4457; 0 0 ACL pg_catalog COLUMN pg_subscription.subdbid azuresu
+4458; 0 0 ACL pg_catalog COLUMN pg_subscription.subname azuresu
+4459; 0 0 ACL pg_catalog COLUMN pg_subscription.subowner azuresu
+4460; 0 0 ACL pg_catalog COLUMN pg_subscription.subenabled azuresu
+4461; 0 0 ACL pg_catalog COLUMN pg_subscription.subconninfo azuresu
+4462; 0 0 ACL pg_catalog COLUMN pg_subscription.subslotname azuresu
+4463; 0 0 ACL pg_catalog COLUMN pg_subscription.subsynccommit azuresu
+4464; 0 0 ACL pg_catalog COLUMN pg_subscription.subpublications azuresu
+254; 1259 24986 TABLE public alembic_version mineadmin
+251; 1259 24954 TABLE public alert_thresholds mineadmin
+250; 1259 24953 SEQUENCE public alert_thresholds_id_seq mineadmin
+4465; 0 0 SEQUENCE OWNED BY public alert_thresholds_id_seq mineadmin
+261; 1259 25034 TABLE public audit_logs mineadmin
+260; 1259 25033 SEQUENCE public audit_logs_id_seq mineadmin
+4466; 0 0 SEQUENCE OWNED BY public audit_logs_id_seq mineadmin
+241; 1259 24875 TABLE public companies mineadmin
+240; 1259 24874 SEQUENCE public companies_id_seq mineadmin
+4467; 0 0 SEQUENCE OWNED BY public companies_id_seq mineadmin
+245; 1259 24908 TABLE public company_settings mineadmin
+244; 1259 24907 SEQUENCE public company_settings_id_seq mineadmin
+4468; 0 0 SEQUENCE OWNED BY public company_settings_id_seq mineadmin
+256; 1259 24992 TABLE public executive_actions mineadmin
+255; 1259 24991 SEQUENCE public executive_actions_id_seq mineadmin
+4469; 0 0 SEQUENCE OWNED BY public executive_actions_id_seq mineadmin
+235; 1259 24840 TABLE public fleet_daily mineadmin
+234; 1259 24839 SEQUENCE public fleet_daily_id_seq mineadmin
+4470; 0 0 SEQUENCE OWNED BY public fleet_daily_id_seq mineadmin
+249; 1259 24939 TABLE public kpi_targets mineadmin
+248; 1259 24938 SEQUENCE public kpi_targets_id_seq mineadmin
+4471; 0 0 SEQUENCE OWNED BY public kpi_targets_id_seq mineadmin
+247; 1259 24923 TABLE public mine_settings mineadmin
+246; 1259 24922 SEQUENCE public mine_settings_id_seq mineadmin
+4472; 0 0 SEQUENCE OWNED BY public mine_settings_id_seq mineadmin
+237; 1259 24851 TABLE public plant_daily mineadmin
+236; 1259 24850 SEQUENCE public plant_daily_id_seq mineadmin
+4473; 0 0 SEQUENCE OWNED BY public plant_daily_id_seq mineadmin
+233; 1259 24830 TABLE public production_daily mineadmin
+257; 1259 25010 TABLE public production_daily_backup_20260728 mineadmin
+232; 1259 24829 SEQUENCE public production_daily_id_seq mineadmin
+4474; 0 0 SEQUENCE OWNED BY public production_daily_id_seq mineadmin
+259; 1259 25018 TABLE public report_history mineadmin
+258; 1259 25017 SEQUENCE public report_history_id_seq mineadmin
+4475; 0 0 SEQUENCE OWNED BY public report_history_id_seq mineadmin
+239; 1259 24861 TABLE public safety_daily mineadmin
+238; 1259 24860 SEQUENCE public safety_daily_id_seq mineadmin
+4476; 0 0 SEQUENCE OWNED BY public safety_daily_id_seq mineadmin
+253; 1259 24971 TABLE public shift_patterns mineadmin
+252; 1259 24970 SEQUENCE public shift_patterns_id_seq mineadmin
+4477; 0 0 SEQUENCE OWNED BY public shift_patterns_id_seq mineadmin
+231; 1259 24820 TABLE public upload_logs mineadmin
+230; 1259 24819 SEQUENCE public upload_logs_id_seq mineadmin
+4478; 0 0 SEQUENCE OWNED BY public upload_logs_id_seq mineadmin
+243; 1259 24886 TABLE public users mineadmin
+242; 1259 24885 SEQUENCE public users_id_seq mineadmin
+4479; 0 0 SEQUENCE OWNED BY public users_id_seq mineadmin
+4054; 2604 24796 DEFAULT ai daily_briefings id mineadmin
+4050; 2604 24780 DEFAULT operations equipment_daily id mineadmin
+4056; 2604 24815 DEFAULT operations fleet_daily id mineadmin
+4048; 2604 24772 DEFAULT operations production_daily id mineadmin
+4052; 2604 24788 DEFAULT operations safety_daily id mineadmin
+4097; 2604 24957 DEFAULT public alert_thresholds id mineadmin
+4113; 2604 25037 DEFAULT public audit_logs id mineadmin
+4075; 2604 24878 DEFAULT public companies id mineadmin
+4083; 2604 24911 DEFAULT public company_settings id mineadmin
+4105; 2604 24995 DEFAULT public executive_actions id mineadmin
+4064; 2604 24843 DEFAULT public fleet_daily id mineadmin
+4093; 2604 24942 DEFAULT public kpi_targets id mineadmin
+4090; 2604 24926 DEFAULT public mine_settings id mineadmin
+4067; 2604 24854 DEFAULT public plant_daily id mineadmin
+4062; 2604 24833 DEFAULT public production_daily id mineadmin
+4110; 2604 25021 DEFAULT public report_history id mineadmin
+4069; 2604 24864 DEFAULT public safety_daily id mineadmin
+4101; 2604 24974 DEFAULT public shift_patterns id mineadmin
+4058; 2604 24823 DEFAULT public upload_logs id mineadmin
+4078; 2604 24889 DEFAULT public users id mineadmin
+4344; 0 24793 TABLE DATA ai daily_briefings mineadmin
+4340; 0 24777 TABLE DATA operations equipment_daily mineadmin
+4346; 0 24812 TABLE DATA operations fleet_daily mineadmin
+4338; 0 24769 TABLE DATA operations production_daily mineadmin
+4342; 0 24785 TABLE DATA operations safety_daily mineadmin
+4371; 0 24986 TABLE DATA public alembic_version mineadmin
+4368; 0 24954 TABLE DATA public alert_thresholds mineadmin
+4378; 0 25034 TABLE DATA public audit_logs mineadmin
+4358; 0 24875 TABLE DATA public companies mineadmin
+4362; 0 24908 TABLE DATA public company_settings mineadmin
+4373; 0 24992 TABLE DATA public executive_actions mineadmin
+4352; 0 24840 TABLE DATA public fleet_daily mineadmin
+4366; 0 24939 TABLE DATA public kpi_targets mineadmin
+4364; 0 24923 TABLE DATA public mine_settings mineadmin
+4354; 0 24851 TABLE DATA public plant_daily mineadmin
+4350; 0 24830 TABLE DATA public production_daily mineadmin
+4374; 0 25010 TABLE DATA public production_daily_backup_20260728 mineadmin
+4376; 0 25018 TABLE DATA public report_history mineadmin
+4356; 0 24861 TABLE DATA public safety_daily mineadmin
+4370; 0 24971 TABLE DATA public shift_patterns mineadmin
+4348; 0 24820 TABLE DATA public upload_logs mineadmin
+4360; 0 24886 TABLE DATA public users mineadmin
+4480; 0 0 SEQUENCE SET ai daily_briefings_id_seq mineadmin
+4481; 0 0 SEQUENCE SET operations equipment_daily_id_seq mineadmin
+4482; 0 0 SEQUENCE SET operations fleet_daily_id_seq mineadmin
+4483; 0 0 SEQUENCE SET operations production_daily_id_seq mineadmin
+4484; 0 0 SEQUENCE SET operations safety_daily_id_seq mineadmin
+4485; 0 0 SEQUENCE SET public alert_thresholds_id_seq mineadmin
+4486; 0 0 SEQUENCE SET public audit_logs_id_seq mineadmin
+4487; 0 0 SEQUENCE SET public companies_id_seq mineadmin
+4488; 0 0 SEQUENCE SET public company_settings_id_seq mineadmin
+4489; 0 0 SEQUENCE SET public executive_actions_id_seq mineadmin
+4490; 0 0 SEQUENCE SET public fleet_daily_id_seq mineadmin
+4491; 0 0 SEQUENCE SET public kpi_targets_id_seq mineadmin
+4492; 0 0 SEQUENCE SET public mine_settings_id_seq mineadmin
+4493; 0 0 SEQUENCE SET public plant_daily_id_seq mineadmin
+4494; 0 0 SEQUENCE SET public production_daily_id_seq mineadmin
+4495; 0 0 SEQUENCE SET public report_history_id_seq mineadmin
+4496; 0 0 SEQUENCE SET public safety_daily_id_seq mineadmin
+4497; 0 0 SEQUENCE SET public shift_patterns_id_seq mineadmin
+4498; 0 0 SEQUENCE SET public upload_logs_id_seq mineadmin
+4499; 0 0 SEQUENCE SET public users_id_seq mineadmin
+4123; 2606 24801 CONSTRAINT ai daily_briefings daily_briefings_pkey mineadmin
+4119; 2606 24783 CONSTRAINT operations equipment_daily equipment_daily_pkey mineadmin
+4125; 2606 24818 CONSTRAINT operations fleet_daily fleet_daily_pkey mineadmin
+4117; 2606 24775 CONSTRAINT operations production_daily production_daily_pkey mineadmin
+4121; 2606 24791 CONSTRAINT operations safety_daily safety_daily_pkey mineadmin
+4163; 2606 24990 CONSTRAINT public alembic_version alembic_version_pkc mineadmin
+4159; 2606 24964 CONSTRAINT public alert_thresholds alert_thresholds_pkey mineadmin
+4180; 2606 25043 CONSTRAINT public audit_logs audit_logs_pkey mineadmin
+4145; 2606 24884 CONSTRAINT public companies companies_pkey mineadmin
+4153; 2606 24921 CONSTRAINT public company_settings company_settings_pkey mineadmin
+4165; 2606 25003 CONSTRAINT public executive_actions executive_actions_pkey mineadmin
+4133; 2606 25059 CONSTRAINT public fleet_daily fleet_daily_mine_date_unique mineadmin
+4135; 2606 24849 CONSTRAINT public fleet_daily fleet_daily_pkey mineadmin
+4157; 2606 24947 CONSTRAINT public kpi_targets kpi_targets_pkey mineadmin
+4155; 2606 24932 CONSTRAINT public mine_settings mine_settings_pkey mineadmin
+4137; 2606 25061 CONSTRAINT public plant_daily plant_daily_mine_date_unique mineadmin
+4139; 2606 24859 CONSTRAINT public plant_daily plant_daily_pkey mineadmin
+4129; 2606 24838 CONSTRAINT public production_daily production_daily_pkey mineadmin
+4178; 2606 25027 CONSTRAINT public report_history report_history_pkey mineadmin
+4141; 2606 25063 CONSTRAINT public safety_daily safety_daily_mine_date_unique mineadmin
+4143; 2606 24873 CONSTRAINT public safety_daily safety_daily_pkey mineadmin
+4161; 2606 24979 CONSTRAINT public shift_patterns shift_patterns_pkey mineadmin
+4127; 2606 24828 CONSTRAINT public upload_logs upload_logs_pkey mineadmin
+4171; 2606 25005 CONSTRAINT public executive_actions uq_executive_actions_action_key mineadmin
+4131; 2606 25016 CONSTRAINT public production_daily uq_production_daily_mine_date mineadmin
+4149; 2606 24898 CONSTRAINT public users users_email_key mineadmin
+4151; 2606 24896 CONSTRAINT public users users_pkey mineadmin
+4166; 1259 25007 INDEX public ix_executive_actions_action_key mineadmin
+4167; 1259 25006 INDEX public ix_executive_actions_id mineadmin
+4168; 1259 25008 INDEX public ix_executive_actions_kpi_key mineadmin
+4169; 1259 25009 INDEX public ix_executive_actions_status mineadmin
+4181; 1259 25056 INDEX public ix_public_audit_logs_action mineadmin
+4182; 1259 25055 INDEX public ix_public_audit_logs_actor_user_id mineadmin
+4183; 1259 25054 INDEX public ix_public_audit_logs_company_id mineadmin
+4184; 1259 25057 INDEX public ix_public_audit_logs_id mineadmin
+4172; 1259 25031 INDEX public ix_public_report_history_generated_at mineadmin
+4173; 1259 25032 INDEX public ix_public_report_history_id mineadmin
+4174; 1259 25029 INDEX public ix_public_report_history_report_format mineadmin
+4175; 1259 25028 INDEX public ix_public_report_history_report_key mineadmin
+4176; 1259 25030 INDEX public ix_public_report_history_status mineadmin
+4146; 1259 24905 INDEX public ix_users_company_id mineadmin
+4147; 1259 24904 INDEX public ix_users_email mineadmin
+4188; 2606 24965 FK CONSTRAINT public alert_thresholds alert_thresholds_mine_id_fkey mineadmin
+4190; 2606 25049 FK CONSTRAINT public audit_logs audit_logs_actor_user_id_fkey mineadmin
+4191; 2606 25044 FK CONSTRAINT public audit_logs audit_logs_company_id_fkey mineadmin
+4187; 2606 24948 FK CONSTRAINT public kpi_targets kpi_targets_mine_id_fkey mineadmin
+4186; 2606 24933 FK CONSTRAINT public mine_settings mine_settings_company_id_fkey mineadmin
+4189; 2606 24980 FK CONSTRAINT public shift_patterns shift_patterns_mine_id_fkey mineadmin
+4185; 2606 24899 FK CONSTRAINT public users users_company_id_fkey mineadmin

@@ -1,0 +1,20 @@
+PostgreSQL Client Tools 
+======================= 
+ 
+pg_dump: 
+C:\Program Files\PostgreSQL\17\bin\pg_dump.exe
+pg_dump (PostgreSQL) 17.10
+ 
+pg_restore: 
+C:\Program Files\PostgreSQL\17\bin\pg_restore.exe
+pg_restore (PostgreSQL) 17.10
+ 
+psql: 
+C:\Program Files\PostgreSQL\17\bin\psql.exe
+psql (PostgreSQL) 17.10
+
+Database Connectivity
+=====================
+Database: mine_manager_ai
+Server version: 17.10
+Connection test: 1

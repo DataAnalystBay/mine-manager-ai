@@ -42,3 +42,7 @@ htmlcov/
 # Logs
 *.log
 npm-debug.log*
+backups/
+*.backup
+*.dump
+*.sql.gz
