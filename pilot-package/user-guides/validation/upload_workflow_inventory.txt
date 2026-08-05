@@ -1,0 +1,60 @@
+9:  FaIndustry,
+16:  FaBrain,
+22:const REPORT_CONFIG = {
+25:    icon: <FaIndustry />,
+27:    requiredColumns: [
+40:    requiredColumns: [
+43:      "availability",
+52:    requiredColumns: [
+64:    requiredColumns: [
+101:  const detail = error?.response?.data?.detail;
+103:  if (typeof detail === "string") {
+104:    return detail;
+107:  if (Array.isArray(detail)) {
+108:    return detail
+119:  if (detail?.message) {
+120:    return detail.message;
+123:  if (detail?.error) {
+124:    return detail.error;
+128:    return "Your login session has expired. Please log in again.";
+138:    "Upload failed. Please check the backend endpoint."
+149:    storedUser?.email ||
+155:    Object.keys(REPORT_CONFIG).forEach((key) => {
+157:        status: "waiting",
+160:        message: "Waiting for upload",
+170:  const uploadHistory = useMemo(() => {
+174:        report: REPORT_CONFIG[key].title,
+189:    (completedCount / Object.keys(REPORT_CONFIG).length) * 100,
+194:    completedCount === Object.keys(REPORT_CONFIG).length;
+204:  const validateExcelColumns = async (
+206:    requiredColumns,
+208:    const data = await file.arrayBuffer();
+220:        missingColumns: requiredColumns,
+221:        message: "The workbook does not contain a readable worksheet.",
+234:        missingColumns: requiredColumns,
+243:    const missingColumns = requiredColumns.filter(
+275:  const handleUpload = async (
+285:    const config = REPORT_CONFIG[reportKey];
+296:      const validation = await validateExcelColumns(
+298:        config.requiredColumns,
+320:            "Not authenticated. Please log in again before uploading.",
+335:      await axios.post(
+371:          detail: {
+417:  const handleGenerateBriefing = async () => {
+424:        "AI Daily Briefing generation will be connected in the next sprint.",
+428:        "Unable to generate AI Daily Briefing:",
+432:      alert("Failed to generate briefing.");
+441:          <h1>Daily Data Center</h1>
+444:            Upload daily operational reports to prepare
+445:            Mine Manager AI briefing.
+467:        {Object.entries(REPORT_CONFIG).map(
+474:              onUpload={handleUpload}
+482:      <div className="briefing-section">
+485:          className={`briefing-button ${
+491:          onClick={handleGenerateBriefing}
+493:          <FaBrain />
+495:          Generate AI Daily Briefing
+501:            the AI Daily Briefing button.
+510:        {uploadHistory.length === 0 ? (
+527:              {uploadHistory.map(
+690:          {config.requiredColumns.join(", ")}

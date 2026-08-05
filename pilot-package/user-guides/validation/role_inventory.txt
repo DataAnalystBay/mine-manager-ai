@@ -1,0 +1,771 @@
+backend\app\auth\dependencies.py:22:# SUPPORTED ROLES
+backend\app\auth\dependencies.py:25:ROLE_ADMINISTRATOR: Final[str] = "administrator"
+backend\app\auth\dependencies.py:26:ROLE_GENERAL_MANAGER: Final[str] = "general manager"
+backend\app\auth\dependencies.py:27:ROLE_MINE_MANAGER: Final[str] = "mine manager"
+backend\app\auth\dependencies.py:28:ROLE_SUPERINTENDENT: Final[str] = "superintendent"
+backend\app\auth\dependencies.py:29:ROLE_VIEWER: Final[str] = "viewer"
+backend\app\auth\dependencies.py:32:VALID_ROLES: Final[set[str]] = {
+backend\app\auth\dependencies.py:33:    ROLE_ADMINISTRATOR,
+backend\app\auth\dependencies.py:34:    ROLE_GENERAL_MANAGER,
+backend\app\auth\dependencies.py:35:    ROLE_MINE_MANAGER,
+backend\app\auth\dependencies.py:36:    ROLE_SUPERINTENDENT,
+backend\app\auth\dependencies.py:37:    ROLE_VIEWER,
+backend\app\auth\dependencies.py:60:# ROLE NORMALIZATION
+backend\app\auth\dependencies.py:63:def normalize_role(role: str | None) -> str:
+backend\app\auth\dependencies.py:65:    Convert a stored role into a consistent comparison value.
+backend\app\auth\dependencies.py:68:        "Administrator" -> "administrator"
+backend\app\auth\dependencies.py:69:        "General Manager" -> "general manager"
+backend\app\auth\dependencies.py:70:        "Mine_Manager" -> "mine manager"
+backend\app\auth\dependencies.py:74:        str(role or "")
+backend\app\auth\dependencies.py:110:    Decode and validate a Mine Manager AI JWT access token.
+backend\app\auth\dependencies.py:229:    normalized_role = normalize_role(
+backend\app\auth\dependencies.py:230:        user.role
+backend\app\auth\dependencies.py:233:    if normalized_role not in VALID_ROLES:
+backend\app\auth\dependencies.py:238:                "or unsupported role"
+backend\app\auth\dependencies.py:246:# GENERIC ROLE AUTHORIZATION
+backend\app\auth\dependencies.py:249:def require_roles(
+backend\app\auth\dependencies.py:250:    *allowed_roles: str,
+backend\app\auth\dependencies.py:253:    Create a FastAPI dependency that permits only selected roles.
+backend\app\auth\dependencies.py:259:                require_roles(
+backend\app\auth\dependencies.py:260:                    "Administrator",
+backend\app\auth\dependencies.py:261:                    "General Manager",
+backend\app\auth\dependencies.py:267:    normalized_allowed_roles = {
+backend\app\auth\dependencies.py:268:        normalize_role(role)
+backend\app\auth\dependencies.py:269:        for role in allowed_roles
+backend\app\auth\dependencies.py:270:        if normalize_role(role)
+backend\app\auth\dependencies.py:273:    if not normalized_allowed_roles:
+backend\app\auth\dependencies.py:275:            "At least one allowed role is required."
+backend\app\auth\dependencies.py:278:    invalid_roles = (
+backend\app\auth\dependencies.py:279:        normalized_allowed_roles - VALID_ROLES
+backend\app\auth\dependencies.py:282:    if invalid_roles:
+backend\app\auth\dependencies.py:284:            "Unsupported authorization roles: "
+backend\app\auth\dependencies.py:285:            f"{sorted(invalid_roles)}"
+backend\app\auth\dependencies.py:288:    def role_dependency(
+backend\app\auth\dependencies.py:293:        normalized_user_role = normalize_role(
+backend\app\auth\dependencies.py:294:            current_user.role
+backend\app\auth\dependencies.py:298:            normalized_user_role
+backend\app\auth\dependencies.py:299:            not in normalized_allowed_roles
+backend\app\auth\dependencies.py:301:            allowed_role_names = ", ".join(
+backend\app\auth\dependencies.py:303:                    role.title()
+backend\app\auth\dependencies.py:304:                    for role
+backend\app\auth\dependencies.py:305:                    in normalized_allowed_roles
+backend\app\auth\dependencies.py:315:                    f"following roles: "
+backend\app\auth\dependencies.py:316:                    f"{allowed_role_names}"
+backend\app\auth\dependencies.py:322:    return role_dependency
+backend\app\auth\dependencies.py:326:# NAMED ROLE DEPENDENCIES
+backend\app\auth\dependencies.py:329:def require_administrator(
+backend\app\auth\dependencies.py:335:    Allow only users with the Administrator role.
+backend\app\auth\dependencies.py:339:        normalize_role(current_user.role)
+backend\app\auth\dependencies.py:340:        != ROLE_ADMINISTRATOR
+backend\app\auth\dependencies.py:345:                "Administrator access is required"
+backend\app\auth\dependencies.py:352:def require_general_manager_or_administrator(
+backend\app\auth\dependencies.py:358:    Allow General Managers and Administrators.
+backend\app\auth\dependencies.py:361:    allowed_roles = {
+backend\app\auth\dependencies.py:362:        ROLE_GENERAL_MANAGER,
+backend\app\auth\dependencies.py:363:        ROLE_ADMINISTRATOR,
+backend\app\auth\dependencies.py:367:        normalize_role(current_user.role)
+backend\app\auth\dependencies.py:368:        not in allowed_roles
+backend\app\auth\dependencies.py:373:                "General Manager or Administrator "
+backend\app\auth\dependencies.py:381:def require_mine_management(
+backend\app\auth\dependencies.py:387:    Allow Mine Managers, General Managers,
+backend\app\auth\dependencies.py:388:    and Administrators.
+backend\app\auth\dependencies.py:391:    allowed_roles = {
+backend\app\auth\dependencies.py:392:        ROLE_MINE_MANAGER,
+backend\app\auth\dependencies.py:393:        ROLE_GENERAL_MANAGER,
+backend\app\auth\dependencies.py:394:        ROLE_ADMINISTRATOR,
+backend\app\auth\dependencies.py:398:        normalize_role(current_user.role)
+backend\app\auth\dependencies.py:399:        not in allowed_roles
+backend\app\auth\dependencies.py:404:                "Mine Manager, General Manager, "
+backend\app\auth\dependencies.py:405:                "or Administrator access is required"
+backend\app\auth\dependencies.py:421:    Viewer accounts are excluded.
+backend\app\auth\dependencies.py:424:    allowed_roles = {
+backend\app\auth\dependencies.py:425:        ROLE_SUPERINTENDENT,
+backend\app\auth\dependencies.py:426:        ROLE_MINE_MANAGER,
+backend\app\auth\dependencies.py:427:        ROLE_GENERAL_MANAGER,
+backend\app\auth\dependencies.py:428:        ROLE_ADMINISTRATOR,
+backend\app\auth\dependencies.py:432:        normalize_role(current_user.role)
+backend\app\auth\dependencies.py:433:        not in allowed_roles
+backend\app\auth\dependencies.py:439:                "Superintendent, Mine Manager, "
+backend\app\auth\dependencies.py:440:                "General Manager, or Administrator access"
+backend\app\auth\dependencies.py:453:    Allow authorized operational roles to upload reports.
+backend\app\auth\dependencies.py:455:    Viewer accounts are read-only.
+backend\app\auth\dependencies.py:458:    allowed_roles = {
+backend\app\auth\dependencies.py:459:        ROLE_SUPERINTENDENT,
+backend\app\auth\dependencies.py:460:        ROLE_MINE_MANAGER,
+backend\app\auth\dependencies.py:461:        ROLE_GENERAL_MANAGER,
+backend\app\auth\dependencies.py:462:        ROLE_ADMINISTRATOR,
+backend\app\auth\dependencies.py:466:        normalize_role(current_user.role)
+backend\app\auth\dependencies.py:467:        not in allowed_roles
+backend\app\auth\dependencies.py:473:                "Superintendent, Mine Manager, "
+backend\app\auth\dependencies.py:474:                "General Manager, or Administrator access"
+backend\app\config.py:20:    require_general_manager_or_administrator,
+backend\app\config.py:26:from app.models.mine import MineSettings
+backend\app\config.py:52:class MineUpdateRequest(BaseModel):
+backend\app\config.py:53:    mine_name: Optional[str] = None
+backend\app\config.py:56:    mine_type: Optional[str] = None
+backend\app\config.py:100:    All authenticated roles may view configuration.
+backend\app\config.py:122:            require_general_manager_or_administrator
+backend\app\config.py:133:    General Manager or Administrator access is required.
+backend\app\config.py:186:            require_general_manager_or_administrator
+backend\app\config.py:197:    General Manager or Administrator access is required.
+backend\app\config.py:329:# MINE SETTINGS
+backend\app\config.py:332:@router.get("/mine")
+backend\app\config.py:333:def get_mine_settings(
+backend\app\config.py:337:    Return mine configuration.
+backend\app\config.py:339:    All authenticated roles may view configuration.
+backend\app\config.py:342:    mine = (
+backend\app\config.py:343:        db.query(MineSettings)
+backend\app\config.py:344:        .order_by(MineSettings.id.asc())
+backend\app\config.py:348:    if not mine:
+backend\app\config.py:351:            detail="Mine settings not found",
+backend\app\config.py:354:    return mine
+backend\app\config.py:358:    "/mine",
+backend\app\config.py:361:            require_general_manager_or_administrator
+backend\app\config.py:365:def update_mine_settings(
+backend\app\config.py:366:    request: MineUpdateRequest,
+backend\app\config.py:370:    Update mine configuration.
+backend\app\config.py:372:    General Manager or Administrator access is required.
+backend\app\config.py:375:    mine = (
+backend\app\config.py:376:        db.query(MineSettings)
+backend\app\config.py:377:        .order_by(MineSettings.id.asc())
+backend\app\config.py:381:    if not mine:
+backend\app\config.py:384:            detail="Mine settings not found",
+backend\app\config.py:393:            mine,
+backend\app\config.py:400:        db.refresh(mine)
+backend\app\config.py:409:            detail="Unable to update mine settings.",
+backend\app\config.py:412:    return mine
+backend\app\config.py:438:            require_general_manager_or_administrator
+backend\app\config.py:450:    General Manager or Administrator access is required.
+backend\app\config.py:516:            require_general_manager_or_administrator
+backend\app\config.py:528:    General Manager or Administrator access is required.
+backend\app\config.py:598:            require_general_manager_or_administrator
+backend\app\config.py:610:    General Manager or Administrator access is required.
+backend\app\config.py:668:    All authenticated roles may view configuration.
+backend\app\config.py:677:    mine = (
+backend\app\config.py:678:        db.query(MineSettings)
+backend\app\config.py:679:        .order_by(MineSettings.id.asc())
+backend\app\config.py:703:        "mine": mine,
+backend\app\main.py:48:APP_NAME = "Mine Manager AI"
+backend\app\main.py:58:    title="Mine Manager AI API",
+backend\app\main.py:60:        "Backend API for Mine Manager AI "
+backend\app\main.py:96:    "https://mine-manager-ai-zeta.vercel.app",
+backend\app\main.py:114:        r"https://mine-manager-ai-[a-zA-Z0-9-]+\.vercel\.app"
+backend\app\main.py:219:        "name": "Mine Manager AI API",
+backend\app\main_before_10_18_2.py:45:APP_NAME = "Mine Manager AI"
+backend\app\main_before_10_18_2.py:55:    title="Mine Manager AI API",
+backend\app\main_before_10_18_2.py:57:        "Backend API for Mine Manager AI "
+backend\app\main_before_10_18_2.py:93:    "https://mine-manager-ai-zeta.vercel.app",
+backend\app\main_before_10_18_2.py:111:        r"https://mine-manager-ai-[a-zA-Z0-9-]+\.vercel\.app"
+backend\app\main_before_10_18_2.py:204:        "name": "Mine Manager AI API",
+backend\app\models\alert_threshold.py:10:    mine_id = Column(Integer, ForeignKey("mine_settings.id", ondelete="CASCADE"))
+backend\app\models\auth_company.py:29:    mine_name = Column(
+backend\app\models\executive_action.py:17:    or entered manually by a mine-management user.
+backend\app\models\kpi_target.py:10:    mine_id = Column(Integer, ForeignKey("mine_settings.id", ondelete="CASCADE"))
+backend\app\models\mine.py:6:class MineSettings(Base):
+backend\app\models\mine.py:7:    __tablename__ = "mine_settings"
+backend\app\models\mine.py:11:    mine_name = Column(String(255), nullable=False)
+backend\app\models\mine.py:14:    mine_type = Column(String(100))
+backend\app\models\report_history.py:68:    mine_name = Column(
+backend\app\models\shift_pattern.py:10:    mine_id = Column(Integer, ForeignKey("mine_settings.id", ondelete="CASCADE"))
+backend\app\models\user.py:52:    role = Column(
+backend\app\models\user.py:55:        default="Viewer",
+backend\app\models\user.py:56:        server_default="Viewer",
+backend\app\models\__init__.py:5:from app.models.mine import MineSettings
+backend\app\models\__init__.py:18:    "MineSettings",
+backend\app\models.py:47:    mine_name = Column(String, nullable=False)
+backend\app\models.py:65:    role = Column(String, default="Viewer")
+backend\app\routers\ai.py:5:from app.services.ai.health_engine import get_mine_health_score
+backend\app\routers\ai.py:65:def mine_health():
+backend\app\routers\ai.py:67:    Return the AI-generated Mine Health score.
+backend\app\routers\ai.py:72:    return get_mine_health_score()backend\app\routers\audit_logs.py:12:    require_administrator,
+backend\app\routers\audit_logs.py:219:    current_user: User = Depends(require_administrator),
+backend\app\routers\audit_logs.py:249:    company_name = "Mine Manager AI"
+backend\app\routers\audit_logs.py:263:            or "Mine Manager AI"
+backend\app\routers\audit_logs.py:269:        or "Administrator"
+backend\app\routers\audit_logs.py:279:        "Mine_Manager_AI_Audit_Trail_"
+backend\app\routers\audit_logs.py:356:    current_user: User = Depends(require_administrator),
+backend\app\routers\auth.py:37:    and its first Administrator account.
+backend\app\routers\auth.py:45:    mine_name: str = Field(
+backend\app\routers\auth.py:68:    role: str
+backend\app\routers\auth.py:77:    role: str
+backend\app\routers\auth.py:90:    Create the first company and first Administrator.
+backend\app\routers\auth.py:94:    Administrator-protected User Management API.
+backend\app\routers\auth.py:104:                "Ask an Administrator to create the user."
+backend\app\routers\auth.py:112:    normalized_mine_name = (
+backend\app\routers\auth.py:113:        request.mine_name.strip()
+backend\app\routers\auth.py:133:    if len(normalized_mine_name) < 2:
+backend\app\routers\auth.py:137:                "Mine name must contain at least "
+backend\app\routers\auth.py:165:        mine_name=normalized_mine_name,
+backend\app\routers\auth.py:180:            role="Administrator",
+backend\app\routers\auth.py:206:            "Initial Administrator registered successfully"
+backend\app\routers\auth.py:210:        "role": user.role,
+backend\app\routers\auth.py:279:            "role": user.role,
+backend\app\routers\auth.py:289:        "role": user.role,
+backend\app\routers\auth.py:312:        "role": current_user.role,
+backend\app\routers\config.py:11:from app.models.mine import MineSettings
+backend\app\routers\config.py:31:class MineUpdateRequest(BaseModel):
+backend\app\routers\config.py:32:    mine_name: Optional[str] = None
+backend\app\routers\config.py:35:    mine_type: Optional[str] = None
+backend\app\routers\config.py:146:@router.get("/mine")
+backend\app\routers\config.py:147:def get_mine_settings(db: Session = Depends(get_db)):
+backend\app\routers\config.py:148:    mine = db.query(MineSettings).order_by(MineSettings.id.asc()).first()
+backend\app\routers\config.py:150:    if not mine:
+backend\app\routers\config.py:151:        raise HTTPException(status_code=404, detail="Mine settings not found")
+backend\app\routers\config.py:153:    return mine
+backend\app\routers\config.py:156:@router.put("/mine")
+backend\app\routers\config.py:157:def update_mine_settings(
+backend\app\routers\config.py:158:    request: MineUpdateRequest,
+backend\app\routers\config.py:161:    mine = db.query(MineSettings).order_by(MineSettings.id.asc()).first()
+backend\app\routers\config.py:163:    if not mine:
+backend\app\routers\config.py:164:        raise HTTPException(status_code=404, detail="Mine settings not found")
+backend\app\routers\config.py:169:        setattr(mine, key, value)
+backend\app\routers\config.py:172:    db.refresh(mine)
+backend\app\routers\config.py:174:    return mine
+backend\app\routers\config.py:261:    mine = db.query(MineSettings).order_by(MineSettings.id.asc()).first()
+backend\app\routers\config.py:268:        "mine": mine,
+backend\app\routers\dashboard.py:55:def empty_summary(mine_name: str):
+backend\app\routers\dashboard.py:58:    data exists for the selected mine.
+backend\app\routers\dashboard.py:62:        "mine_name": mine_name,
+backend\app\routers\dashboard.py:87:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:91:    Return the latest operational KPI summary for the selected mine.
+backend\app\routers\dashboard.py:102:            WHERE mine_name = :mine_name
+backend\app\routers\dashboard.py:107:        {"mine_name": mine_name},
+backend\app\routers\dashboard.py:111:        return empty_summary(mine_name)
+backend\app\routers\dashboard.py:132:            WHERE mine_name = :mine_name
+backend\app\routers\dashboard.py:137:        {"mine_name": mine_name},
+backend\app\routers\dashboard.py:162:            WHERE mine_name = :mine_name
+backend\app\routers\dashboard.py:167:        {"mine_name": mine_name},
+backend\app\routers\dashboard.py:190:            WHERE mine_name = :mine_name
+backend\app\routers\dashboard.py:195:        {"mine_name": mine_name},
+backend\app\routers\dashboard.py:210:    # Mine Health
+backend\app\routers\dashboard.py:222:        "mine_name": mine_name,
+backend\app\routers\dashboard.py:247:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:255:        mine_name=mine_name,
+backend\app\routers\dashboard.py:261:            "mine_name": mine_name,
+backend\app\routers\dashboard.py:273:        risks.append("Overall mine health is below target.")
+backend\app\routers\dashboard.py:328:        f"{mine_name} is currently operating with a Mine Health Score "
+backend\app\routers\dashboard.py:339:        "mine_name": mine_name,
+backend\app\routers\dashboard.py:354:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:362:        mine_name=mine_name,
+backend\app\routers\dashboard.py:368:            "mine_name": mine_name,
+backend\app\routers\dashboard.py:509:        "mine_name": mine_name,
+backend\app\routers\dashboard.py:523:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:531:        mine_name=mine_name,
+backend\app\routers\dashboard.py:537:            "mine_name": mine_name,
+backend\app\routers\dashboard.py:576:            owner="Mine Operations",
+backend\app\routers\dashboard.py:591:            owner="Mine Operations",
+backend\app\routers\dashboard.py:679:        "mine_name": mine_name,
+backend\app\routers\dashboard.py:694:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:698:    Return historical Mine Health and component KPI values.
+backend\app\routers\dashboard.py:702:        mine_name=mine_name,
+backend\app\routers\dashboard.py:713:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:717:    Return Mine Health direction, drivers, and recommendations.
+backend\app\routers\dashboard.py:721:        mine_name=mine_name,
+backend\app\routers\dashboard.py:732:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\dashboard.py:752:        mine_name=mine_name,
+backend\app\routers\dashboard.py:761:    mine_name: str = Query(...),
+backend\app\routers\dashboard.py:767:            mine_name=mine_name,
+backend\app\routers\demo.py:8:    require_administrator,
+backend\app\routers\demo.py:9:    require_general_manager_or_administrator,
+backend\app\routers\demo.py:32:        default="High Performing Mine",
+backend\app\routers\demo.py:38:    mine_name: str = Field(
+backend\app\routers\demo.py:42:        description="Mine name used by the demo.",
+backend\app\routers\demo.py:51:    mine_name: Optional[str] = Field(
+backend\app\routers\demo.py:55:        description="Mine returning to live mode.",
+backend\app\routers\demo.py:63:            require_general_manager_or_administrator
+backend\app\routers\demo.py:72:    and mine.
+backend\app\routers\demo.py:74:    General Manager or Administrator access is required.
+backend\app\routers\demo.py:78:    normalized_mine_name = request.mine_name.strip()
+backend\app\routers\demo.py:82:        mine_name=normalized_mine_name,
+backend\app\routers\demo.py:89:            f"successfully for {normalized_mine_name}"
+backend\app\routers\demo.py:92:        "mine_name": normalized_mine_name,
+backend\app\routers\demo.py:100:        Depends(require_administrator),
+backend\app\routers\demo.py:112:    Administrator access is required.
+backend\app\routers\demo.py:115:    mine_name = None
+backend\app\routers\demo.py:119:        and request.mine_name is not None
+backend\app\routers\demo.py:121:        mine_name = request.mine_name.strip()
+backend\app\routers\demo.py:126:        "mine_name": mine_name,
+backend\app\routers\demo_before_10_18_8_2.py:23:        default="High Performing Mine",
+backend\app\routers\demo_before_10_18_8_2.py:28:    mine_name: str = Field(
+backend\app\routers\demo_before_10_18_8_2.py:31:        description="Mine receiving the demo dataset.",
+backend\app\routers\demo_before_10_18_8_2.py:40:    mine_name: Optional[str] = Field(
+backend\app\routers\demo_before_10_18_8_2.py:42:        description="Mine being returned to live mode.",
+backend\app\routers\demo_before_10_18_8_2.py:56:        mine_name=request.mine_name,
+backend\app\routers\demo_before_10_18_8_2.py:63:            f"successfully for {request.mine_name}"
+backend\app\routers\demo_before_10_18_8_2.py:66:        "mine_name": request.mine_name,
+backend\app\routers\demo_before_10_18_8_2.py:82:    mine_name = (
+backend\app\routers\demo_before_10_18_8_2.py:83:        request.mine_name
+backend\app\routers\demo_before_10_18_8_2.py:84:        if request and request.mine_name
+backend\app\routers\demo_before_10_18_8_2.py:91:        "mine_name": mine_name,
+backend\app\routers\deployment_readiness.py:5:Provides administrative endpoints for reviewing Mine Manager AI
+backend\app\routers\executive_actions.py:16:    require_mine_management,
+backend\app\routers\executive_actions.py:92:    Allowed roles:
+backend\app\routers\executive_actions.py:93:    - Superintendent
+backend\app\routers\executive_actions.py:94:    - Mine Manager
+backend\app\routers\executive_actions.py:95:    - General Manager
+backend\app\routers\executive_actions.py:96:    - Administrator
+backend\app\routers\executive_actions.py:157:    All authenticated roles may view actions.
+backend\app\routers\executive_actions.py:227:    All authenticated roles may view the summary.
+backend\app\routers\executive_actions.py:249:    All authenticated roles may view analytics.
+backend\app\routers\executive_actions.py:272:    All authenticated roles may view actions.
+backend\app\routers\executive_actions.py:310:    All authenticated roles may view KPI context.
+backend\app\routers\executive_actions.py:365:    All authenticated roles may view actions.
+backend\app\routers\executive_actions.py:401:    Allowed roles:
+backend\app\routers\executive_actions.py:402:    - Superintendent
+backend\app\routers\executive_actions.py:403:    - Mine Manager
+backend\app\routers\executive_actions.py:404:    - General Manager
+backend\app\routers\executive_actions.py:405:    - Administrator
+backend\app\routers\executive_actions.py:445:    Allowed roles:
+backend\app\routers\executive_actions.py:446:    - Superintendent
+backend\app\routers\executive_actions.py:447:    - Mine Manager
+backend\app\routers\executive_actions.py:448:    - General Manager
+backend\app\routers\executive_actions.py:449:    - Administrator
+backend\app\routers\executive_actions.py:478:        Depends(require_mine_management),
+backend\app\routers\executive_actions.py:488:    Allowed roles:
+backend\app\routers\executive_actions.py:489:    - Mine Manager
+backend\app\routers\executive_actions.py:490:    - General Manager
+backend\app\routers\executive_actions.py:491:    - Administrator
+backend\app\routers\executive_insights.py:32:    mine_name: str = Query(
+backend\app\routers\executive_insights.py:37:            "Mine name used to generate executive insights."
+backend\app\routers\executive_insights.py:62:    Allowed roles:
+backend\app\routers\executive_insights.py:63:        - Superintendent
+backend\app\routers\executive_insights.py:64:        - Mine Manager
+backend\app\routers\executive_insights.py:65:        - General Manager
+backend\app\routers\executive_insights.py:66:        - Administrator
+backend\app\routers\executive_insights.py:69:    normalized_mine_name = mine_name.strip()
+backend\app\routers\executive_insights.py:78:        mine_name=normalized_mine_name,
+backend\app\routers\executive_insights.py:89:    All authenticated roles may access this endpoint.
+backend\app\routers\executive_insights_before_10_18_8_4.py:18:    mine_name: str = Query(
+backend\app\routers\executive_insights_before_10_18_8_4.py:21:        description="Mine name used to generate executive insights.",
+backend\app\routers\executive_insights_before_10_18_8_4.py:26:    Generate structured executive insights for a selected mine.
+backend\app\routers\executive_insights_before_10_18_8_4.py:37:        mine_name=mine_name,
+backend\app\routers\executive_kpi_pdf.py:236:    mine_id: int = Query(
+backend\app\routers\executive_kpi_pdf.py:243:    Preview the company and mine branding used by PDF exports.
+backend\app\routers\executive_kpi_pdf.py:249:        mine_id=mine_id,
+backend\app\routers\executive_kpi_pdf.py:280:        - Mine Settings configuration
+backend\app\routers\executive_kpi_pdf.py:291:        mine_name = branding["mine_name"]
+backend\app\routers\executive_kpi_pdf.py:297:            mine_name=mine_name,
+backend\app\routers\executive_kpi_pdf.py:325:            mine_name=mine_name,
+backend\app\routers\executive_kpi_pdf.py:327:            prepared_by="Mine Manager AI",
+backend\app\routers\executive_kpi_pdf.py:383:    mine_id: int = Query(
+backend\app\routers\executive_kpi_pdf.py:411:        mine_settings
+backend\app\routers\executive_kpi_pdf.py:418:        &mine_id=1
+backend\app\routers\executive_kpi_pdf.py:428:            mine_id=mine_id,
+backend\app\routers\executive_kpi_pdf.py:432:        mine_name = branding["mine_name"]
+backend\app\routers\executive_kpi_pdf.py:437:            mine_name=mine_name,
+backend\app\routers\executive_kpi_pdf.py:465:            mine_name=mine_name,
+backend\app\routers\executive_kpi_pdf.py:467:            prepared_by="Mine Manager AI",
+backend\app\routers\executive_recommendations.py:98:    Allowed roles:
+backend\app\routers\executive_recommendations.py:99:    - Superintendent
+backend\app\routers\executive_recommendations.py:100:    - Mine Manager
+backend\app\routers\executive_recommendations.py:101:    - General Manager
+backend\app\routers\executive_recommendations.py:102:    - Administrator
+backend\app\routers\predictions.py:425:    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+backend\app\routers\predictions.py:429:    Return Predictive Intelligence for Mine Health and component KPIs.
+backend\app\routers\predictions.py:442:        mine_name=mine_name,
+backend\app\routers\predictions.py:459:            "mine_health",
+backend\app\routers\predictions.py:460:            "mine_health_score",
+backend\app\routers\predictions.py:514:        "mine_health": build_kpi_prediction(
+backend\app\routers\predictions.py:516:            "Mine Health",
+backend\app\routers\predictions.py:553:        "mine_name": mine_name,
+backend\app\routers\reports.py:17:    require_mine_management,
+backend\app\routers\reports.py:124:            mine_name=branding.mine_name,
+backend\app\routers\reports.py:150:                mine_name=branding.mine_name,
+backend\app\routers\reports.py:212:    Allowed roles:
+backend\app\routers\reports.py:213:    - Superintendent
+backend\app\routers\reports.py:214:    - Mine Manager
+backend\app\routers\reports.py:215:    - General Manager
+backend\app\routers\reports.py:216:    - Administrator
+backend\app\routers\reports.py:257:    Allowed roles:
+backend\app\routers\reports.py:258:    - Superintendent
+backend\app\routers\reports.py:259:    - Mine Manager
+backend\app\routers\reports.py:260:    - General Manager
+backend\app\routers\reports.py:261:    - Administrator
+backend\app\routers\reports.py:302:    Allowed roles:
+backend\app\routers\reports.py:303:    - Superintendent
+backend\app\routers\reports.py:304:    - Mine Manager
+backend\app\routers\reports.py:305:    - General Manager
+backend\app\routers\reports.py:306:    - Administrator
+backend\app\routers\reports.py:347:    Allowed roles:
+backend\app\routers\reports.py:348:    - Superintendent
+backend\app\routers\reports.py:349:    - Mine Manager
+backend\app\routers\reports.py:350:    - General Manager
+backend\app\routers\reports.py:351:    - Administrator
+backend\app\routers\reports.py:355:        "Mine_Manager_AI_Executive_Export_"
+backend\app\routers\reports.py:396:    Allowed roles:
+backend\app\routers\reports.py:397:    - Superintendent
+backend\app\routers\reports.py:398:    - Mine Manager
+backend\app\routers\reports.py:399:    - General Manager
+backend\app\routers\reports.py:400:    - Administrator
+backend\app\routers\reports.py:404:        "Mine_Manager_AI_Executive_Board_Pack_"
+backend\app\routers\reports.py:457:    All authenticated roles may view report history.
+backend\app\routers\reports.py:538:    All authenticated roles may view report history.
+backend\app\routers\reports.py:575:        Depends(require_mine_management),
+backend\app\routers\reports.py:585:    Allowed roles:
+backend\app\routers\reports.py:586:    - Mine Manager
+backend\app\routers\reports.py:587:    - General Manager
+backend\app\routers\reports.py:588:    - Administrator
+backend\app\routers\system_health.py:10:    require_general_manager_or_administrator,
+backend\app\routers\system_health.py:33:        Depends(require_general_manager_or_administrator),
+backend\app\routers\system_health.py:46:    Return the current health of Mine Manager AI services.
+backend\app\routers\system_health.py:48:    General Manager or Administrator access is required.
+backend\app\routers\system_health.py:92:            "Mine Manager AI backend is running"
+backend\app\routers\upload.py:35:DEFAULT_MINE_NAME = "Oyu Tolgoi Surface"
+backend\app\routers\upload.py:647:    mine_name: str,
+backend\app\routers\upload.py:653:    normalized_mine_name = str(
+backend\app\routers\upload.py:654:        mine_name or ""
+backend\app\routers\upload.py:657:    if not normalized_mine_name:
+backend\app\routers\upload.py:660:            detail="mine_name is required.",
+backend\app\routers\upload.py:689:                    WHERE mine_name = :mine_name
+backend\app\routers\upload.py:694:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:704:                        mine_name,
+backend\app\routers\upload.py:713:                        :mine_name,
+backend\app\routers\upload.py:721:                        (mine_name, report_date)
+backend\app\routers\upload.py:736:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:761:            "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:789:    mine_name: str,
+backend\app\routers\upload.py:795:    normalized_mine_name = str(
+backend\app\routers\upload.py:796:        mine_name or ""
+backend\app\routers\upload.py:799:    if not normalized_mine_name:
+backend\app\routers\upload.py:802:            detail="mine_name is required.",
+backend\app\routers\upload.py:831:                    WHERE mine_name = :mine_name
+backend\app\routers\upload.py:836:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:846:                        mine_name,
+backend\app\routers\upload.py:853:                        :mine_name,
+backend\app\routers\upload.py:859:                        (mine_name, report_date)
+backend\app\routers\upload.py:870:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:889:            "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:917:    mine_name: str,
+backend\app\routers\upload.py:923:    normalized_mine_name = str(
+backend\app\routers\upload.py:924:        mine_name or ""
+backend\app\routers\upload.py:927:    if not normalized_mine_name:
+backend\app\routers\upload.py:930:            detail="mine_name is required.",
+backend\app\routers\upload.py:959:                    WHERE mine_name = :mine_name
+backend\app\routers\upload.py:964:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:974:                        mine_name,
+backend\app\routers\upload.py:982:                        :mine_name,
+backend\app\routers\upload.py:989:                        (mine_name, report_date)
+backend\app\routers\upload.py:1002:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:1024:            "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:1052:    mine_name: str,
+backend\app\routers\upload.py:1058:    normalized_mine_name = str(
+backend\app\routers\upload.py:1059:        mine_name or ""
+backend\app\routers\upload.py:1062:    if not normalized_mine_name:
+backend\app\routers\upload.py:1065:            detail="mine_name is required.",
+backend\app\routers\upload.py:1094:                    WHERE mine_name = :mine_name
+backend\app\routers\upload.py:1099:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:1109:                        mine_name,
+backend\app\routers\upload.py:1118:                        :mine_name,
+backend\app\routers\upload.py:1126:                        (mine_name, report_date)
+backend\app\routers\upload.py:1141:                    "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:1166:            "mine_name": normalized_mine_name,
+backend\app\routers\upload.py:1223:    mine_name: str = Form(
+backend\app\routers\upload.py:1224:        DEFAULT_MINE_NAME
+backend\app\routers\upload.py:1240:            mine_name=mine_name,
+backend\app\routers\upload.py:1280:    mine_name: str = Form(
+backend\app\routers\upload.py:1281:        DEFAULT_MINE_NAME
+backend\app\routers\upload.py:1297:            mine_name=mine_name,
+backend\app\routers\upload.py:1337:    mine_name: str = Form(
+backend\app\routers\upload.py:1338:        DEFAULT_MINE_NAME
+backend\app\routers\upload.py:1354:            mine_name=mine_name,
+backend\app\routers\upload.py:1394:    mine_name: str = Form(
+backend\app\routers\upload.py:1395:        DEFAULT_MINE_NAME
+backend\app\routers\upload.py:1411:            mine_name=mine_name,
+backend\app\routers\users.py:10:    require_administrator,
+backend\app\routers\users.py:23:ALLOWED_ROLES = {
+backend\app\routers\users.py:24:    "Administrator",
+backend\app\routers\users.py:25:    "General Manager",
+backend\app\routers\users.py:26:    "Mine Manager",
+backend\app\routers\users.py:27:    "Superintendent",
+backend\app\routers\users.py:28:    "Viewer",
+backend\app\routers\users.py:41:    role: str
+backend\app\routers\users.py:63:    role: str = "Viewer"
+backend\app\routers\users.py:79:    role: str
+backend\app\routers\users.py:113:def validate_role(role: str) -> str:
+backend\app\routers\users.py:114:    normalized_role = role.strip()
+backend\app\routers\users.py:116:    if normalized_role not in ALLOWED_ROLES:
+backend\app\routers\users.py:120:                "Invalid role. Allowed roles are: "
+backend\app\routers\users.py:121:                + ", ".join(sorted(ALLOWED_ROLES))
+backend\app\routers\users.py:125:    return normalized_role
+backend\app\routers\users.py:161:    current_user: User = Depends(require_administrator),
+backend\app\routers\users.py:190:    current_user: User = Depends(require_administrator),
+backend\app\routers\users.py:194:    normalized_role = validate_role(request.role)
+backend\app\routers\users.py:215:        role=normalized_role,
+backend\app\routers\users.py:238:            f"({new_user.email}) with role "
+backend\app\routers\users.py:239:            f"'{new_user.role}'."
+backend\app\routers\users.py:262:    current_user: User = Depends(require_administrator),
+backend\app\routers\users.py:272:    old_role = user.role
+backend\app\routers\users.py:276:    normalized_role = validate_role(request.role)
+backend\app\routers\users.py:295:    user.role = normalized_role
+backend\app\routers\users.py:319:    if old_role != user.role:
+backend\app\routers\users.py:321:            f"role changed from '{old_role}' "
+backend\app\routers\users.py:322:            f"to '{user.role}'"
+backend\app\routers\users.py:365:    current_user: User = Depends(require_administrator),
+backend\app\routers\users.py:448:    current_user: User = Depends(require_administrator),
+backend\app\services\ai\briefing_engine.py:40:        "manager_note": (
+backend\app\services\ai\health_engine.py:23:def get_mine_health_score():
+backend\app\services\ai\health_engine.py:44:        "engine": "Mine Health Score 2.0",
+backend\app\services\ai\health_engine.py:56:            f"Mine Health Score is {final_score}/100. "
+backend\app\services\ai_service.py:4:Mine Manager AI Daily Operations Briefing
+backend\app\services\analytics_engine_service.py:2:Shared Analytics Engine for Mine Manager AI.
+backend\app\services\analytics_engine_service.py:57:    mine_name: str,
+backend\app\services\analytics_engine_service.py:68:        "mine": {
+backend\app\services\analytics_engine_service.py:69:            "mine_name": mine_name,
+backend\app\services\analytics_engine_service.py:73:            "mine_health": None,
+backend\app\services\analytics_engine_service.py:87:            "mine_health": _empty_trend_card(days),
+backend\app\services\analytics_engine_service.py:95:            "mine_health": [],
+backend\app\services\analytics_engine_service.py:144:        "mine_health": [
+backend\app\services\analytics_engine_service.py:275:        "mine_health": _calculate_kpi_trend_summary(
+backend\app\services\analytics_engine_service.py:310:    mine_name: str,
+backend\app\services\analytics_engine_service.py:318:    Mine Health data.
+backend\app\services\analytics_engine_service.py:321:    cleaned_mine_name = mine_name.strip() if mine_name else ""
+backend\app\services\analytics_engine_service.py:323:    if not cleaned_mine_name:
+backend\app\services\analytics_engine_service.py:324:        raise ValueError("mine_name is required")
+backend\app\services\analytics_engine_service.py:330:        mine_name=cleaned_mine_name,
+backend\app\services\analytics_engine_service.py:336:        mine_name=cleaned_mine_name,
+backend\app\services\analytics_engine_service.py:352:        mine_name=cleaned_mine_name,
+backend\app\services\analytics_engine_service.py:357:        "mine_health": latest.get("health", 0),
+backend\app\services\audit_excel_service.py:102:    worksheet["A1"] = company_name or "Mine Manager AI"
+backend\app\services\audit_excel_service.py:143:        ("Generated By", generated_by or "Administrator"),
+backend\app\services\audit_excel_service.py:347:        f"{company_name or 'Mine Manager AI'} "
+backend\app\services\audit_excel_service.py:352:        "Administrator and system activity audit records"
+backend\app\services\audit_excel_service.py:355:    workbook.properties.creator = "Mine Manager AI"
+backend\app\services\audit_excel_service.py:359:        "from Mine Manager AI."
+backend\app\services\demo_data_service.py:6:DEFAULT_SCENARIO = "High Performing Mine"
+backend\app\services\demo_data_service.py:7:DEFAULT_MINE_NAME = "Oyu Tolgoi Surface"
+backend\app\services\demo_data_service.py:10:    "High Performing Mine",
+backend\app\services\demo_data_service.py:950:    mine_name: str = DEFAULT_MINE_NAME,
+backend\app\services\demo_data_service.py:969:    normalized_mine_name = _normalize_text(
+backend\app\services\demo_data_service.py:970:        mine_name,
+backend\app\services\demo_data_service.py:971:        DEFAULT_MINE_NAME,
+backend\app\services\demo_data_service.py:1051:            "High Performing Mine":
+backend\app\services\demo_data_service.py:1075:        "mine_name": normalized_mine_name,
+backend\app\services\deployment_readiness_service.py:5:Evaluates whether Mine Manager AI is ready for pilot or production deployment.
+backend\app\services\deployment_readiness_service.py:77:# These tables are based on the main Mine Manager AI Version 1.0 modules.
+backend\app\services\deployment_readiness_service.py:87:    "mine_settings",
+backend\app\services\deployment_readiness_service.py:1008:                "demo endpoints with administrator authorization."
+backend\app\services\deployment_readiness_service.py:1248:def _determine_readiness(
+backend\app\services\deployment_readiness_service.py:1252:    """Determine the overall deployment status."""
+backend\app\services\deployment_readiness_service.py:1354:    readiness = _determine_readiness(
+backend\app\services\deployment_readiness_service.py:1394:        "service": "Mine Manager AI Deployment Readiness",
+backend\app\services\excel_service.py:57:            mine_name,
+backend\app\services\excel_service.py:74:            mine_name,
+backend\app\services\excel_service.py:89:            mine_name,
+backend\app\services\excel_service.py:105:            mine_name,
+backend\app\services\excel_service.py:517:        ("Mine", branding.mine_name),
+backend\app\services\excel_service.py:798:        f"{branding.company_name} | {branding.mine_name} | "
+backend\app\services\excel_service.py:811:        "Mine",
+backend\app\services\excel_service.py:837:            record.get("mine_name") or branding.mine_name,
+backend\app\services\excel_service.py:943:        f"{branding.company_name} | {branding.mine_name} | "
+backend\app\services\excel_service.py:956:        "Mine",
+backend\app\services\excel_service.py:975:            record.get("mine_name") or branding.mine_name,
+backend\app\services\excel_service.py:1069:        f"{branding.company_name} | {branding.mine_name} | "
+backend\app\services\excel_service.py:1082:        "Mine",
+backend\app\services\excel_service.py:1105:            record.get("mine_name") or branding.mine_name,
+backend\app\services\excel_service.py:1210:        f"{branding.company_name} | {branding.mine_name} | "
+backend\app\services\excel_service.py:1223:        "Mine",
+backend\app\services\excel_service.py:1241:            record.get("mine_name") or branding.mine_name,
+backend\app\services\excel_service.py:1346:        f"{branding.company_name} | {branding.mine_name} | "
+backend\app\services\excel_service.py:1392:            "Higher is generally better.",
+backend\app\services\excel_service.py:1399:            "Higher is generally better.",
+backend\app\services\excel_service.py:1413:            "Higher is generally better.",
+backend\app\services\excel_service.py:1441:            "Higher is generally better.",
+backend\app\services\excel_service.py:1501:        f"Operational KPI workbook for {branding.mine_name}"
+backend\app\services\excel_service.py:1503:    workbook.properties.creator = "Mine Manager AI"
+backend\app\services\excel_service.py:1519:    Generate the branded Mine Manager AI executive Excel workbook.
+backend\app\services\excel_service.py:1529:    Branding is loaded from CompanySettings and MineSettings.
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:17:    "mine_health": {
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:18:        "detail_key": "mine_health",
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:19:        "trend_card_key": "mine_health",
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:20:        "trend_group": "mine_health",
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:22:        "display_name": "Mine Health",
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:172:    Falls back to the analytics mine report date, and finally to a
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:213:            "mine",
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:310:    mine_name: str,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:323:            mine_name=mine_name,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:602:    mine_name: str,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:647:        mine_name=mine_name,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:652:        mine_name=mine_name,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:865:            "mine_name": mine_name,
+backend\app\services\executive_pdf\executive_pdf_branding.py:7:DEFAULT_COMPANY_NAME = "Mine Manager AI"
+backend\app\services\executive_pdf\executive_pdf_branding.py:8:DEFAULT_MINE_NAME = "Mine Operations"
+backend\app\services\executive_pdf\executive_pdf_branding.py:34:    mine_id: Optional[int] = None,
+backend\app\services\executive_pdf\executive_pdf_branding.py:37:    Load company and mine branding for PDF reports.
+backend\app\services\executive_pdf\executive_pdf_branding.py:42:        3. Use the requested mine_id when supplied.
+backend\app\services\executive_pdf\executive_pdf_branding.py:43:        4. Otherwise use the first mine linked to the selected company.
+backend\app\services\executive_pdf\executive_pdf_branding.py:55:            "mine_id": 1,
+backend\app\services\executive_pdf\executive_pdf_branding.py:56:            "mine_name": "OT Surface Operations",
+backend\app\services\executive_pdf\executive_pdf_branding.py:59:            "mine_type": "Open Pit",
+backend\app\services\executive_pdf\executive_pdf_branding.py:120:    # Mine settings
+backend\app\services\executive_pdf\executive_pdf_branding.py:123:    mine_row = None
+backend\app\services\executive_pdf\executive_pdf_branding.py:125:    if mine_id is not None:
+backend\app\services\executive_pdf\executive_pdf_branding.py:126:        mine_query = text(
+backend\app\services\executive_pdf\executive_pdf_branding.py:131:                mine_name,
+backend\app\services\executive_pdf\executive_pdf_branding.py:134:                mine_type,
+backend\app\services\executive_pdf\executive_pdf_branding.py:138:            FROM mine_settings
+backend\app\services\executive_pdf\executive_pdf_branding.py:139:            WHERE id = :mine_id
+backend\app\services\executive_pdf\executive_pdf_branding.py:144:        mine_row = db.execute(
+backend\app\services\executive_pdf\executive_pdf_branding.py:145:            mine_query,
+backend\app\services\executive_pdf\executive_pdf_branding.py:146:            {"mine_id": mine_id},
+backend\app\services\executive_pdf\executive_pdf_branding.py:150:        mine_query = text(
+backend\app\services\executive_pdf\executive_pdf_branding.py:155:                mine_name,
+backend\app\services\executive_pdf\executive_pdf_branding.py:158:                mine_type,
+backend\app\services\executive_pdf\executive_pdf_branding.py:162:            FROM mine_settings
+backend\app\services\executive_pdf\executive_pdf_branding.py:169:        mine_row = db.execute(
+backend\app\services\executive_pdf\executive_pdf_branding.py:170:            mine_query,
+backend\app\services\executive_pdf\executive_pdf_branding.py:175:        mine_query = text(
+backend\app\services\executive_pdf\executive_pdf_branding.py:180:                mine_name,
+backend\app\services\executive_pdf\executive_pdf_branding.py:183:                mine_type,
+backend\app\services\executive_pdf\executive_pdf_branding.py:187:            FROM mine_settings
+backend\app\services\executive_pdf\executive_pdf_branding.py:193:        mine_row = db.execute(
+backend\app\services\executive_pdf\executive_pdf_branding.py:194:            mine_query
+backend\app\services\executive_pdf\executive_pdf_branding.py:206:    mine_name = _clean_text(
+backend\app\services\executive_pdf\executive_pdf_branding.py:207:        mine_row.get("mine_name") if mine_row else None,
+backend\app\services\executive_pdf\executive_pdf_branding.py:208:        DEFAULT_MINE_NAME,
+backend\app\services\executive_pdf\executive_pdf_branding.py:250:        "mine_id": (
+backend\app\services\executive_pdf\executive_pdf_branding.py:251:            mine_row.get("id")
+backend\app\services\executive_pdf\executive_pdf_branding.py:252:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_branding.py:256:        "mine_name": mine_name,
+backend\app\services\executive_pdf\executive_pdf_branding.py:259:            mine_row.get("site_code")
+backend\app\services\executive_pdf\executive_pdf_branding.py:260:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_branding.py:265:            mine_row.get("location")
+backend\app\services\executive_pdf\executive_pdf_branding.py:266:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_branding.py:270:        "mine_type": (
+backend\app\services\executive_pdf\executive_pdf_branding.py:271:            mine_row.get("mine_type")
+backend\app\services\executive_pdf\executive_pdf_branding.py:272:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_branding.py:277:            mine_row.get("shift_pattern")
+backend\app\services\executive_pdf\executive_pdf_branding.py:278:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_branding.py:283:            mine_row.get("operating_hours")
+backend\app\services\executive_pdf\executive_pdf_branding.py:284:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_branding.py:289:            mine_row.get("calendar_type")
+backend\app\services\executive_pdf\executive_pdf_branding.py:290:            if mine_row
+backend\app\services\executive_pdf\executive_pdf_sections.py:246:    mine_name: str,
+backend\app\services\executive_pdf\executive_pdf_sections.py:298:            Paragraph(_escape_text(mine_name), subtitle_style),
+backend\app\services\executive_pdf\executive_pdf_sections.py:1323:                            "General",
+backend\app\services\executive_pdf\executive_pdf_service.py:135:    # General relative locations
+backend\app\services\executive_pdf\executive_pdf_service.py:166:        app_directory / "static" / "logos" / "mine-manager-ai.png",
+backend\app\services\executive_pdf\executive_pdf_service.py:303:    mine_name: str,
+backend\app\services\executive_pdf\executive_pdf_service.py:423:        "MINE",
+backend\app\services\executive_pdf\executive_pdf_service.py:438:        str(mine_name),
+backend\app\services\executive_pdf\executive_pdf_service.py:575:    company_name: str = "Mine Manager AI",
+backend\app\services\executive_pdf\executive_pdf_service.py:576:    mine_name: str = "Oyu Tolgoi Surface Operations",
+backend\app\services\executive_pdf\executive_pdf_service.py:578:    prepared_by: str = "Mine Manager AI",
+backend\app\services\executive_pdf\executive_pdf_service.py:600:        - mine name
+backend\app\services\executive_pdf\executive_pdf_service.py:643:        or "Mine Manager AI"
+backend\app\services\executive_pdf\executive_pdf_service.py:646:    mine_name = (
+backend\app\services\executive_pdf\executive_pdf_service.py:647:        str(mine_name).strip()
+backend\app\services\executive_pdf\executive_pdf_service.py:648:        or "Mine Operations"
+backend\app\services\executive_pdf\executive_pdf_service.py:734:            f"{report_title} for {mine_name} — "
+backend\app\services\executive_pdf\executive_pdf_service.py:737:        creator="Mine Manager AI",
+backend\app\services\executive_pdf\executive_pdf_service.py:884:            mine_name=mine_name,
+backend\app\services\executive_pdf\executive_pdf_styles.py:99:            name="cover_mine",
+backend\app\services\executive_recommendation\recommendation_rules.py:145:                owner="Maintenance Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:165:                owner="Mining Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:186:                owner="Maintenance Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:205:            owner="Mining Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:225:                owner="Technical Services Manager",
+backend\app\services\executive_recommendation\recommendation_rules.py:287:            owner="Maintenance Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:307:                owner="Mining Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:326:                owner="Maintenance Manager",
+backend\app\services\executive_recommendation\recommendation_rules.py:344:            owner="Mining Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:391:            owner="Processing Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:410:                owner="Maintenance Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:429:                owner="Metallurgy Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:448:                owner="Processing Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:492:                owner="Health and Safety Manager",
+backend\app\services\executive_recommendation\recommendation_rules.py:511:                owner="Operations Manager",
+backend\app\services\executive_recommendation\recommendation_rules.py:529:            owner="Area Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:566:            owner="Area Superintendent",
+backend\app\services\executive_recommendation\recommendation_rules.py:582:            owner="Operations Manager",
+backend\app\services\executive_summary_service_v2.py:250:def _determine_severity(
+backend\app\services\executive_summary_service_v2.py:256:    Determine executive insight severity.
+backend\app\services\executive_summary_service_v2.py:389:        "The overall mine performance trend is "
+backend\app\services\executive_summary_service_v2.py:582:    severity = _determine_severity(
+backend\app\services\executive_summary_service_v2.py:683:    mine_name: str,
+backend\app\services\executive_summary_service_v2.py:692:        mine_name=mine_name,
+backend\app\services\executive_summary_service_v2.py:933:            "Mine and Maintenance Managers."
+backend\app\services\executive_summary_service_v2.py:1258:                "Mine performance is declining under the "
+backend\app\services\executive_summary_service_v2.py:1361:        f"Overall mine performance is {direction}; "
+backend\app\services\executive_summary_service_v2.py:1368:    mine_name: str,
+backend\app\services\executive_summary_service_v2.py:1381:        "mine_name": mine_name,
+backend\app\services\executive_summary_service_v2.py:1395:    mine_name: str,
+backend\app\services\executive_summary_service_v2.py:1404:        mine_name=mine_name,
+backend\app\services\executive_summary_service_v2.py:1412:                mine_name=mine_name
+backend\app\services\executive_summary_service_v2.py:1499:    mine_name: str,
+backend\app\services\executive_summary_service_v2.py:1527:                mine_name=mine_name,
+backend\app\services\executive_summary_service_v2.py:1534:                    mine_name=mine_name,
+backend\app\services\executive_summary_service_v2.py:1559:        mine_name=mine_name,
+backend\app\services\executive_summary_service_v2.py:1569:                mine_name=mine_name,
+backend\app\services\kpi_context_service.py:494:    mine_id: Optional[int] = None,
+backend\app\services\kpi_context_service.py:508:    del mine_id
+backend\app\services\kpi_detail_service.py:6:    "mine_health": {
+backend\app\services\kpi_detail_service.py:7:        "title": "Mine Health",
+backend\app\services\kpi_detail_service.py:112:    mine_name: str,
+backend\app\services\pdf_service.py:37:            mine_name="OT Surface Operations",
+backend\app\services\pdf_service.py:38:            company_name="Mine Manager AI",
+backend\app\services\pdf_service.py:52:            "Mine operations are currently stable. Production performance, "
+backend\app\services\pdf_service.py:66:                    "label": "Mine Health",
+backend\app\services\pdf_service.py:251:            mine_name="OT Surface Operations",
+backend\app\services\pdf_service.py:252:            company_name="Mine Manager AI",
+backend\app\services\pdf_service.py:268:            "mine leadership review."
+backend\app\services\pdf_service.py:280:                    "label": "Mine Health",
+backend\app\services\pdf_service.py:467:            mine_name="OT Surface Operations",
+backend\app\services\pdf_service.py:468:            company_name="Mine Manager AI",
+backend\app\services\pdf_service.py:482:            "This monthly KPI pack provides mine leadership with a consolidated "
+backend\app\services\pdf_service.py:483:            "view of mine health, production performance, fleet effectiveness, "
+backend\app\services\pdf_service.py:496:                    "label": "Mine Health",
+backend\app\services\pdf_service.py:534:            "Mine Health Score",
+backend\app\services\pdf_template_service.py:27:BRAND_NAME = "Mine Manager AI"
+backend\app\services\pdf_template_service.py:218:    mine_name: str = "Demo Mine",
+backend\app\services\pdf_template_service.py:235:        f"<b>Mine:</b> {mine_name}",
+backend\app\services\pdf_template_service.py:632:        {"label": "Mine Health", "value": "87"},
+backend\app\services\powerpoint_service.py:76:            mine_name,
+backend\app\services\powerpoint_service.py:94:            mine_name,
+backend\app\services\powerpoint_service.py:110:            mine_name,
+backend\app\services\powerpoint_service.py:127:            mine_name,
+backend\app\services\powerpoint_service.py:464:            branding.mine_name,
+backend\app\services\powerpoint_service.py:748:        branding.mine_name,
+backend\app\services\powerpoint_service.py:812:        "Mine Manager AI",
+backend\app\services\powerpoint_service.py:1782:                "Validate the plant throughput constraint and align mine-to-"
+backend\app\services\powerpoint_service.py:1925:        f"Operational board pack for {branding.mine_name}"
+backend\app\services\powerpoint_service.py:1927:    presentation.core_properties.author = "Mine Manager AI"
+backend\app\services\powerpoint_service.py:1930:        "Generated by Mine Manager AI from configured operational data."
+backend\app\services\report_branding_service.py:9:from app.models.mine import MineSettings
+backend\app\services\report_branding_service.py:16:DEFAULT_COMPANY_NAME = "Mine Manager AI"
+backend\app\services\report_branding_service.py:17:DEFAULT_MINE_NAME = "Demo Mine"
+backend\app\services\report_branding_service.py:33:    mine_name: str
+backend\app\services\report_branding_service.py:168:    Load the active company and mine configuration from PostgreSQL.
+backend\app\services\report_branding_service.py:172:        - mine settings do not exist
+backend\app\services\report_branding_service.py:192:        mine = (
+backend\app\services\report_branding_service.py:193:            database_session.query(MineSettings)
+backend\app\services\report_branding_service.py:194:            .order_by(MineSettings.id.asc())
+backend\app\services\report_branding_service.py:203:        mine_name = _normalize_text(
+backend\app\services\report_branding_service.py:204:            getattr(mine, "mine_name", None),
+backend\app\services\report_branding_service.py:205:            DEFAULT_MINE_NAME,
+backend\app\services\report_branding_service.py:234:            mine_name=mine_name,
+backend\app\services\report_history_service.py:50:    mine_name: Optional[str] = None,
+backend\app\services\report_history_service.py:66:        mine_name=mine_name,
+backend\app\services\report_history_service.py:93:    mine_name: Optional[str] = None,
+backend\app\services\report_history_service.py:108:        mine_name=mine_name,
+backend\app\services\report_history_service.py:124:    mine_name: Optional[str] = None,
+backend\app\services\report_history_service.py:139:        mine_name=mine_name,
+backend\app\services\report_history_service.py:246:        "mine_name": history_record.mine_name,
+backend\app\services\system_health_service.py:693:                "Mine Manager AI storage "
+backend\app\services\system_health_service.py:787:def determine_overall_status(
+backend\app\services\system_health_service.py:791:    Determine overall application health from service statuses.
+backend\app\services\system_health_service.py:926:        determine_overall_status(
+backend\app\services\system_health_service.py:945:            "Mine Manager AI"
+backend\app\services\system_health_service.py:988:    This helper may later be used by an administrator-only
+backend\app\services\system_health_service.py:1076:    Return Mine Manager AI System Health information.
+backend\app\services\trend_engine_service.py:13:    mine_name: str,
+backend\app\services\trend_engine_service.py:32:            AND p.mine_name = f.mine_name
+backend\app\services\trend_engine_service.py:35:            AND p.mine_name = pl.mine_name
+backend\app\services\trend_engine_service.py:38:            AND p.mine_name = s.mine_name
+backend\app\services\trend_engine_service.py:39:        WHERE p.mine_name = :mine_name
+backend\app\services\trend_engine_service.py:41:    """), {"mine_name": mine_name}).mappings().all()
+backend\app\services\trend_engine_service.py:83:        "mine_name": mine_name,
+backend\app\services\trend_engine_service.py:90:    mine_name: str,
+backend\app\services\trend_engine_service.py:93:    result = get_health_history_service(mine_name, db)
+backend\app\services\trend_engine_service.py:98:            "mine_name": mine_name,
+backend\app\services\trend_engine_service.py:175:        f"Mine Health is {direction.lower()} over the available reporting period. "
+backend\app\services\trend_engine_service.py:181:        "mine_name": mine_name,

@@ -1,0 +1,35 @@
+5:import DashboardIcon from "@mui/icons-material/Dashboard";
+6:import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+10:import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
+16:import SecurityIcon from "@mui/icons-material/Security";
+17:import SettingsIcon from "@mui/icons-material/Settings";
+24:    label: "Dashboard",
+26:    icon: DashboardIcon,
+29:    label: "Upload Reports",
+30:    path: "/upload",
+31:    icon: CloudUploadIcon,
+34:    label: "Production",
+35:    path: "/production",
+39:    label: "Fleet",
+40:    path: "/fleet",
+44:    label: "Plant",
+45:    path: "/plant",
+49:    label: "Safety",
+50:    path: "/safety",
+51:    icon: HealthAndSafetyIcon,
+54:    label: "Executive Actions",
+55:    path: "/executive-actions",
+59:    label: "Executive Reports",
+60:    path: "/reports",
+65:    path: "/users",
+69:    label: "Audit Trail",
+70:    path: "/audit-trail",
+74:    label: "System Health",
+75:    path: "/system-health",
+79:    label: "Security Center",
+80:    path: "/security-configuration",
+81:    icon: SecurityIcon,
+84:    label: "Settings",
+85:    path: "/settings",
+86:    icon: SettingsIcon,
+394:            Executive operations intelligence
