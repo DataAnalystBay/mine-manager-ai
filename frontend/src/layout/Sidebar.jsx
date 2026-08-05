@@ -13,6 +13,8 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import HistoryIcon from "@mui/icons-material/History";
 import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import SecurityIcon from "@mui/icons-material/Security";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 import { API_BASE_URL } from "../config/apiConfig";
@@ -73,6 +75,16 @@ const navItems = [
     label: "System Health",
     path: "/system-health",
     icon: MonitorHeartIcon,
+  },
+  {
+    label: "Support Diagnostics",
+    path: "/support-diagnostics",
+    icon: SupportAgentIcon,
+  },
+  {
+    label: "Security Center",
+    path: "/security-configuration",
+    icon: SecurityIcon,
   },
   {
     label: "Settings",

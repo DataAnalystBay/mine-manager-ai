@@ -1,8 +1,8 @@
 import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter,
-  Routes,
   Route,
+  Routes,
 } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
@@ -12,34 +12,64 @@ import MainLayout from "./layout/MainLayout";
 /* ---------- Lazy-loaded Pages ---------- */
 
 const Login = lazy(() => import("./pages/Login"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+
+const Dashboard = lazy(() =>
+  import("./pages/Dashboard")
+);
+
 const UploadReports = lazy(() =>
   import("./pages/UploadReports")
 );
+
 const Production = lazy(() =>
   import("./pages/Production")
 );
-const Fleet = lazy(() => import("./pages/Fleet"));
-const Plant = lazy(() => import("./pages/Plant"));
-const Safety = lazy(() => import("./pages/Safety"));
+
+const Fleet = lazy(() =>
+  import("./pages/Fleet")
+);
+
+const Plant = lazy(() =>
+  import("./pages/Plant")
+);
+
+const Safety = lazy(() =>
+  import("./pages/Safety")
+);
+
 const Settings = lazy(() =>
   import("./pages/Settings")
 );
+
 const ExecutiveReports = lazy(() =>
   import("./pages/ExecutiveReports")
 );
+
 const ExecutiveActions = lazy(() =>
   import("./pages/ExecutiveActions")
 );
+
 const SystemHealth = lazy(() =>
   import("./pages/SystemHealth")
 );
+
+const SupportDiagnostics = lazy(() =>
+  import("./pages/SupportDiagnostics")
+);
+
 const UserManagement = lazy(() =>
   import("./pages/UserManagement")
 );
+
 const AuditTrail = lazy(() =>
   import("./pages/AuditTrail")
 );
+
+const SecurityConfiguration = lazy(() =>
+  import("./pages/SecurityConfiguration")
+);
+
+/* ---------- Loading Screen ---------- */
 
 function PageLoader() {
   return (
@@ -95,6 +125,8 @@ function PageLoader() {
   );
 }
 
+/* ---------- Application ---------- */
+
 function App() {
   return (
     <AuthProvider>
@@ -117,10 +149,14 @@ function App() {
                 </ProtectedRoute>
               }
             >
+              {/* ---------- Main Dashboard ---------- */}
+
               <Route
                 path="/"
                 element={<Dashboard />}
               />
+
+              {/* ---------- Operational Data ---------- */}
 
               <Route
                 path="/upload"
@@ -147,6 +183,8 @@ function App() {
                 element={<Safety />}
               />
 
+              {/* ---------- Executive Intelligence ---------- */}
+
               <Route
                 path="/reports"
                 element={<ExecutiveReports />}
@@ -172,6 +210,16 @@ function App() {
               <Route
                 path="/system-health"
                 element={<SystemHealth />}
+              />
+
+              <Route
+                path="/support-diagnostics"
+                element={<SupportDiagnostics />}
+              />
+
+              <Route
+                path="/security-configuration"
+                element={<SecurityConfiguration />}
               />
 
               <Route

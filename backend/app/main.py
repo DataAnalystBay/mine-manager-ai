@@ -19,12 +19,16 @@ from app.routers import (
     dashboard,
     demo,
     executive_actions,
+    executive_insights,
     executive_kpi_pdf,
     executive_recommendations,
     production,
     system_health,
     upload,
     users,
+    predictions,
+    deployment_readiness,
+    support_diagnostics,
 )
 
 
@@ -128,26 +132,41 @@ app.add_middleware(
 # Routers
 # --------------------------------------------------
 
+# Authentication and administration
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(audit_logs.router)
 app.include_router(config.router)
 
+# Core operational modules
 app.include_router(production.router)
 app.include_router(analytics.router)
 app.include_router(ai.router)
 app.include_router(briefing.router)
 app.include_router(upload.router)
 
+# Dashboard, demo and reports
 app.include_router(dashboard.router)
 app.include_router(demo.router)
 app.include_router(reports.router)
 
+# Executive decision-support modules
 app.include_router(executive_actions.router)
 app.include_router(executive_recommendations.router)
+app.include_router(executive_insights.router)
 app.include_router(executive_kpi_pdf.router)
 
+# System monitoring
 app.include_router(system_health.router)
+
+# Prediction
+app.include_router(predictions.router)
+
+# Deployment Readiness
+app.include_router(deployment_readiness.router)
+
+# Support Diagnostics
+app.include_router(support_diagnostics.router)
 
 
 # --------------------------------------------------
@@ -216,6 +235,7 @@ def api_information():
             "Executive Dashboard",
             "Executive Actions",
             "Executive Recommendations",
+            "Executive Insights",
             "Executive Reports",
             "Executive KPI PDF Export",
             "Configuration",
@@ -226,5 +246,12 @@ def api_information():
             "lightweight": "/health",
             "system_ping": "/api/system-health/ping",
             "detailed": "/api/system-health",
+            "executive_insights": (
+                "/api/executive-insights/health"
+            ),
+        },
+        "executive_insights_endpoints": {
+            "generate": "/api/executive-insights",
+            "health": "/api/executive-insights/health",
         },
     }
