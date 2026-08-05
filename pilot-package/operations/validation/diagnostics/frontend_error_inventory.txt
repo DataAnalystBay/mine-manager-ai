@@ -1,0 +1,1142 @@
+frontend\src\api\auditLogApi.js:27:  (error) => Promise.reject(error)
+frontend\src\api\auditLogApi.js:33:  (error) => {
+frontend\src\api\auditLogApi.js:35:      error?.response?.data?.detail;
+frontend\src\api\auditLogApi.js:38:      error?.response?.data?.message;
+frontend\src\api\auditLogApi.js:61:            "Validation error";
+frontend\src\api\auditLogApi.js:72:    } else if (error?.message) {
+frontend\src\api\auditLogApi.js:73:      message = error.message;
+frontend\src\api\auditLogApi.js:76:    error.userMessage = message;
+frontend\src\api\auditLogApi.js:78:    return Promise.reject(error);
+frontend\src\api\auditLogApi.js:152:  } catch (error) {
+frontend\src\api\auditLogApi.js:153:    console.error(
+frontend\src\api\auditLogApi.js:155:      error
+frontend\src\api\auditLogApi.js:158:    throw error;
+frontend\src\api\auditLogApi.js:172:    throw new Error(
+frontend\src\api\auditLogApi.js:183:  } catch (error) {
+frontend\src\api\auditLogApi.js:184:    console.error(
+frontend\src\api\auditLogApi.js:186:      error
+frontend\src\api\auditLogApi.js:189:    throw error;
+frontend\src\api\auditLogApi.js:212:  } catch (error) {
+frontend\src\api\auditLogApi.js:213:    console.error(
+frontend\src\api\auditLogApi.js:215:      error
+frontend\src\api\auditLogApi.js:218:    throw error;
+frontend\src\api\auditLogApi.js:241:  } catch (error) {
+frontend\src\api\auditLogApi.js:242:    console.error(
+frontend\src\api\auditLogApi.js:244:      error
+frontend\src\api\auditLogApi.js:247:    throw error;
+frontend\src\api\configApi.js:63:// Alert Thresholds
+frontend\src\api\configApi.js:66:export const getAlertThresholds = async () => {
+frontend\src\api\configApi.js:68:    `${API_BASE_URL}/api/config/alert-thresholds`
+frontend\src\api\configApi.js:73:export const updateAlertThreshold = async (alertId, data) => {
+frontend\src\api\configApi.js:75:    `${API_BASE_URL}/api/config/alert-thresholds/${alertId}`,
+frontend\src\api\configApi.js:118:    throw new Error("Please select a logo file.");
+frontend\src\api\deploymentReadinessApi.js:28:  (error) => Promise.reject(error),
+frontend\src\api\deploymentReadinessApi.js:32:const extractErrorMessage = (error) => {
+frontend\src\api\deploymentReadinessApi.js:33:  const detail = error?.response?.data?.detail;
+frontend\src\api\deploymentReadinessApi.js:43:  if (detail?.error) {
+frontend\src\api\deploymentReadinessApi.js:44:    return detail.error;
+frontend\src\api\deploymentReadinessApi.js:48:    error?.response?.data?.message ||
+frontend\src\api\deploymentReadinessApi.js:49:    error?.message ||
+frontend\src\api\deploymentReadinessApi.js:59:  } catch (error) {
+frontend\src\api\deploymentReadinessApi.js:60:    throw new Error(extractErrorMessage(error));
+frontend\src\api\deploymentReadinessApi.js:69:  } catch (error) {
+frontend\src\api\deploymentReadinessApi.js:70:    throw new Error(extractErrorMessage(error));
+frontend\src\api\deploymentReadinessApi.js:82:  } catch (error) {
+frontend\src\api\deploymentReadinessApi.js:83:    throw new Error(extractErrorMessage(error));
+frontend\src\api\executiveActionsApi.js:25:  (error) => Promise.reject(error)
+frontend\src\api\executiveActionsApi.js:30:  (error) => {
+frontend\src\api\executiveActionsApi.js:32:      error?.response?.data?.detail;
+frontend\src\api\executiveActionsApi.js:35:      error?.response?.data?.message;
+frontend\src\api\executiveActionsApi.js:38:      "An unexpected error occurred.";
+frontend\src\api\executiveActionsApi.js:58:            "Validation error";
+frontend\src\api\executiveActionsApi.js:69:    } else if (error?.message) {
+frontend\src\api\executiveActionsApi.js:70:      message = error.message;
+frontend\src\api\executiveActionsApi.js:73:    error.userMessage = message;
+frontend\src\api\executiveActionsApi.js:75:    return Promise.reject(error);
+frontend\src\api\executiveActionsApi.js:221:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:222:    console.error(
+frontend\src\api\executiveActionsApi.js:224:      error
+frontend\src\api\executiveActionsApi.js:227:    throw error;
+frontend\src\api\executiveActionsApi.js:238:    throw new Error(
+frontend\src\api\executiveActionsApi.js:250:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:251:    console.error(
+frontend\src\api\executiveActionsApi.js:253:      error
+frontend\src\api\executiveActionsApi.js:256:    throw error;
+frontend\src\api\executiveActionsApi.js:267:    throw new Error(
+frontend\src\api\executiveActionsApi.js:281:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:282:    console.error(
+frontend\src\api\executiveActionsApi.js:284:      error
+frontend\src\api\executiveActionsApi.js:287:    throw error;
+frontend\src\api\executiveActionsApi.js:302:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:303:    console.error(
+frontend\src\api\executiveActionsApi.js:305:      error
+frontend\src\api\executiveActionsApi.js:308:    throw error;
+frontend\src\api\executiveActionsApi.js:326:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:327:    console.error(
+frontend\src\api\executiveActionsApi.js:329:      error
+frontend\src\api\executiveActionsApi.js:332:    throw error;
+frontend\src\api\executiveActionsApi.js:349:    throw new Error(
+frontend\src\api\executiveActionsApi.js:355:    throw new Error(
+frontend\src\api\executiveActionsApi.js:368:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:369:    console.error(
+frontend\src\api\executiveActionsApi.js:371:      error
+frontend\src\api\executiveActionsApi.js:374:    throw error;
+frontend\src\api\executiveActionsApi.js:389:    throw new Error(
+frontend\src\api\executiveActionsApi.js:407:    throw new Error(
+frontend\src\api\executiveActionsApi.js:420:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:421:    console.error(
+frontend\src\api\executiveActionsApi.js:423:      error
+frontend\src\api\executiveActionsApi.js:426:    throw error;
+frontend\src\api\executiveActionsApi.js:438:    throw new Error(
+frontend\src\api\executiveActionsApi.js:470:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:471:    console.error(
+frontend\src\api\executiveActionsApi.js:473:      error
+frontend\src\api\executiveActionsApi.js:476:    throw error;
+frontend\src\api\executiveActionsApi.js:491:    throw new Error(
+frontend\src\api\executiveActionsApi.js:497:    throw new Error(
+frontend\src\api\executiveActionsApi.js:512:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:513:    console.error(
+frontend\src\api\executiveActionsApi.js:515:      error
+frontend\src\api\executiveActionsApi.js:518:    throw error;
+frontend\src\api\executiveActionsApi.js:529:    throw new Error(
+frontend\src\api\executiveActionsApi.js:541:  } catch (error) {
+frontend\src\api\executiveActionsApi.js:542:    console.error(
+frontend\src\api\executiveActionsApi.js:544:      error
+frontend\src\api\executiveActionsApi.js:547:    throw error;
+frontend\src\api\executiveInsightsApi.js:26:  (error) => Promise.reject(error)
+frontend\src\api\executiveInsightsApi.js:32:  (error) => {
+frontend\src\api\executiveInsightsApi.js:34:      error?.response?.data?.detail;
+frontend\src\api\executiveInsightsApi.js:37:      error?.response?.data?.message;
+frontend\src\api\executiveInsightsApi.js:40:      "An unexpected error occurred while loading executive insights.";
+frontend\src\api\executiveInsightsApi.js:64:            "Validation error";
+frontend\src\api\executiveInsightsApi.js:75:    } else if (error?.message) {
+frontend\src\api\executiveInsightsApi.js:76:      message = error.message;
+frontend\src\api\executiveInsightsApi.js:79:    error.userMessage = message;
+frontend\src\api\executiveInsightsApi.js:81:    return Promise.reject(error);
+frontend\src\api\executiveInsightsApi.js:172:  } catch (error) {
+frontend\src\api\executiveInsightsApi.js:178:    console.error(
+frontend\src\api\executiveInsightsApi.js:180:      error
+frontend\src\api\executiveInsightsApi.js:183:    throw error;
+frontend\src\api\executiveInsightsApi.js:204:  } catch (error) {
+frontend\src\api\executiveInsightsApi.js:205:    console.error(
+frontend\src\api\executiveInsightsApi.js:207:      error
+frontend\src\api\executiveInsightsApi.js:210:    throw error;
+frontend\src\api\executiveInsightsApi.js:216: * Return a user-friendly API error message.
+frontend\src\api\executiveInsightsApi.js:218: * @param {unknown} error
+frontend\src\api\executiveInsightsApi.js:222:export function getExecutiveInsightsErrorMessage(
+frontend\src\api\executiveInsightsApi.js:223:  error,
+frontend\src\api\executiveInsightsApi.js:227:    typeof error?.userMessage === "string" &&
+frontend\src\api\executiveInsightsApi.js:228:    error.userMessage.trim()
+frontend\src\api\executiveInsightsApi.js:230:    return error.userMessage;
+frontend\src\api\executiveInsightsApi.js:234:    typeof error?.message === "string" &&
+frontend\src\api\executiveInsightsApi.js:235:    error.message.trim()
+frontend\src\api\executiveInsightsApi.js:237:    return error.message;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:26:  (error) => Promise.reject(error)
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:32:  (error) => {
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:34:      error?.response?.data?.detail;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:37:      error?.response?.data?.message;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:40:      "An unexpected error occurred while loading executive insights.";
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:60:            "Validation error";
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:71:    } else if (error?.message) {
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:72:      message = error.message;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:75:    error.userMessage = message;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:77:    return Promise.reject(error);
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:126:  } catch (error) {
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:127:    console.error(
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:129:      error
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:132:    throw error;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:153:  } catch (error) {
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:154:    console.error(
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:156:      error
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:159:    throw error;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:165: * Return a user-friendly API error message.
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:167: * @param {unknown} error
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:171:export function getExecutiveInsightsErrorMessage(
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:172:  error,
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:176:    typeof error?.userMessage === "string" &&
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:177:    error.userMessage.trim()
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:179:    return error.userMessage;
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:183:    typeof error?.message === "string" &&
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:184:    error.message.trim()
+frontend\src\api\executiveInsightsApi_before_10_18_8_4.js:186:    return error.message;
+frontend\src\api\executiveKpiContextApi.js:16:    throw new Error("A valid executive action ID is required.");
+frontend\src\api\executiveKpiContextApi.js:22:function getErrorMessage(error) {
+frontend\src\api\executiveKpiContextApi.js:23:  if (axios.isCancel(error)) {
+frontend\src\api\executiveKpiContextApi.js:27:  const responseDetail = error?.response?.data?.detail;
+frontend\src\api\executiveKpiContextApi.js:28:  const responseMessage = error?.response?.data?.message;
+frontend\src\api\executiveKpiContextApi.js:36:      .map((item) => item?.msg || item?.message || "Validation error")
+frontend\src\api\executiveKpiContextApi.js:44:  if (error?.code === "ECONNABORTED") {
+frontend\src\api\executiveKpiContextApi.js:48:  if (!error?.response) {
+frontend\src\api\executiveKpiContextApi.js:50:      error?.message ||
+frontend\src\api\executiveKpiContextApi.js:56:    error?.message ||
+frontend\src\api\executiveKpiContextApi.js:96:  } catch (error) {
+frontend\src\api\executiveKpiContextApi.js:97:    const apiError = new Error(getErrorMessage(error));
+frontend\src\api\executiveKpiContextApi.js:99:    apiError.status = error?.response?.status;
+frontend\src\api\executiveKpiContextApi.js:100:    apiError.data = error?.response?.data;
+frontend\src\api\executiveKpiContextApi.js:101:    apiError.originalError = error;
+frontend\src\api\executiveKpiContextApi.js:103:    throw apiError;
+frontend\src\api\predictionsApi.js:31:  } catch (error) {
+frontend\src\api\predictionsApi.js:33:      error?.response?.data?.detail ||
+frontend\src\api\predictionsApi.js:34:      error?.message ||
+frontend\src\api\predictionsApi.js:37:    throw new Error(detail);
+frontend\src\api\userApi.js:17:    throw new Error("Authentication token was not found.");
+frontend\src\api\userApi.js:32:  } catch {
+frontend\src\api\userApi.js:42:    throw new Error(message);
+frontend\src\components\common\AnimatedNumber.jsx:1:import { useEffect, useRef, useState } from "react";
+frontend\src\components\common\AnimatedNumber.jsx:16:  const [displayValue, setDisplayValue] = useState(0);
+frontend\src\components\dashboard\DashboardDataState.jsx:2:  FiAlertTriangle,
+frontend\src\components\dashboard\DashboardDataState.jsx:7:import "./DashboardDataState.css";
+frontend\src\components\dashboard\DashboardDataState.jsx:9:const STATE_CONFIG = {
+frontend\src\components\dashboard\DashboardDataState.jsx:10:  error: {
+frontend\src\components\dashboard\DashboardDataState.jsx:11:    icon: FiAlertTriangle,
+frontend\src\components\dashboard\DashboardDataState.jsx:24:function DashboardDataState({
+frontend\src\components\dashboard\DashboardDataState.jsx:25:  type = "error",
+frontend\src\components\dashboard\DashboardDataState.jsx:33:  const config = STATE_CONFIG[type] || STATE_CONFIG.error;
+frontend\src\components\dashboard\DashboardDataState.jsx:34:  const StateIcon = config.icon;
+frontend\src\components\dashboard\DashboardDataState.jsx:39:        "dashboard-data-state",
+frontend\src\components\dashboard\DashboardDataState.jsx:40:        `dashboard-data-state--${type}`,
+frontend\src\components\dashboard\DashboardDataState.jsx:41:        compact ? "dashboard-data-state--compact" : "",
+frontend\src\components\dashboard\DashboardDataState.jsx:45:      role={type === "error" ? "alert" : "status"}
+frontend\src\components\dashboard\DashboardDataState.jsx:48:      <div className="dashboard-data-state__icon" aria-hidden="true">
+frontend\src\components\dashboard\DashboardDataState.jsx:49:        <StateIcon />
+frontend\src\components\dashboard\DashboardDataState.jsx:52:      <div className="dashboard-data-state__content">
+frontend\src\components\dashboard\DashboardDataState.jsx:60:          className="dashboard-data-state__action"
+frontend\src\components\dashboard\DashboardDataState.jsx:65:            className={retrying ? "dashboard-data-state__spinner" : ""}
+frontend\src\components\dashboard\DashboardDataState.jsx:76:export default DashboardDataState;frontend\src\components\executive\ExecutiveActionAnalytics.jsx:4:  Alert,
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:542:  const { analytics, loading, error, refreshAnalytics } =
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:600:    } catch {
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:601:      // Error state is already exposed by the hook.
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:668:      {error && (
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:669:        <Alert
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:670:          severity="error"
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:683:          {error}
+frontend\src\components\executive\ExecutiveActionAnalytics.jsx:684:        </Alert>
+frontend\src\components\executive\ExecutiveActionDeleteDialog.jsx:2:  Alert,
+frontend\src\components\executive\ExecutiveActionDeleteDialog.jsx:107:        <Alert
+frontend\src\components\executive\ExecutiveActionDeleteDialog.jsx:115:        </Alert>
+frontend\src\components\executive\ExecutiveActionDeleteDialog.jsx:172:          color="error"
+frontend\src\components\executive\ExecutiveActionDialog.jsx:1:import { useEffect, useMemo, useState } from "react";
+frontend\src\components\executive\ExecutiveActionDialog.jsx:103:  const [form, setForm] = useState(
+frontend\src\components\executive\ExecutiveActionDialog.jsx:107:  const [errors, setErrors] = useState({});
+frontend\src\components\executive\ExecutiveActionDialog.jsx:115:    setErrors({});
+frontend\src\components\executive\ExecutiveActionDialog.jsx:145:    if (errors[name]) {
+frontend\src\components\executive\ExecutiveActionDialog.jsx:146:      setErrors((currentErrors) => ({
+frontend\src\components\executive\ExecutiveActionDialog.jsx:147:        ...currentErrors,
+frontend\src\components\executive\ExecutiveActionDialog.jsx:154:    const nextErrors = {};
+frontend\src\components\executive\ExecutiveActionDialog.jsx:157:      nextErrors.action_title =
+frontend\src\components\executive\ExecutiveActionDialog.jsx:162:      nextErrors.owner_name =
+frontend\src\components\executive\ExecutiveActionDialog.jsx:167:      nextErrors.priority =
+frontend\src\components\executive\ExecutiveActionDialog.jsx:172:      nextErrors.status =
+frontend\src\components\executive\ExecutiveActionDialog.jsx:177:      nextErrors.due_date =
+frontend\src\components\executive\ExecutiveActionDialog.jsx:181:    setErrors(nextErrors);
+frontend\src\components\executive\ExecutiveActionDialog.jsx:183:    return Object.keys(nextErrors).length === 0;
+frontend\src\components\executive\ExecutiveActionDialog.jsx:387:                error={Boolean(
+frontend\src\components\executive\ExecutiveActionDialog.jsx:388:                  errors.action_title
+frontend\src\components\executive\ExecutiveActionDialog.jsx:391:                  errors.action_title ||
+frontend\src\components\executive\ExecutiveActionDialog.jsx:453:                error={Boolean(
+frontend\src\components\executive\ExecutiveActionDialog.jsx:454:                  errors.owner_name
+frontend\src\components\executive\ExecutiveActionDialog.jsx:457:                  errors.owner_name ||
+frontend\src\components\executive\ExecutiveActionDialog.jsx:471:                error={Boolean(errors.due_date)}
+frontend\src\components\executive\ExecutiveActionDialog.jsx:473:                  errors.due_date ||
+frontend\src\components\executive\ExecutiveActionDialog.jsx:486:                error={Boolean(errors.priority)}
+frontend\src\components\executive\ExecutiveActionDialog.jsx:518:                  {errors.priority ||
+frontend\src\components\executive\ExecutiveActionDialog.jsx:526:                error={Boolean(errors.status)}
+frontend\src\components\executive\ExecutiveActionDialog.jsx:562:                  {errors.status ||
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:1:import React, { useEffect, useMemo, useState } from "react";
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:5:  Alert,
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:125:  const [responseData, setResponseData] = useState(null);
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:126:  const [loading, setLoading] = useState(Boolean(actionId));
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:127:  const [error, setError] = useState("");
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:133:      setError("");
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:139:      setError("");
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:146:    } catch (requestError) {
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:148:        requestError?.name === "CanceledError" ||
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:149:        requestError?.name === "AbortError" ||
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:150:        requestError?.originalError?.code === "ERR_CANCELED"
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:155:      setError(
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:156:        requestError?.message ||
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:299:  if (error) {
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:301:      <Alert
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:302:        severity="error"
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:323:        {error}
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:324:      </Alert>
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:330:      <Alert
+frontend\src\components\executive\ExecutiveActionKpiContext.jsx:341:      </Alert>
+frontend\src\components\executive\ExecutiveActionTable.jsx:1:import { useMemo, useState } from "react";
+frontend\src\components\executive\ExecutiveActionTable.jsx:298:  ] = useState(null);
+frontend\src\components\executive\ExecutiveActionTable.jsx:672:function EmptyState() {
+frontend\src\components\executive\ExecutiveActionTable.jsx:823:              <EmptyState />
+frontend\src\components\executive\ExecutiveAiInsightCard.jsx:5:  FiAlertTriangle,
+frontend\src\components\executive\ExecutiveAiInsightCard.jsx:67:      icon: <FiAlertTriangle />,
+frontend\src\components\executive\ExecutiveAiInsightCard.jsx:72:      icon: <FiAlertTriangle />,
+frontend\src\components\executive\ExecutiveAiInsightCard_before_10_18_4.jsx:3:  FiAlertTriangle,
+frontend\src\components\executive\ExecutiveAiInsightCard_before_10_18_4.jsx:51:      icon: <FiAlertTriangle />,
+frontend\src\components\executive\ExecutiveAiInsightCard_before_10_18_4.jsx:59:      icon: <FiAlertTriangle />,
+frontend\src\components\executive\ExecutiveAiInsightCard_before_10_18_7_2.jsx:4:  FiAlertTriangle,
+frontend\src\components\executive\ExecutiveAiInsightCard_before_10_18_7_2.jsx:59:      icon: <FiAlertTriangle />,
+frontend\src\components\executive\ExecutiveAiInsightCard_before_10_18_7_2.jsx:67:      icon: <FiAlertTriangle />,
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:6:  useState,
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:10:  FiAlertCircle,
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:17:  getExecutiveInsightsErrorMessage,
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:46:  const [data, setData] = useState(null);
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:47:  const [loading, setLoading] = useState(true);
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:48:  const [error, setError] = useState("");
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:52:    setError("");
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:61:    } catch (requestError) {
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:64:      setError(
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:65:        getExecutiveInsightsErrorMessage(
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:66:          requestError,
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:213:        {!loading && error && (
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:215:            className="executive-insights-error"
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:216:            role="alert"
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:218:            <FiAlertCircle />
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:225:              <p>{error}</p>
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:231:          !error &&
+frontend\src\components\executive\ExecutiveInsightsPanel.jsx:240:          !error &&
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:6:  useState,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:10:  FiAlertCircle,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:17:  getExecutiveInsightsErrorMessage,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:43:  const [data, setData] = useState(null);
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:44:  const [loading, setLoading] = useState(true);
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:45:  const [error, setError] = useState("");
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:49:    setError("");
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:57:    } catch (requestError) {
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:60:      setError(
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:61:        getExecutiveInsightsErrorMessage(
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:62:          requestError,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:249:        {!loading && error && (
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:251:            role="alert"
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:262:            <FiAlertCircle
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:290:                {error}
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:297:          !error &&
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_7.jsx:313:          !error &&
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:6:  useState,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:10:  FiAlertCircle,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:17:  getExecutiveInsightsErrorMessage,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:45:  const [data, setData] = useState(null);
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:46:  const [loading, setLoading] = useState(true);
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:47:  const [error, setError] = useState("");
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:51:    setError("");
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:59:    } catch (requestError) {
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:62:      setError(
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:63:        getExecutiveInsightsErrorMessage(
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:64:          requestError,
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:171:        {!loading && error && (
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:173:            className="executive-insights-error"
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:174:            role="alert"
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:176:            <FiAlertCircle />
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:183:              <p>{error}</p>
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:189:          !error &&
+frontend\src\components\executive\ExecutiveInsightsPanel_before_10_18_8_4.jsx:198:          !error &&
+frontend\src\components\executive\ExecutiveKpiCard.jsx:72:      chipColor: "error",
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:1:import React, { useState } from "react";
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:3:  FiAlertCircle,
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:187:    return <FiAlertCircle />;
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:282:  error = "",
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:289:  const [exportingPdf, setExportingPdf] = useState(false);
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:290:  const [exportError, setExportError] = useState("");
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:291:  const [exportSuccess, setExportSuccess] = useState("");
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:313:    setExportError("");
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:345:    } catch (exportException) {
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:348:      console.error(
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:357:          const errorText = await responseData.text();
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:358:          const parsedError = JSON.parse(errorText);
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:360:          setExportError(
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:361:            parsedError?.detail ||
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:364:        } catch {
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:365:          setExportError(
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:370:        setExportError(
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:483:                Boolean(error) ||
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:521:        {exportError && (
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:522:          <div className="kpi-export-error" role="alert">
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:523:            <FiAlertCircle />
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:524:            <span>{exportError}</span>
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:528:              onClick={() => setExportError("")}
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:529:              aria-label="Dismiss export error"
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:542:        {!loading && error && (
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:543:          <div className="kpi-dialog-state error">
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:544:            <FiAlertCircle />
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:548:              <p>{error}</p>
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:559:        {!loading && !error && data && (
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:744:        {!loading && !error && !data && (
+frontend\src\components\executive\ExecutiveKpiDetailDialog.jsx:745:          <div className="kpi-dialog-state">
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:5:  useState,
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:9:  FiAlertCircle,
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:351:    return <FiAlertCircle />;
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:366:    useState([]);
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:369:    useState([]);
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:372:    useState(false);
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:375:    useState([]);
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:377:  const [actionError, setActionError] =
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:378:    useState("");
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:381:    useState("");
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:418:      setActionError("");
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:507:                } catch (createError) {
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:524:                  } catch {
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:525:                    throw createError;
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:542:      } catch (error) {
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:543:        console.error(
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:545:          error
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:552:          setActionError(
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:553:            error?.message ||
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:658:      setActionError(
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:681:    setActionError("");
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:735:    } catch (error) {
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:736:      console.error(
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:738:        error
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:743:      setActionError(
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:744:        error?.message ||
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:817:      {actionError && (
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:819:          role="alert"
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:831:          <FiAlertCircle
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:838:          {actionError}
+frontend\src\components\executive\ExecutiveRecommendationCard.jsx:1269:                              <FiAlertCircle />
+frontend\src\components\executive\ExecutiveRootCauseCard.jsx:1:import React, { useEffect, useState } from "react";
+frontend\src\components\executive\ExecutiveRootCauseCard.jsx:3:  FiAlertTriangle,
+frontend\src\components\executive\ExecutiveRootCauseCard.jsx:150:  const [expandedItems, setExpandedItems] = useState(() =>
+frontend\src\components\executive\ExecutiveRootCauseCard.jsx:190:            <FiAlertTriangle />
+frontend\src\components\executive\OperationalDriversGrid.jsx:4:  FiAlertTriangle,
+frontend\src\components\executive\OperationalDriversGrid.jsx:233:          <FiAlertTriangle />
+frontend\src\components\executive\PriorityActionsPanel.jsx:16:    color: "error",
+frontend\src\components\executive\PriorityActionsPanel.jsx:167:            color={highPriorityCount > 0 ? "error" : "success"}
+frontend\src\components\executive\RelatedExecutiveActions.jsx:3:  FiAlertCircle,
+frontend\src\components\executive\RelatedExecutiveActions.jsx:92:    error,
+frontend\src\components\executive\RelatedExecutiveActions.jsx:101:    } catch (requestError) {
+frontend\src\components\executive\RelatedExecutiveActions.jsx:102:      console.error(
+frontend\src\components\executive\RelatedExecutiveActions.jsx:104:        requestError
+frontend\src\components\executive\RelatedExecutiveActions.jsx:186:        <div className="related-actions-state">
+frontend\src\components\executive\RelatedExecutiveActions.jsx:195:      {!loading && error && (
+frontend\src\components\executive\RelatedExecutiveActions.jsx:196:        <div className="related-actions-state error">
+frontend\src\components\executive\RelatedExecutiveActions.jsx:197:          <FiAlertCircle />
+frontend\src\components\executive\RelatedExecutiveActions.jsx:201:            <p>{error}</p>
+frontend\src\components\executive\RelatedExecutiveActions.jsx:210:      {!loading && !error && actions.length === 0 && (
+frontend\src\components\executive\RelatedExecutiveActions.jsx:211:        <div className="related-actions-state empty">
+frontend\src\components\executive\RelatedExecutiveActions.jsx:232:      {!loading && !error && actions.length > 0 && (
+frontend\src\components\executive\RiskHeatMap.jsx:53:    chipColor: "error",
+frontend\src\components\executive\RiskHeatMap.jsx:221:            color="error"
+frontend\src\components\executive\SupportingDataTable.jsx:3:  FiAlertCircle,
+frontend\src\components\executive\SupportingDataTable.jsx:168:          <FiAlertCircle />
+frontend\src\components\executive\TrendAnalysisCard.jsx:27:    if (direction === "Declining") return <TrendingDownIcon color="error" />;
+frontend\src\components\executive\TrendAnalysisCard.jsx:34:    if (direction === "Declining") return "error";
+frontend\src\components\executive\TrendAnalyticsPanel.jsx:114:      ? "error"
+frontend\src\components\ExecutiveKpiCard.jsx:15:      ? "error"
+frontend\src\components\ExecutiveKpiCard.jsx:71:                ? "error"
+frontend\src\components\OperationsSnapshotCard.jsx:10:  const alerts = [
+frontend\src\components\OperationsSnapshotCard.jsx:35:        {alerts.map((item) => (
+frontend\src\components\OperationsSnapshotCard.jsx:53:              color={item.status === "OK" ? "success" : "error"}
+frontend\src\components\predictive\ExecutiveForecastRiskStrip.jsx:2:  FiAlertTriangle,
+frontend\src\components\predictive\ExecutiveForecastRiskStrip.jsx:117:            <FiAlertTriangle />
+frontend\src\components\predictive\ExecutiveForecastRiskStrip.jsx:138:          <FiAlertTriangle />
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:4:  useState,
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:9:  FiAlertTriangle,
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:56:      icon: <FiAlertTriangle />,
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:155:  ] = useState(null);
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:160:  ] = useState(true);
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:163:    error,
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:164:    setError,
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:165:  ] = useState("");
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:170:  ] = useState(null);
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:174:    setError("");
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:184:    } catch (requestError) {
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:185:      setError(
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:186:        requestError?.message ||
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:388:        <div className="prediction-summary__state">
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:403:      {!isLoading && error ? (
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:404:        <div className="prediction-summary__state prediction-summary__state--error">
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:405:          <FiAlertTriangle />
+frontend\src\components\predictive\PredictionSummaryPanel.jsx:412:            {error}
+frontend\src\components\ProductionTrendChart.jsx:1:import { useState } from "react";
+frontend\src\components\ProductionTrendChart.jsx:23:  const [mode, setMode] = useState("ore");
+frontend\src\components\reports\ReportHistoryTable.jsx:1:import React, { useCallback, useEffect, useState } from "react";
+frontend\src\components\reports\ReportHistoryTable.jsx:4:  Alert,
+frontend\src\components\reports\ReportHistoryTable.jsx:28:  const [history, setHistory] = useState([]);
+frontend\src\components\reports\ReportHistoryTable.jsx:29:  const [loading, setLoading] = useState(true);
+frontend\src\components\reports\ReportHistoryTable.jsx:30:  const [errorMessage, setErrorMessage] = useState("");
+frontend\src\components\reports\ReportHistoryTable.jsx:36:      setErrorMessage("");
+frontend\src\components\reports\ReportHistoryTable.jsx:45:    } catch (error) {
+frontend\src\components\reports\ReportHistoryTable.jsx:46:      console.error("Unable to load report history:", error);
+frontend\src\components\reports\ReportHistoryTable.jsx:48:      setErrorMessage(
+frontend\src\components\reports\ReportHistoryTable.jsx:104:      normalizedStatus === "error"
+frontend\src\components\reports\ReportHistoryTable.jsx:106:      return "error";
+frontend\src\components\reports\ReportHistoryTable.jsx:125:      normalizedStatus === "error"
+frontend\src\components\reports\ReportHistoryTable.jsx:213:        {errorMessage && (
+frontend\src\components\reports\ReportHistoryTable.jsx:214:          <Alert
+frontend\src\components\reports\ReportHistoryTable.jsx:215:            severity="error"
+frontend\src\components\reports\ReportHistoryTable.jsx:221:            {errorMessage}
+frontend\src\components\reports\ReportHistoryTable.jsx:222:          </Alert>
+frontend\src\components\system-health\SystemHealthIncidentTimeline.jsx:12:import ErrorIcon from "@mui/icons-material/Error";
+frontend\src\components\system-health\SystemHealthIncidentTimeline.jsx:56:      icon: ErrorIcon,
+frontend\src\context\AuthContext.jsx:1:import { createContext, useContext, useEffect, useState } from "react";
+frontend\src\context\AuthContext.jsx:7:    const [user, setUser] = useState(null);
+frontend\src\context\AuthContext.jsx:9:    const [loading, setLoading] = useState(true);
+frontend\src\context\ConfigContext.jsx:5:  useState,
+frontend\src\context\ConfigContext.jsx:13:  const [config, setConfig] = useState({
+frontend\src\context\ConfigContext.jsx:17:    alert_thresholds: [],
+frontend\src\context\ConfigContext.jsx:21:  const [loading, setLoading] = useState(true);
+frontend\src\context\ConfigContext.jsx:27:    } catch (error) {
+frontend\src\context\ConfigContext.jsx:28:      console.error("Failed to load configuration:", error);
+frontend\src\hooks\useExecutiveActionAnalytics.js:4:  useState,
+frontend\src\hooks\useExecutiveActionAnalytics.js:11:function getErrorMessage(error) {
+frontend\src\hooks\useExecutiveActionAnalytics.js:13:    error?.userMessage ||
+frontend\src\hooks\useExecutiveActionAnalytics.js:14:    error?.response?.data?.detail ||
+frontend\src\hooks\useExecutiveActionAnalytics.js:15:    error?.message ||
+frontend\src\hooks\useExecutiveActionAnalytics.js:28:    useState(null);
+frontend\src\hooks\useExecutiveActionAnalytics.js:31:    useState(autoLoad);
+frontend\src\hooks\useExecutiveActionAnalytics.js:33:  const [error, setError] =
+frontend\src\hooks\useExecutiveActionAnalytics.js:34:    useState("");
+frontend\src\hooks\useExecutiveActionAnalytics.js:40:        setError("");
+frontend\src\hooks\useExecutiveActionAnalytics.js:48:      } catch (requestError) {
+frontend\src\hooks\useExecutiveActionAnalytics.js:49:        console.error(
+frontend\src\hooks\useExecutiveActionAnalytics.js:51:          requestError
+frontend\src\hooks\useExecutiveActionAnalytics.js:55:          getErrorMessage(requestError);
+frontend\src\hooks\useExecutiveActionAnalytics.js:57:        setError(message);
+frontend\src\hooks\useExecutiveActionAnalytics.js:60:        throw requestError;
+frontend\src\hooks\useExecutiveActionAnalytics.js:75:  const clearError = useCallback(() => {
+frontend\src\hooks\useExecutiveActionAnalytics.js:76:    setError("");
+frontend\src\hooks\useExecutiveActionAnalytics.js:85:    loadAnalytics().catch(() => {
+frontend\src\hooks\useExecutiveActionAnalytics.js:86:      // Error state is already handled inside
+frontend\src\hooks\useExecutiveActionAnalytics.js:94:    error,
+frontend\src\hooks\useExecutiveActionAnalytics.js:97:    clearError,
+frontend\src\hooks\useKpiExecutiveActions.js:5:  useState,
+frontend\src\hooks\useKpiExecutiveActions.js:25:function getErrorMessage(error, fallbackMessage) {
+frontend\src\hooks\useKpiExecutiveActions.js:27:    error?.userMessage ||
+frontend\src\hooks\useKpiExecutiveActions.js:28:    error?.response?.data?.detail ||
+frontend\src\hooks\useKpiExecutiveActions.js:29:    error?.response?.data?.message ||
+frontend\src\hooks\useKpiExecutiveActions.js:30:    error?.message ||
+frontend\src\hooks\useKpiExecutiveActions.js:36:  const [actions, setActions] = useState([]);
+frontend\src\hooks\useKpiExecutiveActions.js:37:  const [loading, setLoading] = useState(false);
+frontend\src\hooks\useKpiExecutiveActions.js:38:  const [error, setError] = useState("");
+frontend\src\hooks\useKpiExecutiveActions.js:39:  const [updatingStatusId, setUpdatingStatusId] = useState(null);
+frontend\src\hooks\useKpiExecutiveActions.js:44:      setError("");
+frontend\src\hooks\useKpiExecutiveActions.js:51:      setError("");
+frontend\src\hooks\useKpiExecutiveActions.js:68:    } catch (requestError) {
+frontend\src\hooks\useKpiExecutiveActions.js:70:      setError(
+frontend\src\hooks\useKpiExecutiveActions.js:71:        getErrorMessage(
+frontend\src\hooks\useKpiExecutiveActions.js:72:          requestError,
+frontend\src\hooks\useKpiExecutiveActions.js:91:    if (!actionId) throw new Error("Executive action ID is required.");
+frontend\src\hooks\useKpiExecutiveActions.js:143:    error,
+frontend\src\layout\Header.jsx:49:  const handleLogoError = (event) => {
+frontend\src\layout\Header.jsx:50:    event.currentTarget.onerror = null;
+frontend\src\layout\Header.jsx:95:          onError={handleLogoError}
+frontend\src\layout\Sidebar.jsx:132:  const handleLogoError = (event) => {
+frontend\src\layout\Sidebar.jsx:133:    event.currentTarget.onerror = null;
+frontend\src\layout\Sidebar.jsx:192:          onError={handleLogoError}
+frontend\src\pages\AuditTrail.jsx:5:  useState,
+frontend\src\pages\AuditTrail.jsx:9:  Alert,
+frontend\src\pages\AuditTrail.jsx:104:    return "error";
+frontend\src\pages\AuditTrail.jsx:132:    return "error";
+frontend\src\pages\AuditTrail.jsx:158:  const [items, setItems] = useState([]);
+frontend\src\pages\AuditTrail.jsx:159:  const [total, setTotal] = useState(0);
+frontend\src\pages\AuditTrail.jsx:162:    useState(INITIAL_SUMMARY);
+frontend\src\pages\AuditTrail.jsx:164:  const [page, setPage] = useState(0);
+frontend\src\pages\AuditTrail.jsx:166:    useState(DEFAULT_PAGE_SIZE);
+frontend\src\pages\AuditTrail.jsx:169:    useState(INITIAL_FILTERS);
+frontend\src\pages\AuditTrail.jsx:172:    useState("");
+frontend\src\pages\AuditTrail.jsx:175:    useState(true);
+frontend\src\pages\AuditTrail.jsx:177:  const [error, setError] =
+frontend\src\pages\AuditTrail.jsx:178:    useState("");
+frontend\src\pages\AuditTrail.jsx:226:    setError("");
+frontend\src\pages\AuditTrail.jsx:256:    } catch (requestError) {
+frontend\src\pages\AuditTrail.jsx:261:      setError(
+frontend\src\pages\AuditTrail.jsx:262:        requestError?.userMessage ||
+frontend\src\pages\AuditTrail.jsx:263:          requestError?.message ||
+frontend\src\pages\AuditTrail.jsx:371:      {error && (
+frontend\src\pages\AuditTrail.jsx:372:        <Alert
+frontend\src\pages\AuditTrail.jsx:373:          severity="error"
+frontend\src\pages\AuditTrail.jsx:374:          className="audit-trail-alert"
+frontend\src\pages\AuditTrail.jsx:376:          {error}
+frontend\src\pages\AuditTrail.jsx:377:        </Alert>
+frontend\src\pages\Dashboard.jsx:9:  useState,
+frontend\src\pages\Dashboard.jsx:17:import DashboardDataState from "../components/dashboard/DashboardDataState";
+frontend\src\pages\Dashboard.jsx:445:  const [demoLoading, setDemoLoading] = useState(false);
+frontend\src\pages\Dashboard.jsx:446:  const [demoLoaded, setDemoLoaded] = useState(false);
+frontend\src\pages\Dashboard.jsx:447:  const [demoData, setDemoData] = useState(null);
+frontend\src\pages\Dashboard.jsx:448:  const [toast, setToast] = useState(null);
+frontend\src\pages\Dashboard.jsx:449:  const [demoScenario, setDemoScenario] = useState("High Performing Mine");
+frontend\src\pages\Dashboard.jsx:450:  const [scenarioTransition, setScenarioTransition] = useState(false);
+frontend\src\pages\Dashboard.jsx:451:  const [scenarioTransitionLabel, setScenarioTransitionLabel] = useState(
+frontend\src\pages\Dashboard.jsx:455:  const [sharedAnalytics, setSharedAnalytics] = useState(null);
+frontend\src\pages\Dashboard.jsx:456:  const [sharedAnalyticsLoading, setSharedAnalyticsLoading] = useState(true);
+frontend\src\pages\Dashboard.jsx:457:  const [sharedAnalyticsError, setSharedAnalyticsError] = useState("");
+frontend\src\pages\Dashboard.jsx:459:  const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
+frontend\src\pages\Dashboard.jsx:460:  const [kpiDetailLoading, setKpiDetailLoading] = useState(false);
+frontend\src\pages\Dashboard.jsx:461:  const [kpiDetailError, setKpiDetailError] = useState("");
+frontend\src\pages\Dashboard.jsx:462:  const [kpiDetailData, setKpiDetailData] = useState(null);
+frontend\src\pages\Dashboard.jsx:463:  const [selectedKpiKey, setSelectedKpiKey] = useState(null);
+frontend\src\pages\Dashboard.jsx:494:  const showToast = useCallback((type, title, message) => {
+frontend\src\pages\Dashboard.jsx:495:    setToast({ type, title, message });
+frontend\src\pages\Dashboard.jsx:498:      setToast(null);
+frontend\src\pages\Dashboard.jsx:575:          showToast(
+frontend\src\pages\Dashboard.jsx:580:        } catch (error) {
+frontend\src\pages\Dashboard.jsx:581:          console.error("Demo load failed:", error);
+frontend\src\pages\Dashboard.jsx:583:          showToast(
+frontend\src\pages\Dashboard.jsx:584:            "error",
+frontend\src\pages\Dashboard.jsx:593:  }, [demoScenario, mineName, runScenarioTransition, showToast]);
+frontend\src\pages\Dashboard.jsx:609:          showToast(
+frontend\src\pages\Dashboard.jsx:614:        } catch (error) {
+frontend\src\pages\Dashboard.jsx:615:          console.error("Demo reset failed:", error);
+frontend\src\pages\Dashboard.jsx:617:          showToast(
+frontend\src\pages\Dashboard.jsx:618:            "error",
+frontend\src\pages\Dashboard.jsx:625:  }, [mineName, runScenarioTransition, showToast]);
+frontend\src\pages\Dashboard.jsx:630:      setSharedAnalyticsError("");
+frontend\src\pages\Dashboard.jsx:634:    } catch (error) {
+frontend\src\pages\Dashboard.jsx:635:      console.error("Shared analytics load failed:", error);
+frontend\src\pages\Dashboard.jsx:636:      setSharedAnalyticsError("Unable to load shared analytics.");
+frontend\src\pages\Dashboard.jsx:741:        console.warn("Unsupported KPI key:", kpiKey);
+frontend\src\pages\Dashboard.jsx:761:      setKpiDetailError("");
+frontend\src\pages\Dashboard.jsx:774:        } catch (error) {
+frontend\src\pages\Dashboard.jsx:775:          console.error("KPI detail build failed:", error);
+frontend\src\pages\Dashboard.jsx:776:          setKpiDetailError("Unable to prepare the KPI analysis.");
+frontend\src\pages\Dashboard.jsx:835:    setKpiDetailError("");
+frontend\src\pages\Dashboard.jsx:980:      {toast && (
+frontend\src\pages\Dashboard.jsx:981:        <div className={`demo-toast ${toast.type}`}>
+frontend\src\pages\Dashboard.jsx:982:          <div className="demo-toast-icon">
+frontend\src\pages\Dashboard.jsx:983:            {toast.type === "success" ? "✓" : "!"}
+frontend\src\pages\Dashboard.jsx:987:            <h4>{toast.title}</h4>
+frontend\src\pages\Dashboard.jsx:988:            <p>{toast.message}</p>
+frontend\src\pages\Dashboard.jsx:1002:        {sharedAnalyticsError && (
+frontend\src\pages\Dashboard.jsx:1003:          <div className="dashboard-state-banner">
+frontend\src\pages\Dashboard.jsx:1004:            <DashboardDataState
+frontend\src\pages\Dashboard.jsx:1005:              type="error"
+frontend\src\pages\Dashboard.jsx:1680:              error={kpiDetailError}
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:9:  useState,
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:17:import DashboardDataState from "../components/dashboard/DashboardDataState";
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:440:  const [demoLoading, setDemoLoading] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:441:  const [demoLoaded, setDemoLoaded] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:442:  const [demoData, setDemoData] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:443:  const [toast, setToast] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:444:  const [demoScenario, setDemoScenario] = useState("High Performing Mine");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:445:  const [scenarioTransition, setScenarioTransition] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:446:  const [scenarioTransitionLabel, setScenarioTransitionLabel] = useState(
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:450:  const [sharedAnalytics, setSharedAnalytics] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:451:  const [sharedAnalyticsLoading, setSharedAnalyticsLoading] = useState(true);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:452:  const [sharedAnalyticsError, setSharedAnalyticsError] = useState("");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:454:  const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:455:  const [kpiDetailLoading, setKpiDetailLoading] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:456:  const [kpiDetailError, setKpiDetailError] = useState("");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:457:  const [kpiDetailData, setKpiDetailData] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:458:  const [selectedKpiKey, setSelectedKpiKey] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:489:  const showToast = useCallback((type, title, message) => {
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:490:    setToast({ type, title, message });
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:493:      setToast(null);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:567:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:572:        } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:573:          console.error("Demo load failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:575:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:576:            "error",
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:585:  }, [demoScenario, runScenarioTransition, showToast]);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:599:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:604:        } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:605:          console.error("Demo reset failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:607:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:608:            "error",
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:615:  }, [runScenarioTransition, showToast]);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:620:      setSharedAnalyticsError("");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:624:    } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:625:      console.error("Shared analytics load failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:626:      setSharedAnalyticsError("Unable to load shared analytics.");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:731:        console.warn("Unsupported KPI key:", kpiKey);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:751:      setKpiDetailError("");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:764:        } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:765:          console.error("KPI detail build failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:766:          setKpiDetailError("Unable to prepare the KPI analysis.");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:825:    setKpiDetailError("");
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:970:      {toast && (
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:971:        <div className={`demo-toast ${toast.type}`}>
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:972:          <div className="demo-toast-icon">
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:973:            {toast.type === "success" ? "✓" : "!"}
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:977:            <h4>{toast.title}</h4>
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:978:            <p>{toast.message}</p>
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:992:        {sharedAnalyticsError && (
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:993:          <div className="dashboard-state-banner">
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:994:            <DashboardDataState
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:995:              type="error"
+frontend\src\pages\Dashboard_before_10_18_8_2.jsx:1654:              error={kpiDetailError}
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:9:  useState,
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:17:import DashboardDataState from "../components/dashboard/DashboardDataState";
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:440:  const [demoLoading, setDemoLoading] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:441:  const [demoLoaded, setDemoLoaded] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:442:  const [demoData, setDemoData] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:443:  const [toast, setToast] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:444:  const [demoScenario, setDemoScenario] = useState("High Performing Mine");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:445:  const [scenarioTransition, setScenarioTransition] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:446:  const [scenarioTransitionLabel, setScenarioTransitionLabel] = useState(
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:450:  const [sharedAnalytics, setSharedAnalytics] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:451:  const [sharedAnalyticsLoading, setSharedAnalyticsLoading] = useState(true);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:452:  const [sharedAnalyticsError, setSharedAnalyticsError] = useState("");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:454:  const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:455:  const [kpiDetailLoading, setKpiDetailLoading] = useState(false);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:456:  const [kpiDetailError, setKpiDetailError] = useState("");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:457:  const [kpiDetailData, setKpiDetailData] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:458:  const [selectedKpiKey, setSelectedKpiKey] = useState(null);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:489:  const showToast = useCallback((type, title, message) => {
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:490:    setToast({ type, title, message });
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:493:      setToast(null);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:570:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:575:        } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:576:          console.error("Demo load failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:578:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:579:            "error",
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:588:  }, [demoScenario, mineName, runScenarioTransition, showToast]);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:604:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:609:        } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:610:          console.error("Demo reset failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:612:          showToast(
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:613:            "error",
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:620:  }, [mineName, runScenarioTransition, showToast]);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:625:      setSharedAnalyticsError("");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:629:    } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:630:      console.error("Shared analytics load failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:631:      setSharedAnalyticsError("Unable to load shared analytics.");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:736:        console.warn("Unsupported KPI key:", kpiKey);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:756:      setKpiDetailError("");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:769:        } catch (error) {
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:770:          console.error("KPI detail build failed:", error);
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:771:          setKpiDetailError("Unable to prepare the KPI analysis.");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:830:    setKpiDetailError("");
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:975:      {toast && (
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:976:        <div className={`demo-toast ${toast.type}`}>
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:977:          <div className="demo-toast-icon">
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:978:            {toast.type === "success" ? "✓" : "!"}
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:982:            <h4>{toast.title}</h4>
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:983:            <p>{toast.message}</p>
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:997:        {sharedAnalyticsError && (
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:998:          <div className="dashboard-state-banner">
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:999:            <DashboardDataState
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:1000:              type="error"
+frontend\src\pages\Dashboard_before_10_18_8_4.jsx:1659:              error={kpiDetailError}
+frontend\src\pages\ExecutiveActions.jsx:5:  useState,
+frontend\src\pages\ExecutiveActions.jsx:14:  Alert,
+frontend\src\pages\ExecutiveActions.jsx:161:function getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:162:  error,
+frontend\src\pages\ExecutiveActions.jsx:166:    error?.response?.data?.detail;
+frontend\src\pages\ExecutiveActions.jsx:199:          "Validation error";
+frontend\src\pages\ExecutiveActions.jsx:209:    error?.userMessage ||
+frontend\src\pages\ExecutiveActions.jsx:210:    error?.response?.data
+frontend\src\pages\ExecutiveActions.jsx:212:    error?.message ||
+frontend\src\pages\ExecutiveActions.jsx:342:    useState(null);
+frontend\src\pages\ExecutiveActions.jsx:345:    useState([]);
+frontend\src\pages\ExecutiveActions.jsx:348:    useState({
+frontend\src\pages\ExecutiveActions.jsx:373:  ] = useState(true);
+frontend\src\pages\ExecutiveActions.jsx:378:  ] = useState(true);
+frontend\src\pages\ExecutiveActions.jsx:383:  ] = useState(null);
+frontend\src\pages\ExecutiveActions.jsx:388:  ] = useState(false);
+frontend\src\pages\ExecutiveActions.jsx:393:  ] = useState(false);
+frontend\src\pages\ExecutiveActions.jsx:398:  ] = useState(null);
+frontend\src\pages\ExecutiveActions.jsx:403:  ] = useState(false);
+frontend\src\pages\ExecutiveActions.jsx:408:  ] = useState(false);
+frontend\src\pages\ExecutiveActions.jsx:413:  ] = useState(null);
+frontend\src\pages\ExecutiveActions.jsx:416:    errorMessage,
+frontend\src\pages\ExecutiveActions.jsx:417:    setErrorMessage,
+frontend\src\pages\ExecutiveActions.jsx:418:  ] = useState("");
+frontend\src\pages\ExecutiveActions.jsx:423:  ] = useState("");
+frontend\src\pages\ExecutiveActions.jsx:428:  ] = useState(0);
+frontend\src\pages\ExecutiveActions.jsx:618:      } catch (error) {
+frontend\src\pages\ExecutiveActions.jsx:619:        console.error(
+frontend\src\pages\ExecutiveActions.jsx:621:          error
+frontend\src\pages\ExecutiveActions.jsx:624:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:625:          getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:626:            error,
+frontend\src\pages\ExecutiveActions.jsx:692:      } catch (error) {
+frontend\src\pages\ExecutiveActions.jsx:693:        console.error(
+frontend\src\pages\ExecutiveActions.jsx:695:          error
+frontend\src\pages\ExecutiveActions.jsx:698:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:699:          getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:700:            error,
+frontend\src\pages\ExecutiveActions.jsx:716:      setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:935:      setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:944:    setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:973:        setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:999:      } catch (error) {
+frontend\src\pages\ExecutiveActions.jsx:1000:        console.error(
+frontend\src\pages\ExecutiveActions.jsx:1004:          error
+frontend\src\pages\ExecutiveActions.jsx:1007:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1008:          getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1009:            error,
+frontend\src\pages\ExecutiveActions.jsx:1030:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1042:        setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:1056:      } catch (error) {
+frontend\src\pages\ExecutiveActions.jsx:1057:        console.error(
+frontend\src\pages\ExecutiveActions.jsx:1059:          error
+frontend\src\pages\ExecutiveActions.jsx:1062:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1063:          getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1064:            error,
+frontend\src\pages\ExecutiveActions.jsx:1079:    setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:1107:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1116:        setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:1133:      } catch (error) {
+frontend\src\pages\ExecutiveActions.jsx:1134:        console.error(
+frontend\src\pages\ExecutiveActions.jsx:1136:          error
+frontend\src\pages\ExecutiveActions.jsx:1139:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1140:          getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1141:            error,
+frontend\src\pages\ExecutiveActions.jsx:1154:        setErrorMessage("");
+frontend\src\pages\ExecutiveActions.jsx:1169:      } catch (error) {
+frontend\src\pages\ExecutiveActions.jsx:1170:        console.error(
+frontend\src\pages\ExecutiveActions.jsx:1171:          "KPI Context Error:",
+frontend\src\pages\ExecutiveActions.jsx:1172:          error
+frontend\src\pages\ExecutiveActions.jsx:1175:        setErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1176:          getBackendErrorMessage(
+frontend\src\pages\ExecutiveActions.jsx:1177:            error,
+frontend\src\pages\ExecutiveActions.jsx:1577:        <Alert
+frontend\src\pages\ExecutiveActions.jsx:1588:        </Alert>
+frontend\src\pages\ExecutiveActions.jsx:1593:          errorMessage
+frontend\src\pages\ExecutiveActions.jsx:1597:          setErrorMessage("")
+frontend\src\pages\ExecutiveActions.jsx:1604:        <Alert
+frontend\src\pages\ExecutiveActions.jsx:1605:          severity="error"
+frontend\src\pages\ExecutiveActions.jsx:1608:            setErrorMessage("")
+frontend\src\pages\ExecutiveActions.jsx:1614:          {errorMessage}
+frontend\src\pages\ExecutiveActions.jsx:1615:        </Alert>
+frontend\src\pages\ExecutiveReports.jsx:1:import React, { useState } from "react";
+frontend\src\pages\ExecutiveReports.jsx:7:  Alert,
+frontend\src\pages\ExecutiveReports.jsx:25:  const [loadingReport, setLoadingReport] = useState(null);
+frontend\src\pages\ExecutiveReports.jsx:27:  const [notification, setNotification] = useState({
+frontend\src\pages\ExecutiveReports.jsx:142:    } catch (error) {
+frontend\src\pages\ExecutiveReports.jsx:143:      console.error(
+frontend\src\pages\ExecutiveReports.jsx:145:        error
+frontend\src\pages\ExecutiveReports.jsx:148:      let errorMessage =
+frontend\src\pages\ExecutiveReports.jsx:151:      if (error.response?.status === 401) {
+frontend\src\pages\ExecutiveReports.jsx:152:        errorMessage =
+frontend\src\pages\ExecutiveReports.jsx:154:      } else if (error.response?.status === 403) {
+frontend\src\pages\ExecutiveReports.jsx:155:        errorMessage =
+frontend\src\pages\ExecutiveReports.jsx:157:      } else if (error.response?.status >= 500) {
+frontend\src\pages\ExecutiveReports.jsx:158:        errorMessage =
+frontend\src\pages\ExecutiveReports.jsx:159:          "The report service encountered an error. Please review the backend logs.";
+frontend\src\pages\ExecutiveReports.jsx:163:        "error",
+frontend\src\pages\ExecutiveReports.jsx:164:        errorMessage
+frontend\src\pages\ExecutiveReports.jsx:408:        <Alert
+frontend\src\pages\ExecutiveReports.jsx:419:        </Alert>
+frontend\src\pages\Login.jsx:1:import { useState } from "react";
+frontend\src\pages\Login.jsx:11:  const [email, setEmail] = useState("admin@minemanager.ai");
+frontend\src\pages\Login.jsx:12:  const [password, setPassword] = useState("admin123");
+frontend\src\pages\Login.jsx:13:  const [rememberMe, setRememberMe] = useState(true);
+frontend\src\pages\Login.jsx:14:  const [language, setLanguage] = useState("EN");
+frontend\src\pages\Login.jsx:15:  const [error, setError] = useState("");
+frontend\src\pages\Login.jsx:16:  const [loading, setLoading] = useState(false);
+frontend\src\pages\Login.jsx:20:    setError("");
+frontend\src\pages\Login.jsx:36:    } catch (error) {
+frontend\src\pages\Login.jsx:37:      console.error("Login flow failed:", error);
+frontend\src\pages\Login.jsx:39:      setError(
+frontend\src\pages\Login.jsx:40:        error?.response?.data?.detail ||
+frontend\src\pages\Login.jsx:41:          error?.message ||
+frontend\src\pages\Login.jsx:151:            {error && <div className="login-error">{error}</div>}
+frontend\src\pages\SecurityConfiguration.jsx:1:import { useCallback, useEffect, useMemo, useState } from "react";
+frontend\src\pages\SecurityConfiguration.jsx:53:  const [report, setReport] = useState(null);
+frontend\src\pages\SecurityConfiguration.jsx:54:  const [loading, setLoading] = useState(true);
+frontend\src\pages\SecurityConfiguration.jsx:55:  const [refreshing, setRefreshing] = useState(false);
+frontend\src\pages\SecurityConfiguration.jsx:56:  const [error, setError] = useState("");
+frontend\src\pages\SecurityConfiguration.jsx:66:    setError("");
+frontend\src\pages\SecurityConfiguration.jsx:71:    } catch (requestError) {
+frontend\src\pages\SecurityConfiguration.jsx:72:      setError(
+frontend\src\pages\SecurityConfiguration.jsx:73:        requestError?.message ||
+frontend\src\pages\SecurityConfiguration.jsx:100:        <div className="security-loading-state">
+frontend\src\pages\SecurityConfiguration.jsx:113:  if (error && !report) {
+frontend\src\pages\SecurityConfiguration.jsx:116:        <div className="security-error-state">
+frontend\src\pages\SecurityConfiguration.jsx:119:          <p>{error}</p>
+frontend\src\pages\SecurityConfiguration.jsx:168:      {error && (
+frontend\src\pages\SecurityConfiguration.jsx:169:        <div className="security-inline-error">
+frontend\src\pages\SecurityConfiguration.jsx:171:          <span>{error}</span>
+frontend\src\pages\Settings.jsx:1:import React, { useEffect, useState } from "react";
+frontend\src\pages\Settings.jsx:12:  Alert,
+frontend\src\pages\Settings.jsx:29:  updateAlertThreshold,
+frontend\src\pages\Settings.jsx:48:    alert_thresholds,
+frontend\src\pages\Settings.jsx:52:  const [tab, setTab] = useState(0);
+frontend\src\pages\Settings.jsx:53:  const [companyForm, setCompanyForm] = useState({});
+frontend\src\pages\Settings.jsx:54:  const [mineForm, setMineForm] = useState({});
+frontend\src\pages\Settings.jsx:55:  const [shiftForms, setShiftForms] = useState([]);
+frontend\src\pages\Settings.jsx:56:  const [kpiForms, setKpiForms] = useState([]);
+frontend\src\pages\Settings.jsx:57:  const [alertForms, setAlertForms] = useState([]);
+frontend\src\pages\Settings.jsx:59:  const [selectedLogo, setSelectedLogo] = useState(null);
+frontend\src\pages\Settings.jsx:60:  const [logoPreview, setLogoPreview] = useState(null);
+frontend\src\pages\Settings.jsx:62:  const [saving, setSaving] = useState(false);
+frontend\src\pages\Settings.jsx:63:  const [success, setSuccess] = useState(false);
+frontend\src\pages\Settings.jsx:70:    if (alert_thresholds) setAlertForms(alert_thresholds);
+frontend\src\pages\Settings.jsx:71:  }, [company, mine, shift_patterns, kpi_targets, alert_thresholds]);
+frontend\src\pages\Settings.jsx:93:  const handleAlertChange = (index, field, value) => {
+frontend\src\pages\Settings.jsx:94:    const updated = [...alertForms];
+frontend\src\pages\Settings.jsx:96:    setAlertForms(updated);
+frontend\src\pages\Settings.jsx:178:      for (const alert of alertForms) {
+frontend\src\pages\Settings.jsx:179:        await updateAlertThreshold(alert.id, {
+frontend\src\pages\Settings.jsx:180:          alert_name: alert.alert_name,
+frontend\src\pages\Settings.jsx:181:          kpi_name: alert.kpi_name,
+frontend\src\pages\Settings.jsx:182:          warning_value: Number(alert.warning_value),
+frontend\src\pages\Settings.jsx:183:          critical_value: Number(alert.critical_value),
+frontend\src\pages\Settings.jsx:184:          unit: alert.unit,
+frontend\src\pages\Settings.jsx:185:          alert_level: alert.alert_level,
+frontend\src\pages\Settings.jsx:194:    } catch (error) {
+frontend\src\pages\Settings.jsx:195:      console.error(error);
+frontend\src\pages\Settings.jsx:196:      alert("Unable to save configuration.");
+frontend\src\pages\Settings.jsx:207:    if (alert_thresholds) setAlertForms(alert_thresholds);
+frontend\src\pages\Settings.jsx:221:        Configure branding, mine setup, KPI targets, shifts, and alert thresholds.
+frontend\src\pages\Settings.jsx:228:        <SummaryCard title="Alerts" value={`${alertForms.length || 0} configured`} subtitle="Warning and critical limits" status="Live" />
+frontend\src\pages\Settings.jsx:232:        <Alert severity="success" sx={{ mb: 3, borderRadius: 3 }}>
+frontend\src\pages\Settings.jsx:234:        </Alert>
+frontend\src\pages\Settings.jsx:257:          <Tab label="Alert Thresholds" />
+frontend\src\pages\Settings.jsx:522:        <ConfigurationCards title="Alert Threshold Management" description="Configure warning and critical limits used by the risk engine.">
+frontend\src\pages\Settings.jsx:523:          {alertForms.map((alert, index) => (
+frontend\src\pages\Settings.jsx:524:            <Grid item xs={12} md={6} key={alert.id}>
+frontend\src\pages\Settings.jsx:527:                  <Typography sx={{ fontSize: 18, fontWeight: 900 }}>{alert.alert_name || "Alert"}</Typography>
+frontend\src\pages\Settings.jsx:528:                  <Typography sx={{ fontSize: 13, color: "#64748b", mb: 2 }}>{alert.kpi_name || "KPI"}</Typography>
+frontend\src\pages\Settings.jsx:531:                    <TextField label="Alert Name" value={alert.alert_name || ""} onChange={(e) => handleAlertChange(index, "alert_name", e.target.value)} fullWidth />
+frontend\src\pages\Settings.jsx:532:                    <TextField label="KPI Name" value={alert.kpi_name || ""} onChange={(e) => handleAlertChange(index, "kpi_name", e.target.value)} fullWidth />
+frontend\src\pages\Settings.jsx:533:                    <TextField label="Warning Value" type="number" value={alert.warning_value || ""} onChange={(e) => handleAlertChange(index, "warning_value", e.target.value)} fullWidth />
+frontend\src\pages\Settings.jsx:534:                    <TextField label="Critical Value" type="number" value={alert.critical_value || ""} onChange={(e) => handleAlertChange(index, "critical_value", e.target.value)} fullWidth />
+frontend\src\pages\Settings.jsx:535:                    <TextField label="Unit" value={alert.unit || ""} onChange={(e) => handleAlertChange(index, "unit", e.target.value)} fullWidth />
+frontend\src\pages\Settings.jsx:536:                    <TextField label="Alert Level" value={alert.alert_level || ""} onChange={(e) => handleAlertChange(index, "alert_level", e.target.value)} fullWidth />
+frontend\src\pages\SystemHealth.jsx:6:  useState,
+frontend\src\pages\SystemHealth.jsx:10:  Alert,
+frontend\src\pages\SystemHealth.jsx:26:import ErrorIcon from "@mui/icons-material/Error";
+frontend\src\pages\SystemHealth.jsx:104:      icon: ErrorIcon,
+frontend\src\pages\SystemHealth.jsx:112:      icon: ErrorIcon,
+frontend\src\pages\SystemHealth.jsx:248:  } catch (error) {
+frontend\src\pages\SystemHealth.jsx:249:    console.warn(
+frontend\src\pages\SystemHealth.jsx:251:      error
+frontend\src\pages\SystemHealth.jsx:265:  } catch (error) {
+frontend\src\pages\SystemHealth.jsx:266:    console.warn(
+frontend\src\pages\SystemHealth.jsx:268:      error
+frontend\src\pages\SystemHealth.jsx:293:  } catch (error) {
+frontend\src\pages\SystemHealth.jsx:294:    console.warn(
+frontend\src\pages\SystemHealth.jsx:296:      error
+frontend\src\pages\SystemHealth.jsx:310:  } catch (error) {
+frontend\src\pages\SystemHealth.jsx:311:    console.warn(
+frontend\src\pages\SystemHealth.jsx:313:      error
+frontend\src\pages\SystemHealth.jsx:446:        } state`,
+frontend\src\pages\SystemHealth.jsx:1009:    useState(null);
+frontend\src\pages\SystemHealth.jsx:1012:    useState(true);
+frontend\src\pages\SystemHealth.jsx:1015:    useState(false);
+frontend\src\pages\SystemHealth.jsx:1018:    errorMessage,
+frontend\src\pages\SystemHealth.jsx:1019:    setErrorMessage,
+frontend\src\pages\SystemHealth.jsx:1020:  ] = useState("");
+frontend\src\pages\SystemHealth.jsx:1025:  ] = useState(
+frontend\src\pages\SystemHealth.jsx:1032:  ] = useState(
+frontend\src\pages\SystemHealth.jsx:1039:    useState(true);
+frontend\src\pages\SystemHealth.jsx:1042:    useState(AUTO_REFRESH_INTERVAL_SECONDS);
+frontend\src\pages\SystemHealth.jsx:1045:    useState(null);
+frontend\src\pages\SystemHealth.jsx:1054:        setErrorMessage("");
+frontend\src\pages\SystemHealth.jsx:1148:      } catch (error) {
+frontend\src\pages\SystemHealth.jsx:1149:        console.error(
+frontend\src\pages\SystemHealth.jsx:1151:          error
+frontend\src\pages\SystemHealth.jsx:1155:          error?.response?.data?.detail ||
+frontend\src\pages\SystemHealth.jsx:1156:          error?.response?.data?.message ||
+frontend\src\pages\SystemHealth.jsx:1157:          error?.userMessage ||
+frontend\src\pages\SystemHealth.jsx:1158:          error?.message ||
+frontend\src\pages\SystemHealth.jsx:1161:        setErrorMessage(message);
+frontend\src\pages\SystemHealth.jsx:1178:    } catch (error) {
+frontend\src\pages\SystemHealth.jsx:1179:      console.warn(
+frontend\src\pages\SystemHealth.jsx:1181:        error
+frontend\src\pages\SystemHealth.jsx:1704:        {errorMessage && (
+frontend\src\pages\SystemHealth.jsx:1705:          <Alert
+frontend\src\pages\SystemHealth.jsx:1706:            severity="error"
+frontend\src\pages\SystemHealth.jsx:1712:            {errorMessage}
+frontend\src\pages\SystemHealth.jsx:1713:          </Alert>
+frontend\src\pages\UploadReports.jsx:1:import React, { useMemo, useState } from "react";
+frontend\src\pages\UploadReports.jsx:84:  } catch (error) {
+frontend\src\pages\UploadReports.jsx:85:    console.warn("Unable to read stored user information.", error);
+frontend\src\pages\UploadReports.jsx:100:const extractUploadErrorMessage = (error) => {
+frontend\src\pages\UploadReports.jsx:101:  const detail = error?.response?.data?.detail;
+frontend\src\pages\UploadReports.jsx:114:        return item?.msg || item?.message || "Validation error";
+frontend\src\pages\UploadReports.jsx:123:  if (detail?.error) {
+frontend\src\pages\UploadReports.jsx:124:    return detail.error;
+frontend\src\pages\UploadReports.jsx:127:  if (error?.response?.status === 401) {
+frontend\src\pages\UploadReports.jsx:131:  if (error?.response?.status === 403) {
+frontend\src\pages\UploadReports.jsx:136:    error?.response?.data?.message ||
+frontend\src\pages\UploadReports.jsx:137:    error?.message ||
+frontend\src\pages\UploadReports.jsx:152:  const [reports, setReports] = useState(() => {
+frontend\src\pages\UploadReports.jsx:153:    const initialState = {};
+frontend\src\pages\UploadReports.jsx:156:      initialState[key] = {
+frontend\src\pages\UploadReports.jsx:166:    return initialState;
+frontend\src\pages\UploadReports.jsx:303:          status: "error",
+frontend\src\pages\UploadReports.jsx:317:          status: "error",
+frontend\src\pages\UploadReports.jsx:383:    } catch (error) {
+frontend\src\pages\UploadReports.jsx:384:      console.error(
+frontend\src\pages\UploadReports.jsx:386:        error,
+frontend\src\pages\UploadReports.jsx:390:        status: "error",
+frontend\src\pages\UploadReports.jsx:392:        message: extractUploadErrorMessage(error),
+frontend\src\pages\UploadReports.jsx:403:    const firstError = firstRejection?.errors?.[0];
+frontend\src\pages\UploadReports.jsx:406:      status: "error",
+frontend\src\pages\UploadReports.jsx:411:        firstError?.message ||
+frontend\src\pages\UploadReports.jsx:423:      alert(
+frontend\src\pages\UploadReports.jsx:426:    } catch (error) {
+frontend\src\pages\UploadReports.jsx:427:      console.error(
+frontend\src\pages\UploadReports.jsx:429:        error,
+frontend\src\pages\UploadReports.jsx:432:      alert("Failed to generate briefing.");
+frontend\src\pages\UploadReports.jsx:621:          {report.status === "error" && (
+frontend\src\pages\UserManagement.jsx:5:  useState,
+frontend\src\pages\UserManagement.jsx:9:  Alert,
+frontend\src\pages\UserManagement.jsx:97:      return "error";
+frontend\src\pages\UserManagement.jsx:138:  const validationErrors = {};
+frontend\src\pages\UserManagement.jsx:147:    validationErrors.full_name =
+frontend\src\pages\UserManagement.jsx:150:    validationErrors.full_name =
+frontend\src\pages\UserManagement.jsx:155:    validationErrors.email =
+frontend\src\pages\UserManagement.jsx:162:    validationErrors.email =
+frontend\src\pages\UserManagement.jsx:167:    validationErrors.role =
+frontend\src\pages\UserManagement.jsx:171:  return validationErrors;
+frontend\src\pages\UserManagement.jsx:176:  const validationErrors =
+frontend\src\pages\UserManagement.jsx:180:    validationErrors.password =
+frontend\src\pages\UserManagement.jsx:183:    validationErrors.password =
+frontend\src\pages\UserManagement.jsx:187:  return validationErrors;
+frontend\src\pages\UserManagement.jsx:192:  const validationErrors = {};
+frontend\src\pages\UserManagement.jsx:195:    validationErrors.new_password =
+frontend\src\pages\UserManagement.jsx:198:    validationErrors.new_password =
+frontend\src\pages\UserManagement.jsx:201:    validationErrors.new_password =
+frontend\src\pages\UserManagement.jsx:206:    validationErrors.confirm_password =
+frontend\src\pages\UserManagement.jsx:212:    validationErrors.confirm_password =
+frontend\src\pages\UserManagement.jsx:216:  return validationErrors;
+frontend\src\pages\UserManagement.jsx:221:  const [users, setUsers] = useState([]);
+frontend\src\pages\UserManagement.jsx:223:    useState(true);
+frontend\src\pages\UserManagement.jsx:225:    useState(false);
+frontend\src\pages\UserManagement.jsx:226:  const [error, setError] =
+frontend\src\pages\UserManagement.jsx:227:    useState("");
+frontend\src\pages\UserManagement.jsx:231:  ] = useState("");
+frontend\src\pages\UserManagement.jsx:240:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:243:    useState(INITIAL_CREATE_FORM);
+frontend\src\pages\UserManagement.jsx:245:  const [createErrors, setCreateErrors] =
+frontend\src\pages\UserManagement.jsx:246:    useState({});
+frontend\src\pages\UserManagement.jsx:249:    useState(false);
+frontend\src\pages\UserManagement.jsx:254:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:263:  ] = useState(null);
+frontend\src\pages\UserManagement.jsx:268:  ] = useState(null);
+frontend\src\pages\UserManagement.jsx:277:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:280:    useState(INITIAL_EDIT_FORM);
+frontend\src\pages\UserManagement.jsx:282:  const [editErrors, setEditErrors] =
+frontend\src\pages\UserManagement.jsx:283:    useState({});
+frontend\src\pages\UserManagement.jsx:286:    useState(false);
+frontend\src\pages\UserManagement.jsx:295:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:300:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:303:    statusError,
+frontend\src\pages\UserManagement.jsx:304:    setStatusError,
+frontend\src\pages\UserManagement.jsx:305:  ] = useState("");
+frontend\src\pages\UserManagement.jsx:314:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:319:  ] = useState(INITIAL_PASSWORD_FORM);
+frontend\src\pages\UserManagement.jsx:322:    passwordErrors,
+frontend\src\pages\UserManagement.jsx:323:    setPasswordErrors,
+frontend\src\pages\UserManagement.jsx:324:  ] = useState({});
+frontend\src\pages\UserManagement.jsx:329:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:334:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:339:  ] = useState(false);
+frontend\src\pages\UserManagement.jsx:368:      setError("");
+frontend\src\pages\UserManagement.jsx:378:      } catch (requestError) {
+frontend\src\pages\UserManagement.jsx:379:        setError(
+frontend\src\pages\UserManagement.jsx:380:          requestError?.message ||
+frontend\src\pages\UserManagement.jsx:405:    setCreateErrors({});
+frontend\src\pages\UserManagement.jsx:420:    setCreateErrors({});
+frontend\src\pages\UserManagement.jsx:438:    setCreateErrors(
+frontend\src\pages\UserManagement.jsx:439:      (currentErrors) => ({
+frontend\src\pages\UserManagement.jsx:440:        ...currentErrors,
+frontend\src\pages\UserManagement.jsx:449:    const validationErrors =
+frontend\src\pages\UserManagement.jsx:454:        validationErrors
+frontend\src\pages\UserManagement.jsx:457:      setCreateErrors(
+frontend\src\pages\UserManagement.jsx:458:        validationErrors
+frontend\src\pages\UserManagement.jsx:464:    setCreateErrors({});
+frontend\src\pages\UserManagement.jsx:492:      setCreateErrors({});
+frontend\src\pages\UserManagement.jsx:500:    } catch (requestError) {
+frontend\src\pages\UserManagement.jsx:501:      setCreateErrors({
+frontend\src\pages\UserManagement.jsx:503:          requestError?.message ||
+frontend\src\pages\UserManagement.jsx:551:    setEditErrors({});
+frontend\src\pages\UserManagement.jsx:566:    setEditErrors({});
+frontend\src\pages\UserManagement.jsx:584:    setEditErrors(
+frontend\src\pages\UserManagement.jsx:585:      (currentErrors) => ({
+frontend\src\pages\UserManagement.jsx:586:        ...currentErrors,
+frontend\src\pages\UserManagement.jsx:595:    const validationErrors =
+frontend\src\pages\UserManagement.jsx:600:        validationErrors
+frontend\src\pages\UserManagement.jsx:603:      setEditErrors(
+frontend\src\pages\UserManagement.jsx:604:        validationErrors
+frontend\src\pages\UserManagement.jsx:610:      setEditErrors({
+frontend\src\pages\UserManagement.jsx:618:    setEditErrors({});
+frontend\src\pages\UserManagement.jsx:646:      setEditErrors({});
+frontend\src\pages\UserManagement.jsx:654:    } catch (requestError) {
+frontend\src\pages\UserManagement.jsx:655:      setEditErrors({
+frontend\src\pages\UserManagement.jsx:657:          requestError?.message ||
+frontend\src\pages\UserManagement.jsx:675:    setStatusError("");
+frontend\src\pages\UserManagement.jsx:687:    setStatusError("");
+frontend\src\pages\UserManagement.jsx:695:        setStatusError(
+frontend\src\pages\UserManagement.jsx:705:      setStatusError("");
+frontend\src\pages\UserManagement.jsx:729:      } catch (requestError) {
+frontend\src\pages\UserManagement.jsx:730:        setStatusError(
+frontend\src\pages\UserManagement.jsx:731:          requestError?.message ||
+frontend\src\pages\UserManagement.jsx:752:    setPasswordErrors({});
+frontend\src\pages\UserManagement.jsx:769:    setPasswordErrors({});
+frontend\src\pages\UserManagement.jsx:789:    setPasswordErrors(
+frontend\src\pages\UserManagement.jsx:790:      (currentErrors) => ({
+frontend\src\pages\UserManagement.jsx:791:        ...currentErrors,
+frontend\src\pages\UserManagement.jsx:800:    const validationErrors =
+frontend\src\pages\UserManagement.jsx:807:        validationErrors
+frontend\src\pages\UserManagement.jsx:810:      setPasswordErrors(
+frontend\src\pages\UserManagement.jsx:811:        validationErrors
+frontend\src\pages\UserManagement.jsx:817:      setPasswordErrors({
+frontend\src\pages\UserManagement.jsx:825:    setPasswordErrors({});
+frontend\src\pages\UserManagement.jsx:840:      setPasswordErrors({});
+frontend\src\pages\UserManagement.jsx:848:    } catch (requestError) {
+frontend\src\pages\UserManagement.jsx:849:      setPasswordErrors({
+frontend\src\pages\UserManagement.jsx:851:          requestError?.message ||
+frontend\src\pages\UserManagement.jsx:967:      {error && (
+frontend\src\pages\UserManagement.jsx:968:        <Alert
+frontend\src\pages\UserManagement.jsx:969:          severity="error"
+frontend\src\pages\UserManagement.jsx:974:          {error}
+frontend\src\pages\UserManagement.jsx:975:        </Alert>
+frontend\src\pages\UserManagement.jsx:1350:                color="error"
+frontend\src\pages\UserManagement.jsx:1426:            {createErrors.form && (
+frontend\src\pages\UserManagement.jsx:1427:              <Alert severity="error">
+frontend\src\pages\UserManagement.jsx:1428:                {createErrors.form}
+frontend\src\pages\UserManagement.jsx:1429:              </Alert>
+frontend\src\pages\UserManagement.jsx:1441:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1442:                createErrors.full_name
+frontend\src\pages\UserManagement.jsx:1445:                createErrors.full_name
+frontend\src\pages\UserManagement.jsx:1462:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1463:                createErrors.email
+frontend\src\pages\UserManagement.jsx:1466:                createErrors.email
+frontend\src\pages\UserManagement.jsx:1488:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1489:                createErrors.password
+frontend\src\pages\UserManagement.jsx:1492:                createErrors.password ||
+frontend\src\pages\UserManagement.jsx:1535:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1536:                createErrors.role
+frontend\src\pages\UserManagement.jsx:1565:              {createErrors.role && (
+frontend\src\pages\UserManagement.jsx:1567:                  {createErrors.role}
+frontend\src\pages\UserManagement.jsx:1572:            <Alert severity="info">
+frontend\src\pages\UserManagement.jsx:1578:            </Alert>
+frontend\src\pages\UserManagement.jsx:1681:            {editErrors.form && (
+frontend\src\pages\UserManagement.jsx:1682:              <Alert severity="error">
+frontend\src\pages\UserManagement.jsx:1683:                {editErrors.form}
+frontend\src\pages\UserManagement.jsx:1684:              </Alert>
+frontend\src\pages\UserManagement.jsx:1696:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1697:                editErrors.full_name
+frontend\src\pages\UserManagement.jsx:1700:                editErrors.full_name
+frontend\src\pages\UserManagement.jsx:1717:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1718:                editErrors.email
+frontend\src\pages\UserManagement.jsx:1721:                editErrors.email
+frontend\src\pages\UserManagement.jsx:1732:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:1733:                editErrors.role
+frontend\src\pages\UserManagement.jsx:1762:              {editErrors.role && (
+frontend\src\pages\UserManagement.jsx:1764:                  {editErrors.role}
+frontend\src\pages\UserManagement.jsx:1769:            <Alert severity="info">
+frontend\src\pages\UserManagement.jsx:1775:            </Alert>
+frontend\src\pages\UserManagement.jsx:1856:                    ? "error.main"
+frontend\src\pages\UserManagement.jsx:1888:            {statusError && (
+frontend\src\pages\UserManagement.jsx:1889:              <Alert severity="error">
+frontend\src\pages\UserManagement.jsx:1890:                {statusError}
+frontend\src\pages\UserManagement.jsx:1891:              </Alert>
+frontend\src\pages\UserManagement.jsx:1902:              <Alert severity="warning">
+frontend\src\pages\UserManagement.jsx:1908:              </Alert>
+frontend\src\pages\UserManagement.jsx:1934:                ? "error"
+frontend\src\pages\UserManagement.jsx:2044:            {passwordErrors.form && (
+frontend\src\pages\UserManagement.jsx:2045:              <Alert severity="error">
+frontend\src\pages\UserManagement.jsx:2046:                {passwordErrors.form}
+frontend\src\pages\UserManagement.jsx:2047:              </Alert>
+frontend\src\pages\UserManagement.jsx:2050:            <Alert severity="info">
+frontend\src\pages\UserManagement.jsx:2060:            </Alert>
+frontend\src\pages\UserManagement.jsx:2076:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:2077:                passwordErrors.new_password
+frontend\src\pages\UserManagement.jsx:2080:                passwordErrors.new_password ||
+frontend\src\pages\UserManagement.jsx:2137:              error={Boolean(
+frontend\src\pages\UserManagement.jsx:2138:                passwordErrors.confirm_password
+frontend\src\pages\UserManagement.jsx:2141:                passwordErrors.confirm_password
+frontend\src\pages\UserManagement.jsx:2182:            <Alert severity="warning">
+frontend\src\pages\UserManagement.jsx:2189:            </Alert>
+frontend\src\pages\UserManagement.jsx:2252:        <Alert
+frontend\src\pages\UserManagement.jsx:2263:        </Alert>
+frontend\src\services\dashboardApi.js:107:  } catch (error) {
+frontend\src\services\dashboardApi.js:108:    console.error("Failed to load shared analytics:", error);
+frontend\src\services\dashboardApi.js:109:    throw error;
+frontend\src\services\dashboardApi.js:131:  } catch (error) {
+frontend\src\services\dashboardApi.js:132:    console.error("Failed to load KPI detail:", error);
+frontend\src\services\dashboardApi.js:133:    throw error;

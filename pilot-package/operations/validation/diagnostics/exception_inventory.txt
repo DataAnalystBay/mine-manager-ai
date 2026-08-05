@@ -1,0 +1,472 @@
+backend\app\auth\dependencies.py:6:from fastapi import Depends, HTTPException, status
+backend\app\auth\dependencies.py:8:from jose import JWTError, jwt
+backend\app\auth\dependencies.py:83:# AUTHENTICATION EXCEPTIONS
+backend\app\auth\dependencies.py:86:def get_credentials_exception() -> HTTPException:
+backend\app\auth\dependencies.py:91:    return HTTPException(
+backend\app\auth\dependencies.py:93:        detail=(
+backend\app\auth\dependencies.py:118:    credentials_exception = (
+backend\app\auth\dependencies.py:119:        get_credentials_exception()
+backend\app\auth\dependencies.py:134:            raise credentials_exception
+backend\app\auth\dependencies.py:137:            raise credentials_exception
+backend\app\auth\dependencies.py:140:            raise credentials_exception
+backend\app\auth\dependencies.py:145:        except (TypeError, ValueError) as exc:
+backend\app\auth\dependencies.py:146:            raise credentials_exception from exc
+backend\app\auth\dependencies.py:149:            raise credentials_exception
+backend\app\auth\dependencies.py:152:            raise credentials_exception
+backend\app\auth\dependencies.py:162:    except HTTPException:
+backend\app\auth\dependencies.py:163:        raise
+backend\app\auth\dependencies.py:165:    except JWTError as exc:
+backend\app\auth\dependencies.py:166:        raise credentials_exception from exc
+backend\app\auth\dependencies.py:201:        raise HTTPException(
+backend\app\auth\dependencies.py:203:            detail=(
+backend\app\auth\dependencies.py:212:        raise HTTPException(
+backend\app\auth\dependencies.py:214:            detail="User account is inactive",
+backend\app\auth\dependencies.py:218:        raise HTTPException(
+backend\app\auth\dependencies.py:220:            detail="User company was not found",
+backend\app\auth\dependencies.py:224:        raise HTTPException(
+backend\app\auth\dependencies.py:226:            detail="Company account is inactive",
+backend\app\auth\dependencies.py:234:        raise HTTPException(
+backend\app\auth\dependencies.py:236:            detail=(
+backend\app\auth\dependencies.py:274:        raise ValueError(
+backend\app\auth\dependencies.py:283:        raise ValueError(
+backend\app\auth\dependencies.py:309:            raise HTTPException(
+backend\app\auth\dependencies.py:313:                detail=(
+backend\app\auth\dependencies.py:342:        raise HTTPException(
+backend\app\auth\dependencies.py:344:            detail=(
+backend\app\auth\dependencies.py:370:        raise HTTPException(
+backend\app\auth\dependencies.py:372:            detail=(
+backend\app\auth\dependencies.py:401:        raise HTTPException(
+backend\app\auth\dependencies.py:403:            detail=(
+backend\app\auth\dependencies.py:435:        raise HTTPException(
+backend\app\auth\dependencies.py:437:            detail=(
+backend\app\auth\dependencies.py:469:        raise HTTPException(
+backend\app\auth\dependencies.py:471:            detail=(
+backend\app\auth\jwt_handler.py:12:    raise RuntimeError(
+backend\app\auth\jwt_handler.py:22:except ValueError as exc:
+backend\app\auth\jwt_handler.py:23:    raise RuntimeError(
+backend\app\auth\jwt_handler.py:30:        raise TypeError("Token data must be a dictionary.")
+backend\app\config.py:11:    HTTPException,
+backend\app\config.py:110:        raise HTTPException(
+backend\app\config.py:112:            detail="Company settings not found",
+backend\app\config.py:143:        raise HTTPException(
+backend\app\config.py:145:            detail="Company settings not found",
+backend\app\config.py:163:    except Exception as exc:
+backend\app\config.py:166:        raise HTTPException(
+backend\app\config.py:168:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:170:            detail=(
+backend\app\config.py:215:        raise HTTPException(
+backend\app\config.py:217:            detail=(
+backend\app\config.py:232:        raise HTTPException(
+backend\app\config.py:234:            detail=(
+backend\app\config.py:269:    except Exception as exc:
+backend\app\config.py:270:        raise HTTPException(
+backend\app\config.py:272:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:274:            detail="Unable to save the company logo.",
+backend\app\config.py:290:        except OSError:
+backend\app\config.py:293:        raise HTTPException(
+backend\app\config.py:295:            detail="Company settings not found",
+backend\app\config.py:304:    except Exception as exc:
+backend\app\config.py:309:        except OSError:
+backend\app\config.py:312:        raise HTTPException(
+backend\app\config.py:314:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:316:            detail=(
+backend\app\config.py:349:        raise HTTPException(
+backend\app\config.py:351:            detail="Mine settings not found",
+backend\app\config.py:382:        raise HTTPException(
+backend\app\config.py:384:            detail="Mine settings not found",
+backend\app\config.py:402:    except Exception as exc:
+backend\app\config.py:405:        raise HTTPException(
+backend\app\config.py:407:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:409:            detail="Unable to update mine settings.",
+backend\app\config.py:460:        raise HTTPException(
+backend\app\config.py:462:            detail="KPI target not found",
+backend\app\config.py:480:    except Exception as exc:
+backend\app\config.py:483:        raise HTTPException(
+backend\app\config.py:485:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:487:            detail="Unable to update the KPI target.",
+backend\app\config.py:540:        raise HTTPException(
+backend\app\config.py:542:            detail="Alert threshold not found",
+backend\app\config.py:560:    except Exception as exc:
+backend\app\config.py:563:        raise HTTPException(
+backend\app\config.py:565:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:567:            detail=(
+backend\app\config.py:622:        raise HTTPException(
+backend\app\config.py:624:            detail="Shift pattern not found",
+backend\app\config.py:642:    except Exception as exc:
+backend\app\config.py:645:        raise HTTPException(
+backend\app\config.py:647:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\config.py:649:            detail=(
+backend\app\models\report_history.py:81:    error_message = Column(
+backend\app\routers\analytics.py:1:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\analytics.py:46:            raise HTTPException(
+backend\app\routers\analytics.py:48:                detail="Production KPI data was not found.",
+backend\app\routers\analytics.py:167:    except HTTPException:
+backend\app\routers\analytics.py:168:        raise
+backend\app\routers\analytics.py:170:    except Exception as exc:
+backend\app\routers\analytics.py:171:        raise HTTPException(
+backend\app\routers\analytics.py:173:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\routers\analytics.py:175:            detail=(
+backend\app\routers\auth.py:1:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\auth.py:100:        raise HTTPException(
+backend\app\routers\auth.py:102:            detail=(
+backend\app\routers\auth.py:125:        raise HTTPException(
+backend\app\routers\auth.py:127:            detail=(
+backend\app\routers\auth.py:134:        raise HTTPException(
+backend\app\routers\auth.py:136:            detail=(
+backend\app\routers\auth.py:143:        raise HTTPException(
+backend\app\routers\auth.py:145:            detail=(
+backend\app\routers\auth.py:158:        raise HTTPException(
+backend\app\routers\auth.py:160:            detail="Email already registered",
+backend\app\routers\auth.py:190:    except HTTPException:
+backend\app\routers\auth.py:192:        raise
+backend\app\routers\auth.py:194:    except Exception as exc:
+backend\app\routers\auth.py:197:        raise HTTPException(
+backend\app\routers\auth.py:198:            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+backend\app\routers\auth.py:199:            detail=(
+backend\app\routers\auth.py:237:        raise HTTPException(
+backend\app\routers\auth.py:239:            detail="Invalid email or password",
+backend\app\routers\auth.py:249:        raise HTTPException(
+backend\app\routers\auth.py:251:            detail="Invalid email or password",
+backend\app\routers\auth.py:258:        raise HTTPException(
+backend\app\routers\auth.py:260:            detail="User account is inactive",
+backend\app\routers\auth.py:264:        raise HTTPException(
+backend\app\routers\auth.py:266:            detail="User company was not found",
+backend\app\routers\auth.py:270:        raise HTTPException(
+backend\app\routers\auth.py:272:            detail="Company account is inactive",
+backend\app\routers\config.py:1:from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+backend\app\routers\config.py:73:        raise HTTPException(status_code=404, detail="Company settings not found")
+backend\app\routers\config.py:86:        raise HTTPException(status_code=404, detail="Company settings not found")
+backend\app\routers\config.py:112:        raise HTTPException(
+backend\app\routers\config.py:114:            detail="Only PNG, JPG, JPEG, and WEBP logo files are allowed",
+backend\app\routers\config.py:132:        raise HTTPException(status_code=404, detail="Company settings not found")
+backend\app\routers\config.py:151:        raise HTTPException(status_code=404, detail="Mine settings not found")
+backend\app\routers\config.py:164:        raise HTTPException(status_code=404, detail="Mine settings not found")
+backend\app\routers\config.py:191:        raise HTTPException(status_code=404, detail="KPI target not found")
+backend\app\routers\config.py:218:        raise HTTPException(status_code=404, detail="Alert threshold not found")
+backend\app\routers\config.py:245:        raise HTTPException(status_code=404, detail="Shift pattern not found")
+backend\app\routers\dashboard.py:1:from fastapi import APIRouter, Depends, HTTPException, Query
+backend\app\routers\dashboard.py:771:    except ValueError as error:
+backend\app\routers\dashboard.py:772:        raise HTTPException(
+backend\app\routers\dashboard.py:774:            detail=str(error),
+backend\app\routers\dashboard.py:775:        ) from error
+backend\app\routers\dashboard.py:776:    except Exception as error:
+backend\app\routers\dashboard.py:777:        raise HTTPException(
+backend\app\routers\dashboard.py:778:            status_code=500,
+backend\app\routers\dashboard.py:779:            detail="Unable to generate KPI detail.",
+backend\app\routers\dashboard.py:780:        ) from errorbackend\app\routers\deployment_readiness.py:9:from fastapi import APIRouter, HTTPException, status
+backend\app\routers\deployment_readiness.py:48:    except Exception as exc:
+backend\app\routers\deployment_readiness.py:49:        raise HTTPException(
+backend\app\routers\deployment_readiness.py:50:            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+backend\app\routers\deployment_readiness.py:51:            detail={
+backend\app\routers\deployment_readiness.py:53:                "error_type": type(exc).__name__,
+backend\app\routers\deployment_readiness.py:54:                "error": str(exc),
+backend\app\routers\deployment_readiness.py:78:    except Exception as exc:
+backend\app\routers\deployment_readiness.py:79:        raise HTTPException(
+backend\app\routers\deployment_readiness.py:80:            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+backend\app\routers\deployment_readiness.py:81:            detail={
+backend\app\routers\deployment_readiness.py:83:                "error_type": type(exc).__name__,
+backend\app\routers\deployment_readiness.py:84:                "error": str(exc),
+backend\app\routers\deployment_readiness.py:106:    except Exception as exc:
+backend\app\routers\deployment_readiness.py:107:        raise HTTPException(
+backend\app\routers\deployment_readiness.py:108:            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+backend\app\routers\deployment_readiness.py:109:            detail={
+backend\app\routers\deployment_readiness.py:111:                "error_type": type(exc).__name__,
+backend\app\routers\deployment_readiness.py:112:                "error": str(exc),
+backend\app\routers\executive_actions.py:6:    HTTPException,
+backend\app\routers\executive_actions.py:11:from sqlalchemy.exc import IntegrityError
+backend\app\routers\executive_actions.py:105:        raise HTTPException(
+backend\app\routers\executive_actions.py:107:            detail=(
+backend\app\routers\executive_actions.py:119:    except IntegrityError as exc:
+backend\app\routers\executive_actions.py:122:        raise HTTPException(
+backend\app\routers\executive_actions.py:124:            detail=(
+backend\app\routers\executive_actions.py:172:            raise HTTPException(
+backend\app\routers\executive_actions.py:174:                detail=(
+backend\app\routers\executive_actions.py:188:            raise HTTPException(
+backend\app\routers\executive_actions.py:190:                detail=(
+backend\app\routers\executive_actions.py:281:        raise HTTPException(
+backend\app\routers\executive_actions.py:283:            detail="Executive action not found.",
+backend\app\routers\executive_actions.py:319:        raise HTTPException(
+backend\app\routers\executive_actions.py:321:            detail="Executive action not found.",
+backend\app\routers\executive_actions.py:374:        raise HTTPException(
+backend\app\routers\executive_actions.py:376:            detail="Executive action not found.",
+backend\app\routers\executive_actions.py:414:        raise HTTPException(
+backend\app\routers\executive_actions.py:416:            detail="Executive action not found.",
+backend\app\routers\executive_actions.py:458:        raise HTTPException(
+backend\app\routers\executive_actions.py:460:            detail="Executive action not found.",
+backend\app\routers\executive_actions.py:500:        raise HTTPException(
+backend\app\routers\executive_actions.py:502:            detail="Executive action not found.",
+backend\app\routers\executive_kpi_pdf.py:4:from fastapi import APIRouter, Depends, HTTPException, Query
+backend\app\routers\executive_kpi_pdf.py:99:    except (TypeError, ValueError):
+backend\app\routers\executive_kpi_pdf.py:348:    except ValueError as exc:
+backend\app\routers\executive_kpi_pdf.py:349:        raise HTTPException(
+backend\app\routers\executive_kpi_pdf.py:351:            detail=str(exc),
+backend\app\routers\executive_kpi_pdf.py:354:    except Exception as exc:
+backend\app\routers\executive_kpi_pdf.py:355:        raise HTTPException(
+backend\app\routers\executive_kpi_pdf.py:356:            status_code=500,
+backend\app\routers\executive_kpi_pdf.py:357:            detail=(
+backend\app\routers\executive_kpi_pdf.py:359:                f"Error: {exc}"
+backend\app\routers\executive_kpi_pdf.py:496:    except ValueError as exc:
+backend\app\routers\executive_kpi_pdf.py:497:        raise HTTPException(
+backend\app\routers\executive_kpi_pdf.py:499:            detail=str(exc),
+backend\app\routers\executive_kpi_pdf.py:502:    except Exception as exc:
+backend\app\routers\executive_kpi_pdf.py:503:        raise HTTPException(
+backend\app\routers\executive_kpi_pdf.py:504:            status_code=500,
+backend\app\routers\executive_kpi_pdf.py:505:            detail=(
+backend\app\routers\executive_kpi_pdf.py:507:                f"Error: {exc}"
+backend\app\routers\predictions.py:126:            except (TypeError, ValueError):
+backend\app\routers\production.py:1:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\production.py:122:    except Exception as exc:
+backend\app\routers\production.py:123:        raise HTTPException(
+backend\app\routers\production.py:125:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\routers\production.py:127:            detail=(
+backend\app\routers\production.py:199:    except Exception as exc:
+backend\app\routers\production.py:200:        raise HTTPException(
+backend\app\routers\production.py:202:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\routers\production.py:204:            detail=(
+backend\app\routers\reports.py:8:    HTTPException,
+backend\app\routers\reports.py:70:        raise ValueError(
+backend\app\routers\reports.py:78:        raise TypeError(
+backend\app\routers\reports.py:140:    except Exception as exc:
+backend\app\routers\reports.py:151:                error_message=str(exc),
+backend\app\routers\reports.py:154:        except Exception:
+backend\app\routers\reports.py:155:            # Preserve the original generation error
+backend\app\routers\reports.py:159:        raise HTTPException(
+backend\app\routers\reports.py:161:                status.HTTP_500_INTERNAL_SERVER_ERROR
+backend\app\routers\reports.py:163:            detail=(
+backend\app\routers\reports.py:487:        raise HTTPException(
+backend\app\routers\reports.py:489:            detail=(
+backend\app\routers\reports.py:499:        raise HTTPException(
+backend\app\routers\reports.py:501:            detail=(
+backend\app\routers\reports.py:542:        raise HTTPException(
+backend\app\routers\reports.py:544:            detail=(
+backend\app\routers\reports.py:555:        raise HTTPException(
+backend\app\routers\reports.py:557:            detail="Report history record not found.",
+backend\app\routers\reports.py:592:        raise HTTPException(
+backend\app\routers\reports.py:594:            detail=(
+backend\app\routers\reports.py:605:        raise HTTPException(
+backend\app\routers\reports.py:607:            detail="Report history record not found.",
+backend\app\routers\upload.py:9:    HTTPException,
+backend\app\routers\upload.py:72:    except Exception as exc:
+backend\app\routers\upload.py:73:        raise HTTPException(
+backend\app\routers\upload.py:74:            status_code=500,
+backend\app\routers\upload.py:75:            detail=(
+backend\app\routers\upload.py:128:    except Exception:
+backend\app\routers\upload.py:130:        raise
+backend\app\routers\upload.py:174:        raise HTTPException(
+backend\app\routers\upload.py:176:            detail=(
+backend\app\routers\upload.py:193:        errors="coerce",
+backend\app\routers\upload.py:206:        raise HTTPException(
+backend\app\routers\upload.py:208:            detail=(
+backend\app\routers\upload.py:230:            errors="coerce",
+backend\app\routers\upload.py:247:        raise HTTPException(
+backend\app\routers\upload.py:249:            detail=(
+backend\app\routers\upload.py:277:        raise HTTPException(
+backend\app\routers\upload.py:279:            detail=(
+backend\app\routers\upload.py:347:        raise HTTPException(
+backend\app\routers\upload.py:349:            detail=(
+backend\app\routers\upload.py:424:        raise HTTPException(
+backend\app\routers\upload.py:426:            detail=(
+backend\app\routers\upload.py:505:        raise HTTPException(
+backend\app\routers\upload.py:507:            detail=(
+backend\app\routers\upload.py:590:        raise HTTPException(
+backend\app\routers\upload.py:592:            detail=(
+backend\app\routers\upload.py:621:        raise HTTPException(
+backend\app\routers\upload.py:623:            detail=(
+backend\app\routers\upload.py:658:        raise HTTPException(
+backend\app\routers\upload.py:660:            detail="mine_name is required.",
+backend\app\routers\upload.py:666:    except Exception as exc:
+backend\app\routers\upload.py:667:        raise HTTPException(
+backend\app\routers\upload.py:669:            detail=(
+backend\app\routers\upload.py:767:    except HTTPException:
+backend\app\routers\upload.py:769:        raise
+backend\app\routers\upload.py:771:    except Exception as exc:
+backend\app\routers\upload.py:774:        raise HTTPException(
+backend\app\routers\upload.py:775:            status_code=500,
+backend\app\routers\upload.py:776:            detail=f"Production import failed: {exc}",
+backend\app\routers\upload.py:800:        raise HTTPException(
+backend\app\routers\upload.py:802:            detail="mine_name is required.",
+backend\app\routers\upload.py:808:    except Exception as exc:
+backend\app\routers\upload.py:809:        raise HTTPException(
+backend\app\routers\upload.py:811:            detail=(
+backend\app\routers\upload.py:895:    except HTTPException:
+backend\app\routers\upload.py:897:        raise
+backend\app\routers\upload.py:899:    except Exception as exc:
+backend\app\routers\upload.py:902:        raise HTTPException(
+backend\app\routers\upload.py:903:            status_code=500,
+backend\app\routers\upload.py:904:            detail=f"Fleet import failed: {exc}",
+backend\app\routers\upload.py:928:        raise HTTPException(
+backend\app\routers\upload.py:930:            detail="mine_name is required.",
+backend\app\routers\upload.py:936:    except Exception as exc:
+backend\app\routers\upload.py:937:        raise HTTPException(
+backend\app\routers\upload.py:939:            detail=(
+backend\app\routers\upload.py:1030:    except HTTPException:
+backend\app\routers\upload.py:1032:        raise
+backend\app\routers\upload.py:1034:    except Exception as exc:
+backend\app\routers\upload.py:1037:        raise HTTPException(
+backend\app\routers\upload.py:1038:            status_code=500,
+backend\app\routers\upload.py:1039:            detail=f"Plant import failed: {exc}",
+backend\app\routers\upload.py:1063:        raise HTTPException(
+backend\app\routers\upload.py:1065:            detail="mine_name is required.",
+backend\app\routers\upload.py:1071:    except Exception as exc:
+backend\app\routers\upload.py:1072:        raise HTTPException(
+backend\app\routers\upload.py:1074:            detail=(
+backend\app\routers\upload.py:1172:    except HTTPException:
+backend\app\routers\upload.py:1174:        raise
+backend\app\routers\upload.py:1176:    except Exception as exc:
+backend\app\routers\upload.py:1179:        raise HTTPException(
+backend\app\routers\upload.py:1180:            status_code=500,
+backend\app\routers\upload.py:1181:            detail=f"Safety import failed: {exc}",
+backend\app\routers\upload.py:1249:    except Exception:
+backend\app\routers\upload.py:1255:        raise
+backend\app\routers\upload.py:1306:    except Exception:
+backend\app\routers\upload.py:1312:        raise
+backend\app\routers\upload.py:1363:    except Exception:
+backend\app\routers\upload.py:1369:        raise
+backend\app\routers\upload.py:1420:    except Exception:
+backend\app\routers\upload.py:1426:        raise
+backend\app\routers\users.py:4:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\users.py:117:        raise HTTPException(
+backend\app\routers\users.py:119:            detail=(
+backend\app\routers\users.py:143:        raise HTTPException(
+backend\app\routers\users.py:145:            detail="User not found",
+backend\app\routers\users.py:205:        raise HTTPException(
+backend\app\routers\users.py:207:            detail="Email already registered",
+backend\app\routers\users.py:224:    except Exception:
+backend\app\routers\users.py:226:        raise
+backend\app\routers\users.py:288:        raise HTTPException(
+backend\app\routers\users.py:290:            detail="Email already registered",
+backend\app\routers\users.py:301:    except Exception:
+backend\app\routers\users.py:303:        raise
+backend\app\routers\users.py:374:        raise HTTPException(
+backend\app\routers\users.py:376:            detail="You cannot deactivate your own account",
+backend\app\routers\users.py:397:    except Exception:
+backend\app\routers\users.py:399:        raise
+backend\app\routers\users.py:464:    except Exception:
+backend\app\routers\users.py:466:        raise
+backend\app\schemas\executive_action.py:95:            raise ValueError(
+backend\app\schemas\executive_action.py:117:            raise ValueError(
+backend\app\schemas\executive_action.py:140:            raise ValueError(
+backend\app\schemas\executive_action.py:210:            raise ValueError(
+backend\app\schemas\executive_action.py:235:            raise ValueError(
+backend\app\schemas\executive_action.py:261:            raise ValueError(
+backend\app\schemas\executive_action.py:291:            raise ValueError(
+backend\app\services\analytics_engine_service.py:208:        except (TypeError, ValueError):
+backend\app\services\analytics_engine_service.py:324:        raise ValueError("mine_name is required")
+backend\app\services\analytics_engine_service.py:327:        raise ValueError("days must be greater than or equal to 1")
+backend\app\services\audit_log_service.py:95:    except Exception:
+backend\app\services\audit_log_service.py:97:        raise
+backend\app\services\chart_service.py:20:        raise ValueError("Chart labels cannot be empty.")
+backend\app\services\chart_service.py:23:        raise ValueError("Chart values cannot be empty.")
+backend\app\services\chart_service.py:26:        raise ValueError(
+backend\app\services\demo_data_service.py:44:    except (TypeError, ValueError):
+backend\app\services\deployment_readiness_service.py:37:from sqlalchemy.exc import SQLAlchemyError
+backend\app\services\deployment_readiness_service.py:473:    except SQLAlchemyError as exc:
+backend\app\services\deployment_readiness_service.py:474:        logger.exception("Deployment readiness database check failed.")
+backend\app\services\deployment_readiness_service.py:483:                "error_type": type(exc).__name__,
+backend\app\services\deployment_readiness_service.py:484:                "error": str(exc),
+backend\app\services\deployment_readiness_service.py:492:    except Exception as exc:
+backend\app\services\deployment_readiness_service.py:493:        logger.exception("Unexpected deployment readiness database error.")
+backend\app\services\deployment_readiness_service.py:500:            message="An unexpected database connectivity error occurred.",
+backend\app\services\deployment_readiness_service.py:502:                "error_type": type(exc).__name__,
+backend\app\services\deployment_readiness_service.py:503:                "error": str(exc),
+backend\app\services\deployment_readiness_service.py:599:    except SQLAlchemyError as exc:
+backend\app\services\deployment_readiness_service.py:600:        logger.exception("Unable to inspect database schema.")
+backend\app\services\deployment_readiness_service.py:610:                    "error_type": type(exc).__name__,
+backend\app\services\deployment_readiness_service.py:611:                    "error": str(exc),
+backend\app\services\deployment_readiness_service.py:619:    except Exception as exc:
+backend\app\services\deployment_readiness_service.py:620:        logger.exception("Unexpected schema inspection error.")
+backend\app\services\deployment_readiness_service.py:628:                message="An unexpected schema inspection error occurred.",
+backend\app\services\deployment_readiness_service.py:630:                    "error_type": type(exc).__name__,
+backend\app\services\deployment_readiness_service.py:631:                    "error": str(exc),
+backend\app\services\deployment_readiness_service.py:765:        except metadata.PackageNotFoundError:
+backend\app\services\deployment_readiness_service.py:1068:        "ERROR",
+backend\app\services\deployment_readiness_service.py:1084:                "Use CRITICAL, ERROR, WARNING, INFO, or DEBUG."
+backend\app\services\excel_service.py:127:    except (TypeError, ValueError):
+backend\app\services\excel_service.py:445:    except Exception:
+backend\app\services\executive_pdf\executive_action_pdf_data.py:24:        raise TypeError("kpi_key must be a string.")
+backend\app\services\executive_pdf\executive_action_pdf_data.py:33:        raise ValueError("kpi_key cannot be empty.")
+backend\app\services\executive_pdf\executive_action_pdf_data.py:182:        raise TypeError("limit must be an integer.")
+backend\app\services\executive_pdf\executive_action_pdf_data.py:185:        raise ValueError("limit must be at least 1.")
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:150:    except (TypeError, ValueError):
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:208:        except (TypeError, ValueError):
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:239:        except (TypeError, ValueError):
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:328:    except (
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:329:        ValueError,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:330:        KeyError,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:331:        TypeError,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:621:        raise ValueError(
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:640:        raise ValueError(
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:828:        detail=detail,
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:846:        detail=detail,
+backend\app\services\executive_pdf\executive_pdf_charts.py:60:        raise ValueError(
+backend\app\services\executive_pdf\executive_pdf_charts.py:76:        except (TypeError, ValueError):
+backend\app\services\executive_pdf\executive_pdf_charts.py:83:        raise ValueError(
+backend\app\services\executive_pdf\executive_pdf_charts.py:130:        except (TypeError, ValueError):
+backend\app\services\executive_pdf\executive_pdf_sections.py:60:    """Convert a value to float without raising an exception."""
+backend\app\services\executive_pdf\executive_pdf_sections.py:67:    except (TypeError, ValueError):
+backend\app\services\executive_pdf\executive_pdf_sections.py:78:    except (KeyError, TypeError):
+backend\app\services\executive_pdf\executive_pdf_service.py:249:    except Exception:
+backend\app\services\executive_pdf\executive_pdf_service.py:610:        raise TypeError("kpi_data must be a dictionary.")
+backend\app\services\executive_pdf\executive_pdf_service.py:620:        raise TypeError("historical_data must be a list.")
+backend\app\services\executive_pdf\executive_pdf_service.py:623:        raise TypeError("benchmark_data must be a dictionary.")
+backend\app\services\executive_pdf\executive_pdf_service.py:626:        raise TypeError("ai_insight_data must be a dictionary.")
+backend\app\services\executive_pdf\executive_pdf_service.py:629:        raise TypeError("root_cause_data must be a list.")
+backend\app\services\executive_pdf\executive_pdf_service.py:632:        raise TypeError(
+backend\app\services\executive_pdf\executive_pdf_service.py:637:        raise TypeError(
+backend\app\services\executive_pdf\sections\benchmark_section.py:28:    except (TypeError, ValueError):
+backend\app\services\executive_pdf\sections\benchmark_section.py:475:    # ReportLab to raise: "Style '0' not found in stylesheet".
+backend\app\services\executive_pdf\sections\decision_banner_section.py:94:    except (KeyError, TypeError):
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:78:    Convert a value to float without raising an exception.
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:83:    except (TypeError, ValueError):
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:101:    except (KeyError, TypeError):
+backend\app\services\executive_recommendation\recommendation_engine.py:17:    except (TypeError, ValueError):
+backend\app\services\executive_recommendation\recommendation_rules.py:22:    except (TypeError, ValueError):
+backend\app\services\executive_summary_service_v2.py:40:    Convert a value to float without raising an exception.
+backend\app\services\executive_summary_service_v2.py:48:    except (TypeError, ValueError):
+backend\app\services\executive_summary_service_v2.py:57:    Convert a value to int without raising an exception.
+backend\app\services\executive_summary_service_v2.py:62:    except (TypeError, ValueError):
+backend\app\services\executive_summary_service_v2.py:1179:                "raises the risk of continued equipment "
+backend\app\services\executive_summary_service_v2.py:1531:        except Exception as exc:
+backend\app\services\executive_summary_service_v2.py:1542:                "status": "error",
+backend\app\services\executive_summary_service_v2.py:1547:                "error": str(exc),
+backend\app\services\executive_summary_service_v2.py:1726:    except Exception as exc:
+backend\app\services\executive_summary_service_v2.py:1729:            "status": "error",
+backend\app\services\executive_summary_service_v2.py:1733:            "error": str(exc),
+backend\app\services\kpi_detail_service.py:119:        raise ValueError(f"Unsupported KPI: {kpi_name}")
+backend\app\services\pdf_template_service.py:773:        raise ValueError(
+backend\app\services\pdf_template_service.py:778:        raise TypeError(
+backend\app\services\powerpoint_service.py:67:    except Exception:
+backend\app\services\powerpoint_service.py:176:    except (TypeError, ValueError):
+backend\app\services\powerpoint_service.py:393:    except Exception:
+backend\app\services\powerpoint_service.py:1472:                "No material threshold exception detected",
+backend\app\services\powerpoint_service.py:1792:            "Review exceptions against plan daily and escalate only the "
+backend\app\services\predictive\prediction_engine.py:18:        except (TypeError, ValueError):
+backend\app\services\report_branding_service.py:111:    except ValueError:
+backend\app\services\report_history_service.py:52:    error_message: Optional[str] = None,
+backend\app\services\report_history_service.py:68:        error_message=error_message,
+backend\app\services\report_history_service.py:78:    except Exception:
+backend\app\services\report_history_service.py:80:        raise
+backend\app\services\report_history_service.py:110:        error_message=None,
+backend\app\services\report_history_service.py:121:    error_message: str,
+backend\app\services\report_history_service.py:141:        error_message=error_message,
+backend\app\services\report_history_service.py:222:    except Exception:
+backend\app\services\report_history_service.py:224:        raise
+backend\app\services\report_history_service.py:248:        "error_message": history_record.error_message,
+backend\app\services\system_health_service.py:14:from sqlalchemy.exc import SQLAlchemyError
+backend\app\services\system_health_service.py:216:    Unexpected exceptions are converted into an unhealthy
+backend\app\services\system_health_service.py:226:    except Exception as exc:
+backend\app\services\system_health_service.py:240:            "error": str(exc),
+backend\app\services\system_health_service.py:378:    except SQLAlchemyError as exc:
+backend\app\services\system_health_service.py:397:            "error": str(exc),
+backend\app\services\system_health_service.py:400:    except Exception as exc:
+backend\app\services\system_health_service.py:406:                "Unexpected demo data check error"
+backend\app\services\system_health_service.py:419:            "error": str(exc),
+backend\app\services\system_health_service.py:500:    except SQLAlchemyError as exc:
+backend\app\services\system_health_service.py:521:                "error": str(exc),
+backend\app\services\system_health_service.py:541:                "error": (
+backend\app\services\system_health_service.py:547:    except Exception as exc:
+backend\app\services\system_health_service.py:558:                    "Unexpected database error"
+backend\app\services\system_health_service.py:570:                "error": str(exc),
+backend\app\services\system_health_service.py:590:                "error": str(exc),
+backend\app\services\system_health_service.py:770:    except Exception as exc:
+backend\app\services\system_health_service.py:779:            "error": str(exc),

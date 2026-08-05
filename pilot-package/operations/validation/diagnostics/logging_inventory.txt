@@ -1,0 +1,522 @@
+backend\app\auth\dependencies.py:1:from __future__ import annotations
+backend\app\auth\dependencies.py:3:from collections.abc import Callable
+backend\app\auth\dependencies.py:4:from typing import Final
+backend\app\auth\dependencies.py:6:from fastapi import Depends, HTTPException, status
+backend\app\auth\dependencies.py:7:from fastapi.security import OAuth2PasswordBearer
+backend\app\auth\dependencies.py:8:from jose import JWTError, jwt
+backend\app\auth\dependencies.py:9:from sqlalchemy.orm import Session
+backend\app\auth\dependencies.py:11:from app.auth.jwt_handler import ALGORITHM, SECRET_KEY
+backend\app\auth\dependencies.py:12:from app.database import SessionLocal
+backend\app\auth\dependencies.py:13:from app.models import User
+backend\app\auth\jwt_handler.py:1:import os
+backend\app\auth\jwt_handler.py:2:from datetime import datetime, timedelta, timezone
+backend\app\auth\jwt_handler.py:4:from dotenv import load_dotenv
+backend\app\auth\jwt_handler.py:5:from jose import jwt
+backend\app\auth\security.py:1:from passlib.context import CryptContext
+backend\app\config.py:1:from datetime import time
+backend\app\config.py:2:import os
+backend\app\config.py:3:from pathlib import Path
+backend\app\config.py:4:from typing import Optional
+backend\app\config.py:5:import uuid
+backend\app\config.py:7:from fastapi import (
+backend\app\config.py:15:from pydantic import BaseModel
+backend\app\config.py:16:from sqlalchemy.orm import Session
+backend\app\config.py:18:from app.auth.dependencies import (
+backend\app\config.py:22:from app.database import get_db
+backend\app\config.py:23:from app.models.alert_threshold import AlertThreshold
+backend\app\config.py:24:from app.models.company import CompanySettings
+backend\app\config.py:25:from app.models.kpi_target import KpiTarget
+backend\app\config.py:26:from app.models.mine import MineSettings
+backend\app\config.py:27:from app.models.shift_pattern import ShiftPattern
+backend\app\database.py:1:from sqlalchemy import create_engine
+backend\app\database.py:2:from sqlalchemy.orm import sessionmaker, declarative_base
+backend\app\database.py:3:from dotenv import load_dotenv
+backend\app\database.py:4:import os
+backend\app\main.py:1:from __future__ import annotations
+backend\app\main.py:3:import os
+backend\app\main.py:5:from fastapi import FastAPI
+backend\app\main.py:6:from fastapi.middleware.cors import CORSMiddleware
+backend\app\main.py:7:from fastapi.staticfiles import StaticFiles
+backend\app\main.py:9:from app import models
+backend\app\main.py:10:from app.database import engine
+backend\app\main.py:11:from app.routers import reports
+backend\app\main.py:12:from app.routers import (
+backend\app\main_before_10_18_2.py:1:from __future__ import annotations
+backend\app\main_before_10_18_2.py:3:import os
+backend\app\main_before_10_18_2.py:5:from fastapi import FastAPI
+backend\app\main_before_10_18_2.py:6:from fastapi.middleware.cors import CORSMiddleware
+backend\app\main_before_10_18_2.py:7:from fastapi.staticfiles import StaticFiles
+backend\app\main_before_10_18_2.py:9:from app import models
+backend\app\main_before_10_18_2.py:10:from app.database import engine
+backend\app\main_before_10_18_2.py:11:from app.routers import reports
+backend\app\main_before_10_18_2.py:12:from app.routers import (
+backend\app\models\alert_threshold.py:1:from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
+backend\app\models\alert_threshold.py:2:from sqlalchemy.sql import func
+backend\app\models\alert_threshold.py:3:from app.database import Base
+backend\app\models\audit_log.py:1:from sqlalchemy import (
+backend\app\models\audit_log.py:9:from sqlalchemy.sql import func
+backend\app\models\audit_log.py:11:from app.database import Base
+backend\app\models\auth_company.py:1:from sqlalchemy import (
+backend\app\models\auth_company.py:8:from sqlalchemy.orm import relationship
+backend\app\models\auth_company.py:9:from sqlalchemy.sql import func
+backend\app\models\auth_company.py:11:from app.database import Base
+backend\app\models\company.py:1:from sqlalchemy import Column, Integer, String, Text, DateTime
+backend\app\models\company.py:2:from sqlalchemy.sql import func
+backend\app\models\company.py:3:from app.database import Base
+backend\app\models\executive_action.py:1:from sqlalchemy import (
+backend\app\models\executive_action.py:9:from sqlalchemy.sql import func
+backend\app\models\executive_action.py:11:from app.database import Base
+backend\app\models\kpi_target.py:1:from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
+backend\app\models\kpi_target.py:2:from sqlalchemy.sql import func
+backend\app\models\kpi_target.py:3:from app.database import Base
+backend\app\models\mine.py:1:from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+backend\app\models\mine.py:2:from sqlalchemy.sql import func
+backend\app\models\mine.py:3:from app.database import Base
+backend\app\models\report_history.py:1:from sqlalchemy import (
+backend\app\models\report_history.py:9:from sqlalchemy.sql import func
+backend\app\models\report_history.py:11:from app.database import Base
+backend\app\models\shift_pattern.py:1:from sqlalchemy import Column, Integer, String, Time, Boolean, DateTime, ForeignKey
+backend\app\models\shift_pattern.py:2:from sqlalchemy.sql import func
+backend\app\models\shift_pattern.py:3:from app.database import Base
+backend\app\models\user.py:1:from sqlalchemy import (
+backend\app\models\user.py:9:from sqlalchemy.orm import relationship
+backend\app\models\user.py:10:from sqlalchemy.sql import func
+backend\app\models\user.py:12:from app.database import Base
+backend\app\models\__init__.py:1:from app.models.user import User
+backend\app\models\__init__.py:2:from app.models.auth_company import Company
+backend\app\models\__init__.py:4:from app.models.company import CompanySettings
+backend\app\models\__init__.py:5:from app.models.mine import MineSettings
+backend\app\models\__init__.py:6:from app.models.kpi_target import KpiTarget
+backend\app\models\__init__.py:7:from app.models.alert_threshold import AlertThreshold
+backend\app\models\__init__.py:8:from app.models.shift_pattern import ShiftPattern
+backend\app\models\__init__.py:9:from app.models.executive_action import ExecutiveAction
+backend\app\models\__init__.py:10:from app.models.report_history import ReportHistory
+backend\app\models\__init__.py:11:from app.models.audit_log import AuditLog
+backend\app\models.py:1:from sqlalchemy import (
+backend\app\models.py:12:from sqlalchemy.sql import func
+backend\app\models.py:13:from sqlalchemy.orm import relationship
+backend\app\models.py:15:from app.database import Base
+backend\app\routers\ai.py:1:from fastapi import APIRouter, Depends
+backend\app\routers\ai.py:3:from app.auth.dependencies import get_current_user
+backend\app\routers\ai.py:4:from app.services.ai.briefing_engine import get_daily_briefing
+backend\app\routers\ai.py:5:from app.services.ai.health_engine import get_mine_health_score
+backend\app\routers\ai.py:6:from app.services.ai.kpi_engine import get_kpi_intelligence
+backend\app\routers\ai.py:7:from app.services.ai.recommendation_engine import get_recommendations
+backend\app\routers\ai.py:8:from app.services.ai.risk_engine import get_operational_risks
+backend\app\routers\analytics.py:1:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\analytics.py:2:from sqlalchemy import text
+backend\app\routers\analytics.py:4:from app.auth.dependencies import get_current_user
+backend\app\routers\analytics.py:5:from app.database import SessionLocal
+backend\app\routers\audit_logs.py:1:from datetime import datetime, timezone
+backend\app\routers\audit_logs.py:2:from typing import List, Optional
+backend\app\routers\audit_logs.py:4:from fastapi import APIRouter, Depends, Query
+backend\app\routers\audit_logs.py:5:from fastapi.responses import StreamingResponse
+backend\app\routers\audit_logs.py:6:from pydantic import BaseModel
+backend\app\routers\audit_logs.py:7:from sqlalchemy import func, or_
+backend\app\routers\audit_logs.py:8:from sqlalchemy.orm import Session
+backend\app\routers\audit_logs.py:10:from app.auth.dependencies import (
+backend\app\routers\audit_logs.py:14:from app.models import User
+backend\app\routers\audit_logs.py:15:from app.models.audit_log import AuditLog
+backend\app\routers\audit_logs.py:16:from app.services.audit_excel_service import (
+backend\app\routers\auth.py:1:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\auth.py:2:from fastapi.security import OAuth2PasswordRequestForm
+backend\app\routers\auth.py:3:from pydantic import BaseModel, EmailStr, Field
+backend\app\routers\auth.py:4:from sqlalchemy.orm import Session
+backend\app\routers\auth.py:6:from app.auth.dependencies import get_current_user
+backend\app\routers\auth.py:7:from app.auth.jwt_handler import create_access_token
+backend\app\routers\auth.py:8:from app.auth.security import hash_password, verify_password
+backend\app\routers\auth.py:9:from app.database import SessionLocal
+backend\app\routers\auth.py:10:from app.models import Company, User
+backend\app\routers\briefing.py:1:from fastapi import APIRouter, Depends
+backend\app\routers\briefing.py:3:from app.auth.dependencies import get_current_user
+backend\app\routers\briefing.py:4:from app.services.ai_service import generate_briefing
+backend\app\routers\config.py:1:from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+backend\app\routers\config.py:2:from sqlalchemy.orm import Session
+backend\app\routers\config.py:3:from pydantic import BaseModel
+backend\app\routers\config.py:4:from typing import Optional
+backend\app\routers\config.py:5:from datetime import time
+backend\app\routers\config.py:6:import os
+backend\app\routers\config.py:7:import uuid
+backend\app\routers\config.py:9:from app.database import get_db
+backend\app\routers\config.py:10:from app.models.company import CompanySettings
+backend\app\routers\config.py:11:from app.models.mine import MineSettings
+backend\app\routers\config.py:12:from app.models.kpi_target import KpiTarget
+backend\app\routers\config.py:13:from app.models.alert_threshold import AlertThreshold
+backend\app\routers\config.py:14:from app.models.shift_pattern import ShiftPattern
+backend\app\routers\dashboard.py:1:from fastapi import APIRouter, Depends, HTTPException, Query
+backend\app\routers\dashboard.py:2:from sqlalchemy import text
+backend\app\routers\dashboard.py:3:from sqlalchemy.orm import Session
+backend\app\routers\dashboard.py:5:from app.auth.dependencies import get_current_user
+backend\app\routers\dashboard.py:6:from app.database import SessionLocal
+backend\app\routers\dashboard.py:8:from app.services.analytics_engine_service import get_shared_analytics
+backend\app\routers\dashboard.py:11:from app.schemas.kpi_detail import KpiDetailResponse
+backend\app\routers\dashboard.py:12:from app.services.kpi_detail_service import get_kpi_detail
+backend\app\routers\dashboard.py:14:from app.services.kpi_calculation_service import (
+backend\app\routers\dashboard.py:21:from app.services.trend_engine_service import (
+backend\app\routers\demo.py:1:from typing import Optional
+backend\app\routers\demo.py:3:from fastapi import APIRouter, Depends
+backend\app\routers\demo.py:4:from pydantic import BaseModel, Field
+backend\app\routers\demo.py:6:from app.auth.dependencies import (
+backend\app\routers\demo.py:11:from app.services.demo_data_service import (
+backend\app\routers\demo_before_10_18_8_2.py:1:from typing import Optional
+backend\app\routers\demo_before_10_18_8_2.py:3:from fastapi import APIRouter
+backend\app\routers\demo_before_10_18_8_2.py:4:from pydantic import BaseModel, Field
+backend\app\routers\demo_before_10_18_8_2.py:6:from app.services.demo_data_service import (
+backend\app\routers\deployment_readiness.py:9:from fastapi import APIRouter, HTTPException, status
+backend\app\routers\deployment_readiness.py:11:from app.services.deployment_readiness_service import (
+backend\app\routers\executive_actions.py:1:from typing import Optional
+backend\app\routers\executive_actions.py:3:from fastapi import (
+backend\app\routers\executive_actions.py:11:from sqlalchemy.exc import IntegrityError
+backend\app\routers\executive_actions.py:12:from sqlalchemy.orm import Session
+backend\app\routers\executive_actions.py:14:from app.auth.dependencies import (
+backend\app\routers\executive_actions.py:19:from app.database import get_db
+backend\app\routers\executive_actions.py:21:from app.schemas.executive_action import (
+backend\app\routers\executive_actions.py:29:from app.schemas.kpi_context import (
+backend\app\routers\executive_actions.py:33:from app.services.executive_action_service import (
+backend\app\routers\executive_actions.py:44:from app.services.kpi_context_service import (
+backend\app\routers\executive_insights.py:1:from typing import Optional
+backend\app\routers\executive_insights.py:3:from fastapi import APIRouter, Depends, Query
+backend\app\routers\executive_insights.py:4:from sqlalchemy.orm import Session
+backend\app\routers\executive_insights.py:6:from app.auth.dependencies import (
+backend\app\routers\executive_insights.py:10:from app.database import get_db
+backend\app\routers\executive_insights.py:11:from app.services.executive_summary_service_v2 import (
+backend\app\routers\executive_insights_before_10_18_8_4.py:1:from fastapi import APIRouter, Depends, Query
+backend\app\routers\executive_insights_before_10_18_8_4.py:2:from sqlalchemy.orm import Session
+backend\app\routers\executive_insights_before_10_18_8_4.py:4:from app.database import get_db
+backend\app\routers\executive_insights_before_10_18_8_4.py:5:from app.services.executive_summary_service_v2 import (
+backend\app\routers\executive_kpi_pdf.py:1:from datetime import datetime
+backend\app\routers\executive_kpi_pdf.py:2:from typing import Any, Dict, List
+backend\app\routers\executive_kpi_pdf.py:4:from fastapi import APIRouter, Depends, HTTPException, Query
+backend\app\routers\executive_kpi_pdf.py:5:from fastapi.responses import StreamingResponse
+backend\app\routers\executive_kpi_pdf.py:6:from sqlalchemy.orm import Session
+backend\app\routers\executive_kpi_pdf.py:8:from app.auth.dependencies import (
+backend\app\routers\executive_kpi_pdf.py:12:from app.database import get_db
+backend\app\routers\executive_kpi_pdf.py:13:from app.services.executive_pdf.executive_action_pdf_data import (
+backend\app\routers\executive_kpi_pdf.py:16:from app.services.executive_pdf.executive_kpi_pdf_data import (
+backend\app\routers\executive_kpi_pdf.py:19:from app.services.executive_pdf.executive_pdf_branding import (
+backend\app\routers\executive_kpi_pdf.py:22:from app.services.executive_pdf.executive_pdf_service import (
+backend\app\routers\executive_recommendations.py:1:from typing import Any, Dict, Optional
+backend\app\routers\executive_recommendations.py:3:from fastapi import APIRouter, Depends
+backend\app\routers\executive_recommendations.py:4:from pydantic import BaseModel, Field
+backend\app\routers\executive_recommendations.py:6:from app.auth.dependencies import (
+backend\app\routers\executive_recommendations.py:10:from app.services.executive_recommendation.recommendation_engine import (
+backend\app\routers\predictions.py:1:from typing import Any, Dict, List
+backend\app\routers\predictions.py:3:from fastapi import APIRouter, Depends, Query
+backend\app\routers\predictions.py:4:from sqlalchemy.orm import Session
+backend\app\routers\predictions.py:6:from app.auth.dependencies import get_current_user
+backend\app\routers\predictions.py:7:from app.database import SessionLocal
+backend\app\routers\predictions.py:8:from app.services.predictive.prediction_engine import calculate_prediction
+backend\app\routers\predictions.py:9:from app.services.trend_engine_service import get_health_history_service
+backend\app\routers\production.py:1:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\production.py:2:from sqlalchemy import text
+backend\app\routers\production.py:3:from sqlalchemy.orm import Session
+backend\app\routers\production.py:5:from app.auth.dependencies import get_current_user
+backend\app\routers\production.py:6:from app.database import SessionLocal
+backend\app\routers\reports.py:1:from datetime import datetime
+backend\app\routers\reports.py:2:from io import BytesIO
+backend\app\routers\reports.py:3:from typing import Callable, Optional
+backend\app\routers\reports.py:5:from fastapi import (
+backend\app\routers\reports.py:12:from fastapi.responses import StreamingResponse
+backend\app\routers\reports.py:13:from sqlalchemy.orm import Session
+backend\app\routers\reports.py:15:from app.auth.dependencies import (
+backend\app\routers\reports.py:20:from app.database import get_db
+backend\app\routers\reports.py:21:from app.models import User
+backend\app\routers\reports.py:22:from app.services.excel_service import (
+backend\app\routers\reports.py:25:from app.services.pdf_service import (
+backend\app\routers\reports.py:30:from app.services.powerpoint_service import (
+backend\app\routers\reports.py:33:from app.services.report_branding_service import (
+backend\app\routers\reports.py:36:from app.services.report_history_service import (
+backend\app\routers\system_health.py:1:from fastapi import (
+backend\app\routers\system_health.py:6:from fastapi.responses import JSONResponse
+backend\app\routers\system_health.py:8:from app.auth.dependencies import (
+backend\app\routers\system_health.py:12:from app.services.system_health_service import (
+backend\app\routers\upload.py:1:from pathlib import Path
+backend\app\routers\upload.py:3:import pandas as pd
+backend\app\routers\upload.py:4:from fastapi import (
+backend\app\routers\upload.py:12:from sqlalchemy import text
+backend\app\routers\upload.py:14:from app.auth.dependencies import (
+backend\app\routers\upload.py:18:from app.database import SessionLocal
+backend\app\routers\upload.py:642:# PRODUCTION DATABASE IMPORT
+backend\app\routers\upload.py:645:def import_production_excel(
+backend\app\routers\upload.py:650:    Import Production Excel data into PostgreSQL.
+backend\app\routers\upload.py:776:            detail=f"Production import failed: {exc}",
+backend\app\routers\upload.py:784:# FLEET DATABASE IMPORT
+backend\app\routers\upload.py:787:def import_fleet_excel(
+backend\app\routers\upload.py:792:    Import Fleet Excel data into PostgreSQL.
+backend\app\routers\upload.py:904:            detail=f"Fleet import failed: {exc}",
+backend\app\routers\upload.py:912:# PLANT DATABASE IMPORT
+backend\app\routers\upload.py:915:def import_plant_excel(
+backend\app\routers\upload.py:920:    Import Plant Excel data into PostgreSQL.
+backend\app\routers\upload.py:1039:            detail=f"Plant import failed: {exc}",
+backend\app\routers\upload.py:1047:# SAFETY DATABASE IMPORT
+backend\app\routers\upload.py:1050:def import_safety_excel(
+backend\app\routers\upload.py:1055:    Import Safety Excel data into PostgreSQL.
+backend\app\routers\upload.py:1181:            detail=f"Safety import failed: {exc}",
+backend\app\routers\upload.py:1238:        import_result = import_production_excel(
+backend\app\routers\upload.py:1264:        **import_result,
+backend\app\routers\upload.py:1295:        import_result = import_fleet_excel(
+backend\app\routers\upload.py:1321:        **import_result,
+backend\app\routers\upload.py:1352:        import_result = import_plant_excel(
+backend\app\routers\upload.py:1378:        **import_result,
+backend\app\routers\upload.py:1409:        import_result = import_safety_excel(
+backend\app\routers\upload.py:1435:        **import_result,
+backend\app\routers\users.py:1:from datetime import datetime
+backend\app\routers\users.py:2:from typing import List, Optional
+backend\app\routers\users.py:4:from fastapi import APIRouter, Depends, HTTPException, status
+backend\app\routers\users.py:5:from pydantic import BaseModel, EmailStr, Field
+backend\app\routers\users.py:6:from sqlalchemy.orm import Session
+backend\app\routers\users.py:8:from app.auth.dependencies import (
+backend\app\routers\users.py:12:from app.auth.security import hash_password
+backend\app\routers\users.py:13:from app.models import User
+backend\app\routers\users.py:14:from app.services.audit_log_service import log_audit
+backend\app\schemas\executive_action.py:1:from datetime import date, datetime
+backend\app\schemas\executive_action.py:2:from typing import Optional
+backend\app\schemas\executive_action.py:4:from pydantic import (
+backend\app\schemas\kpi_context.py:1:from datetime import date, datetime
+backend\app\schemas\kpi_context.py:2:from typing import List, Optional
+backend\app\schemas\kpi_context.py:4:from pydantic import BaseModel, Field
+backend\app\schemas\kpi_detail.py:1:from typing import List, Optional
+backend\app\schemas\kpi_detail.py:3:from pydantic import BaseModel
+backend\app\schemas\__init__.py:1:from app.schemas.executive_action import (
+backend\app\services\ai\briefing_engine.py:1:from app.services.ai.kpi_engine import get_kpi_intelligence
+backend\app\services\ai\briefing_engine.py:2:from app.services.ai.risk_engine import get_operational_risks
+backend\app\services\ai\briefing_engine.py:3:from app.services.ai.recommendation_engine import get_recommendations
+backend\app\services\ai\health_engine.py:1:from app.services.ai.kpi_engine import get_kpi_intelligence
+backend\app\services\ai\health_engine.py:2:from app.services.ai.risk_engine import get_operational_risks
+backend\app\services\ai\kpi_engine.py:1:from app.database import SessionLocal
+backend\app\services\ai\kpi_engine.py:2:from sqlalchemy import text
+backend\app\services\ai\recommendation_engine.py:1:from app.services.ai.risk_engine import get_operational_risks
+backend\app\services\ai\risk_engine.py:1:from app.services.ai.kpi_engine import get_kpi_intelligence
+backend\app\services\analytics_engine_service.py:13:from datetime import date, datetime, timezone
+backend\app\services\analytics_engine_service.py:14:from typing import Any, Dict, Optional
+backend\app\services\analytics_engine_service.py:16:from sqlalchemy.orm import Session
+backend\app\services\analytics_engine_service.py:18:from app.services.trend_engine_service import (
+backend\app\services\audit_excel_service.py:1:from datetime import datetime, timezone
+backend\app\services\audit_excel_service.py:2:from io import BytesIO
+backend\app\services\audit_excel_service.py:3:from typing import Iterable, Mapping, Optional
+backend\app\services\audit_excel_service.py:5:from openpyxl import Workbook
+backend\app\services\audit_excel_service.py:6:from openpyxl.styles import (
+backend\app\services\audit_excel_service.py:13:from openpyxl.utils import get_column_letter
+backend\app\services\audit_excel_service.py:14:from openpyxl.worksheet.table import Table, TableStyleInfo
+backend\app\services\audit_log_service.py:1:from typing import Optional
+backend\app\services\audit_log_service.py:3:from sqlalchemy.orm import Session
+backend\app\services\audit_log_service.py:5:from app.models.audit_log import AuditLog
+backend\app\services\audit_log_service.py:6:from app.models.user import User
+backend\app\services\chart_service.py:1:from io import BytesIO
+backend\app\services\chart_service.py:2:from typing import Optional, Sequence
+backend\app\services\chart_service.py:4:import matplotlib
+backend\app\services\chart_service.py:8:import matplotlib.pyplot as plt
+backend\app\services\demo_data_service.py:1:from datetime import date, timedelta
+backend\app\services\demo_data_service.py:2:import random
+backend\app\services\demo_data_service.py:3:from typing import Any, Dict, List
+backend\app\services\demo_data_service_before_10_18_8_2.py:1:from datetime import date, timedelta
+backend\app\services\demo_data_service_before_10_18_8_2.py:2:import random
+backend\app\services\deployment_readiness_service.py:16:8. Logging configuration
+backend\app\services\deployment_readiness_service.py:24:from __future__ import annotations
+backend\app\services\deployment_readiness_service.py:26:import logging
+backend\app\services\deployment_readiness_service.py:27:import os
+backend\app\services\deployment_readiness_service.py:28:import platform
+backend\app\services\deployment_readiness_service.py:29:import sys
+backend\app\services\deployment_readiness_service.py:30:from datetime import datetime, timezone
+backend\app\services\deployment_readiness_service.py:31:from importlib import metadata
+backend\app\services\deployment_readiness_service.py:32:from pathlib import Path
+backend\app\services\deployment_readiness_service.py:33:from typing import Any, Dict, List, Optional
+backend\app\services\deployment_readiness_service.py:35:from sqlalchemy import inspect, text
+backend\app\services\deployment_readiness_service.py:36:from sqlalchemy.engine import Engine
+backend\app\services\deployment_readiness_service.py:37:from sqlalchemy.exc import SQLAlchemyError
+backend\app\services\deployment_readiness_service.py:39:from app.database import engine
+backend\app\services\deployment_readiness_service.py:42:logger = logging.getLogger(__name__)
+backend\app\services\deployment_readiness_service.py:474:        logger.exception("Deployment readiness database check failed.")
+backend\app\services\deployment_readiness_service.py:493:        logger.exception("Unexpected deployment readiness database error.")
+backend\app\services\deployment_readiness_service.py:600:        logger.exception("Unable to inspect database schema.")
+backend\app\services\deployment_readiness_service.py:620:        logger.exception("Unexpected schema inspection error.")
+backend\app\services\deployment_readiness_service.py:754:    # Distribution names can differ from import names.
+backend\app\services\deployment_readiness_service.py:1048:def check_logging_configuration() -> Dict[str, Any]:
+backend\app\services\deployment_readiness_service.py:1049:    """Check basic application logging configuration."""
+backend\app\services\deployment_readiness_service.py:1050:    log_level = os.getenv("LOG_LEVEL")
+backend\app\services\deployment_readiness_service.py:1052:    if not log_level:
+backend\app\services\deployment_readiness_service.py:1054:            key="logging_configuration",
+backend\app\services\deployment_readiness_service.py:1055:            name="Logging configuration",
+backend\app\services\deployment_readiness_service.py:1058:            message="LOG_LEVEL is not explicitly configured.",
+backend\app\services\deployment_readiness_service.py:1059:            details={"log_level": None},
+backend\app\services\deployment_readiness_service.py:1061:                "Set LOG_LEVEL=INFO for pilot or production deployments."
+backend\app\services\deployment_readiness_service.py:1065:    normalised_level = log_level.strip().upper()
+backend\app\services\deployment_readiness_service.py:1077:            key="logging_configuration",
+backend\app\services\deployment_readiness_service.py:1078:            name="Logging configuration",
+backend\app\services\deployment_readiness_service.py:1081:            message="LOG_LEVEL contains an unrecognised value.",
+backend\app\services\deployment_readiness_service.py:1082:            details={"log_level": normalised_level},
+backend\app\services\deployment_readiness_service.py:1093:            key="logging_configuration",
+backend\app\services\deployment_readiness_service.py:1094:            name="Logging configuration",
+backend\app\services\deployment_readiness_service.py:1097:            message="Production logging is configured at DEBUG level.",
+backend\app\services\deployment_readiness_service.py:1098:            details={"log_level": normalised_level},
+backend\app\services\deployment_readiness_service.py:1100:                "Use LOG_LEVEL=INFO or LOG_LEVEL=WARNING in production."
+backend\app\services\deployment_readiness_service.py:1105:        key="logging_configuration",
+backend\app\services\deployment_readiness_service.py:1106:        name="Logging configuration",
+backend\app\services\deployment_readiness_service.py:1109:        message=f"Logging level is configured as {normalised_level}.",
+backend\app\services\deployment_readiness_service.py:1110:        details={"log_level": normalised_level},
+backend\app\services\deployment_readiness_service.py:1351:    checks.append(check_logging_configuration())
+backend\app\services\excel_service.py:1:from __future__ import annotations
+backend\app\services\excel_service.py:3:from datetime import date, datetime
+backend\app\services\excel_service.py:4:from io import BytesIO
+backend\app\services\excel_service.py:5:from pathlib import Path
+backend\app\services\excel_service.py:6:from typing import Any, Dict, Iterable, List, Optional
+backend\app\services\excel_service.py:8:from openpyxl import Workbook
+backend\app\services\excel_service.py:9:from openpyxl.formatting.rule import CellIsRule
+backend\app\services\excel_service.py:10:from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+backend\app\services\excel_service.py:11:from openpyxl.utils import get_column_letter
+backend\app\services\excel_service.py:12:from sqlalchemy import text
+backend\app\services\excel_service.py:14:from app.database import engine
+backend\app\services\excel_service.py:15:from app.services.report_branding_service import (
+backend\app\services\excel_service.py:439:        from openpyxl.drawing.image import Image as ExcelImage
+backend\app\services\executive_action_service.py:1:from datetime import date, datetime, timezone
+backend\app\services\executive_action_service.py:2:from typing import Optional
+backend\app\services\executive_action_service.py:4:from sqlalchemy import case, func
+backend\app\services\executive_action_service.py:5:from sqlalchemy.orm import Session
+backend\app\services\executive_action_service.py:7:from app.models.executive_action import ExecutiveAction
+backend\app\services\executive_action_service.py:8:from app.schemas.executive_action import (
+backend\app\services\executive_pdf\executive_action_pdf_data.py:1:from typing import Any, Dict, List
+backend\app\services\executive_pdf\executive_action_pdf_data.py:3:from sqlalchemy.orm import Session
+backend\app\services\executive_pdf\executive_action_pdf_data.py:5:from app.services.executive_action_service import (
+backend\app\services\executive_pdf\executive_benchmark_service.py:1:from typing import Dict, List
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:1:from __future__ import annotations
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:3:from datetime import date, datetime
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:4:from typing import Any, Dict, List
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:6:from sqlalchemy.orm import Session
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:8:from app.services.analytics_engine_service import get_shared_analytics
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:9:from app.services.kpi_detail_service import get_kpi_detail
+backend\app\services\executive_pdf\executive_kpi_pdf_data.py:11:from app.services.executive_pdf.executive_benchmark_service import (
+backend\app\services\executive_pdf\executive_pdf_branding.py:1:from typing import Any, Dict, Optional
+backend\app\services\executive_pdf\executive_pdf_branding.py:3:from sqlalchemy import text
+backend\app\services\executive_pdf\executive_pdf_branding.py:4:from sqlalchemy.orm import Session
+backend\app\services\executive_pdf\executive_pdf_charts.py:1:from io import BytesIO
+backend\app\services\executive_pdf\executive_pdf_charts.py:2:from typing import Any, Dict, List, Optional
+backend\app\services\executive_pdf\executive_pdf_charts.py:4:import matplotlib
+backend\app\services\executive_pdf\executive_pdf_charts.py:8:import matplotlib.pyplot as plt
+backend\app\services\executive_pdf\executive_pdf_charts.py:9:from matplotlib.ticker import FuncFormatter
+backend\app\services\executive_pdf\executive_pdf_sections.py:1:from html import escape
+backend\app\services\executive_pdf\executive_pdf_sections.py:2:from pathlib import Path
+backend\app\services\executive_pdf\executive_pdf_sections.py:3:from typing import Any, Dict, List, Optional, Sequence, Tuple
+backend\app\services\executive_pdf\executive_pdf_sections.py:5:from reportlab.graphics.charts.lineplots import LinePlot
+backend\app\services\executive_pdf\executive_pdf_sections.py:6:from reportlab.graphics.shapes import Drawing, String
+backend\app\services\executive_pdf\executive_pdf_sections.py:7:from reportlab.lib import colors
+backend\app\services\executive_pdf\executive_pdf_sections.py:8:from reportlab.lib.colors import HexColor
+backend\app\services\executive_pdf\executive_pdf_sections.py:9:from reportlab.lib.enums import TA_CENTER, TA_LEFT
+backend\app\services\executive_pdf\executive_pdf_sections.py:10:from reportlab.lib.styles import ParagraphStyle
+backend\app\services\executive_pdf\executive_pdf_sections.py:11:from reportlab.lib.units import mm
+backend\app\services\executive_pdf\executive_pdf_sections.py:12:from reportlab.platypus import (
+backend\app\services\executive_pdf\executive_pdf_sections.py:21:from app.services.executive_pdf.executive_pdf_styles import (
+backend\app\services\executive_pdf\executive_pdf_service.py:1:from datetime import datetime
+backend\app\services\executive_pdf\executive_pdf_service.py:2:from io import BytesIO
+backend\app\services\executive_pdf\executive_pdf_service.py:3:from pathlib import Path
+backend\app\services\executive_pdf\executive_pdf_service.py:4:from typing import Any, Dict, List, Optional
+backend\app\services\executive_pdf\executive_pdf_service.py:6:from reportlab.lib import colors
+backend\app\services\executive_pdf\executive_pdf_service.py:7:from reportlab.lib.pagesizes import A4
+backend\app\services\executive_pdf\executive_pdf_service.py:8:from reportlab.lib.units import mm
+backend\app\services\executive_pdf\executive_pdf_service.py:9:from reportlab.lib.utils import ImageReader
+backend\app\services\executive_pdf\executive_pdf_service.py:10:from reportlab.platypus import (
+backend\app\services\executive_pdf\executive_pdf_service.py:19:from app.services.executive_pdf.executive_pdf_sections import (
+backend\app\services\executive_pdf\executive_pdf_service.py:26:from app.services.executive_pdf.executive_pdf_styles import (
+backend\app\services\executive_pdf\executive_pdf_service.py:31:from app.services.executive_recommendation.recommendation_engine import (
+backend\app\services\executive_pdf\executive_pdf_service.py:34:from app.services.executive_pdf.sections.benchmark_section import (
+backend\app\services\executive_pdf\executive_pdf_service.py:37:from app.services.executive_pdf.sections.decision_banner_section import (
+backend\app\services\executive_pdf\executive_pdf_service.py:41:from app.services.executive_pdf.sections.executive_recommendation_section import (
+backend\app\services\executive_pdf\executive_pdf_styles.py:1:from reportlab.lib.colors import HexColor
+backend\app\services\executive_pdf\executive_pdf_styles.py:2:from reportlab.lib.enums import TA_CENTER, TA_LEFT
+backend\app\services\executive_pdf\executive_pdf_styles.py:3:from reportlab.lib.styles import ParagraphStyle, StyleSheet1
+backend\app\services\executive_pdf\executive_pdf_styles.py:4:from reportlab.lib.units import mm
+backend\app\services\executive_pdf\sections\benchmark_section.py:1:from __future__ import annotations
+backend\app\services\executive_pdf\sections\benchmark_section.py:3:from typing import Any, Dict, List
+backend\app\services\executive_pdf\sections\benchmark_section.py:5:from reportlab.lib import colors
+backend\app\services\executive_pdf\sections\benchmark_section.py:6:from reportlab.lib.enums import TA_CENTER, TA_LEFT
+backend\app\services\executive_pdf\sections\benchmark_section.py:7:from reportlab.lib.styles import ParagraphStyle
+backend\app\services\executive_pdf\sections\benchmark_section.py:8:from reportlab.lib.units import mm
+backend\app\services\executive_pdf\sections\benchmark_section.py:9:from reportlab.platypus import (
+backend\app\services\executive_pdf\sections\decision_banner_section.py:1:from html import escape
+backend\app\services\executive_pdf\sections\decision_banner_section.py:2:from typing import Any, Dict, List
+backend\app\services\executive_pdf\sections\decision_banner_section.py:4:from reportlab.lib import colors
+backend\app\services\executive_pdf\sections\decision_banner_section.py:5:from reportlab.lib.colors import HexColor
+backend\app\services\executive_pdf\sections\decision_banner_section.py:6:from reportlab.lib.enums import TA_CENTER, TA_LEFT
+backend\app\services\executive_pdf\sections\decision_banner_section.py:7:from reportlab.lib.styles import ParagraphStyle
+backend\app\services\executive_pdf\sections\decision_banner_section.py:8:from reportlab.lib.units import mm
+backend\app\services\executive_pdf\sections\decision_banner_section.py:9:from reportlab.platypus import (
+backend\app\services\executive_pdf\sections\decision_banner_section.py:17:from app.services.executive_pdf.executive_pdf_styles import (
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:1:from typing import Any, Dict, List
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:3:from reportlab.lib import colors
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:4:from reportlab.lib.colors import HexColor
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:5:from reportlab.lib.enums import TA_CENTER, TA_LEFT
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:6:from reportlab.lib.styles import ParagraphStyle
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:7:from reportlab.lib.units import mm
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:8:from reportlab.platypus import (
+backend\app\services\executive_pdf\sections\executive_recommendation_section.py:16:from app.services.executive_pdf.executive_pdf_styles import (
+backend\app\services\executive_recommendation\recommendation_engine.py:1:from typing import Any, Dict, List, Optional
+backend\app\services\executive_recommendation\recommendation_engine.py:3:from app.services.executive_recommendation.recommendation_rules import (
+backend\app\services\executive_recommendation\recommendation_rules.py:1:from typing import Any, Dict, List, Optional
+backend\app\services\executive_summary_service_v2.py:1:from datetime import datetime, timezone
+backend\app\services\executive_summary_service_v2.py:2:from typing import Any, Dict, List, Optional
+backend\app\services\executive_summary_service_v2.py:4:from sqlalchemy.orm import Session
+backend\app\services\executive_summary_service_v2.py:6:from app.services.ai.kpi_engine import get_kpi_intelligence
+backend\app\services\executive_summary_service_v2.py:7:from app.services.demo_data_service import generate_all_demo_data
+backend\app\services\executive_summary_service_v2.py:8:from app.services.trend_engine_service import (
+backend\app\services\kpi_context_service.py:1:from datetime import datetime, timezone
+backend\app\services\kpi_context_service.py:2:from typing import Any, Dict, Optional
+backend\app\services\kpi_context_service.py:4:from sqlalchemy.orm import Session
+backend\app\services\kpi_context_service.py:6:from app.models.executive_action import ExecutiveAction
+backend\app\services\kpi_detail_service.py:1:from datetime import date, timedelta
+backend\app\services\kpi_detail_service.py:2:from typing import Dict, List
+backend\app\services\pdf_service.py:1:from datetime import datetime
+backend\app\services\pdf_service.py:3:from reportlab.lib.units import mm
+backend\app\services\pdf_service.py:5:from app.services.chart_service import (
+backend\app\services\pdf_service.py:11:from app.services.pdf_template_service import (
+backend\app\services\pdf_template_service.py:1:from datetime import datetime
+backend\app\services\pdf_template_service.py:2:from io import BytesIO
+backend\app\services\pdf_template_service.py:3:from typing import List, Optional, Sequence
+backend\app\services\pdf_template_service.py:5:from reportlab.lib import colors
+backend\app\services\pdf_template_service.py:6:from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+backend\app\services\pdf_template_service.py:7:from reportlab.lib.pagesizes import A4
+backend\app\services\pdf_template_service.py:8:from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+backend\app\services\pdf_template_service.py:9:from reportlab.lib.units import mm
+backend\app\services\pdf_template_service.py:10:from reportlab.pdfgen.canvas import Canvas
+backend\app\services\pdf_template_service.py:11:from reportlab.platypus import (
+backend\app\services\powerpoint_service.py:1:from __future__ import annotations
+backend\app\services\powerpoint_service.py:3:from datetime import date, datetime
+backend\app\services\powerpoint_service.py:4:from io import BytesIO
+backend\app\services\powerpoint_service.py:5:from pathlib import Path
+backend\app\services\powerpoint_service.py:6:from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+backend\app\services\powerpoint_service.py:8:from pptx import Presentation
+backend\app\services\powerpoint_service.py:9:from pptx.chart.data import CategoryChartData
+backend\app\services\powerpoint_service.py:10:from pptx.dml.color import RGBColor
+backend\app\services\powerpoint_service.py:11:from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
+backend\app\services\powerpoint_service.py:12:from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
+backend\app\services\powerpoint_service.py:13:from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
+backend\app\services\powerpoint_service.py:14:from pptx.util import Inches, Pt
+backend\app\services\powerpoint_service.py:15:from sqlalchemy import text
+backend\app\services\powerpoint_service.py:17:from app.database import engine
+backend\app\services\powerpoint_service.py:18:from app.services.report_branding_service import (
+backend\app\services\predictive\prediction_engine.py:1:from statistics import mean
+backend\app\services\predictive\prediction_engine.py:2:from typing import Any, Dict, List
+backend\app\services\report_branding_service.py:1:from dataclasses import dataclass
+backend\app\services\report_branding_service.py:2:from pathlib import Path
+backend\app\services\report_branding_service.py:3:from typing import Optional
+backend\app\services\report_branding_service.py:5:from sqlalchemy.orm import sessionmaker
+backend\app\services\report_branding_service.py:7:from app.database import engine
+backend\app\services\report_branding_service.py:8:from app.models.company import CompanySettings
+backend\app\services\report_branding_service.py:9:from app.models.mine import MineSettings
+backend\app\services\report_history_service.py:1:from typing import List, Optional
+backend\app\services\report_history_service.py:3:from sqlalchemy.orm import Session
+backend\app\services\report_history_service.py:5:from app.models.report_history import ReportHistory
+backend\app\services\system_health_service.py:1:from __future__ import annotations
+backend\app\services\system_health_service.py:3:import copy
+backend\app\services\system_health_service.py:4:import os
+backend\app\services\system_health_service.py:5:import shutil
+backend\app\services\system_health_service.py:6:import threading
+backend\app\services\system_health_service.py:7:import time
+backend\app\services\system_health_service.py:8:from datetime import datetime, timezone
+backend\app\services\system_health_service.py:9:from pathlib import Path
+backend\app\services\system_health_service.py:10:from typing import Any, Callable
+backend\app\services\system_health_service.py:12:from sqlalchemy import text
+backend\app\services\system_health_service.py:13:from sqlalchemy.engine import Connection
+backend\app\services\system_health_service.py:14:from sqlalchemy.exc import SQLAlchemyError
+backend\app\services\system_health_service.py:16:from app.database import engine
+backend\app\services\trend_engine_service.py:1:from sqlalchemy.orm import Session
+backend\app\services\trend_engine_service.py:2:from sqlalchemy import text
+backend\app\services\trend_engine_service.py:4:from app.services.kpi_calculation_service import (

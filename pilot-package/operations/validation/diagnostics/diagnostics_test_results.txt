@@ -1,0 +1,81 @@
+Mine Manager AI Support Diagnostics Test
+=========================================
+
+Test date: 2026-08-05T15:05:45+08:00
+
+Backend Service
+---------------
+Support diagnostics service compilation: PASSED
+Support diagnostics router compilation: PASSED
+FastAPI startup: PASSED
+Swagger endpoint registration: PASSED
+
+Frontend
+--------
+Support Diagnostics page build: PASSED
+Sidebar navigation: PASSED
+Page rendering: PASSED
+Administrator access: PASSED
+Diagnostics download control: PASSED
+
+Runtime Diagnostics
+-------------------
+Application information: PASSED
+Database diagnostics: HEALTHY
+Disk diagnostics: HEALTHY
+Runtime directory diagnostics: PASSED WITH WARNINGS
+System Health integration: AVAILABLE
+Deployment Readiness integration: AVAILABLE
+Application log status: NOT CONFIGURED
+Dependency inventory: PASSED
+
+Diagnostics Collection Script
+-----------------------------
+Script execution: PASSED
+Output folder creation: PASSED
+System information collection: PASSED
+Python environment collection: PASSED
+Node environment collection: PASSED
+Git information collection: PASSED
+Support diagnostics JSON collection: PASSED
+Alembic status collection: PASSED
+Log inventory collection: PASSED
+Runtime directory inventory: PASSED WITH OPTIONAL FILE-NOT-FOUND WARNINGS
+Sensitive-name scan: PASSED
+Completion result file: PASSED
+
+Generated Output
+----------------
+Directory:
+C:\Projects\mine-manager-ai\support-diagnostics\diagnostics_20260805_150532
+
+Files created:
+- system_information.txt
+- python_environment.txt
+- node_environment.txt
+- git_information.txt
+- support_diagnostics.json
+- alembic_status.txt
+- log_inventory.txt
+- runtime_directories.txt
+- sensitive_name_scan.txt
+- collection_result.txt
+
+Security Review
+---------------
+Passwords exposed: NO
+JWT secrets exposed: NO
+Access tokens exposed: NO
+Database passwords exposed: NO
+API keys exposed: NO
+Generated diagnostics directory committed to Git: NO
+
+Overall Result
+--------------
+PASSED WITH NON-BLOCKING WARNINGS
+
+Notes
+-----
+The application log status is currently Not Configured because centralized file logging is not enabled.
+Optional runtime directory and log inventory commands may return File Not Found when folders or log files do not yet exist.
+These warnings do not block the pilot package.
