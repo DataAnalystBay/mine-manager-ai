@@ -1,0 +1,7 @@
+C:\Projects\mine-manager-ai\backend\uploads\fleet_fleet_test.xlsx
+C:\Projects\mine-manager-ai\backend\uploads\plant_plant_test.xlsx
+C:\Projects\mine-manager-ai\backend\uploads\production.xlsx
+C:\Projects\mine-manager-ai\backend\uploads\Production_Daily_Template.xlsx
+C:\Projects\mine-manager-ai\backend\uploads\Production_Demo.xlsx
+C:\Projects\mine-manager-ai\backend\uploads\production_Production_Demo.xlsx
+C:\Projects\mine-manager-ai\backend\uploads\safety_safety_test.xlsx

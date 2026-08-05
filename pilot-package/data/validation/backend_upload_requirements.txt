@@ -1,0 +1,350 @@
+app\routers\analytics.py:32:                    COALESCE(SUM(ore_plan), 0) AS ore_plan,
+app\routers\analytics.py:33:                    COALESCE(SUM(ore_actual), 0) AS ore_actual,
+app\routers\analytics.py:34:                    COALESCE(SUM(waste_plan), 0) AS waste_plan,
+app\routers\analytics.py:35:                    COALESCE(SUM(waste_actual), 0) AS waste_actual,
+app\routers\analytics.py:37:                    COALESCE(AVG(recovery_pct), 0) AS recovery_pct
+app\routers\analytics.py:51:        ore_plan = float(row.ore_plan or 0)
+app\routers\analytics.py:52:        ore_actual = float(row.ore_actual or 0)
+app\routers\analytics.py:53:        waste_plan = float(row.waste_plan or 0)
+app\routers\analytics.py:54:        waste_actual = float(row.waste_actual or 0)
+app\routers\analytics.py:58:        recovery_pct = float(
+app\routers\analytics.py:59:            row.recovery_pct or 0
+app\routers\analytics.py:64:                (ore_actual / ore_plan) * 100,
+app\routers\analytics.py:67:            if ore_plan > 0
+app\routers\analytics.py:73:                (waste_actual / waste_plan) * 100,
+app\routers\analytics.py:76:            if waste_plan > 0
+app\routers\analytics.py:86:            ore_actual - ore_plan
+app\routers\analytics.py:90:            waste_actual - waste_plan
+app\routers\analytics.py:105:            f"Average recovery is "
+app\routers\analytics.py:106:            f"{round(recovery_pct, 2)}%."
+app\routers\analytics.py:128:            "ore_plan": round(
+app\routers\analytics.py:129:                ore_plan,
+app\routers\analytics.py:132:            "ore_actual": round(
+app\routers\analytics.py:133:                ore_actual,
+app\routers\analytics.py:141:            "waste_plan": round(
+app\routers\analytics.py:142:                waste_plan,
+app\routers\analytics.py:145:            "waste_actual": round(
+app\routers\analytics.py:146:                waste_actual,
+app\routers\analytics.py:158:            "recovery_pct": round(
+app\routers\analytics.py:159:                recovery_pct,
+app\routers\dashboard.py:63:        "report_date": None,
+app\routers\dashboard.py:68:        "availability": 0,
+app\routers\dashboard.py:69:        "utilization": 0,
+app\routers\dashboard.py:72:        "recovery": 0,
+app\routers\dashboard.py:74:        "safety_score": 0,
+app\routers\dashboard.py:75:        "near_misses": 0,
+app\routers\dashboard.py:76:        "critical_risks": 0,
+app\routers\dashboard.py:103:            ORDER BY report_date DESC
+app\routers\dashboard.py:114:        production["ore_actual"],
+app\routers\dashboard.py:115:        production["ore_plan"],
+app\routers\dashboard.py:119:        production["waste_actual"],
+app\routers\dashboard.py:120:        production["waste_plan"],
+app\routers\dashboard.py:133:            ORDER BY report_date DESC
+app\routers\dashboard.py:141:        availability = float(fleet_result["availability"] or 0)
+app\routers\dashboard.py:142:        utilization = float(fleet_result["utilization"] or 0)
+app\routers\dashboard.py:145:            availability,
+app\routers\dashboard.py:146:            utilization,
+app\routers\dashboard.py:149:        availability = 0
+app\routers\dashboard.py:150:        utilization = 0
+app\routers\dashboard.py:163:            ORDER BY report_date DESC
+app\routers\dashboard.py:171:        plant, throughput, recovery = calculate_plant_score(
+app\routers\dashboard.py:172:            plant_result["throughput_actual"],
+app\routers\dashboard.py:173:            plant_result["throughput_plan"],
+app\routers\dashboard.py:174:            plant_result["recovery"],
+app\routers\dashboard.py:179:        recovery = 0
+app\routers\dashboard.py:191:            ORDER BY report_date DESC
+app\routers\dashboard.py:199:        incidents = int(safety_result["incidents"] or 0)
+app\routers\dashboard.py:200:        near_misses = int(safety_result["near_misses"] or 0)
+app\routers\dashboard.py:201:        critical_risks = int(safety_result["critical_risks"] or 0)
+app\routers\dashboard.py:202:        safety_score = float(safety_result["safety_score"] or 0)
+app\routers\dashboard.py:204:        incidents = 0
+app\routers\dashboard.py:205:        near_misses = 0
+app\routers\dashboard.py:206:        critical_risks = 0
+app\routers\dashboard.py:207:        safety_score = 0
+app\routers\dashboard.py:218:        safety_score=safety_score,
+app\routers\dashboard.py:223:        "report_date": str(production["report_date"]),
+app\routers\dashboard.py:228:        "availability": availability,
+app\routers\dashboard.py:229:        "utilization": utilization,
+app\routers\dashboard.py:232:        "recovery": recovery,
+app\routers\dashboard.py:233:        "safety": incidents,
+app\routers\dashboard.py:234:        "safety_score": safety_score,
+app\routers\dashboard.py:235:        "near_misses": near_misses,
+app\routers\dashboard.py:236:        "critical_risks": critical_risks,
+app\routers\dashboard.py:262:            "report_date": summary.get("report_date"),
+app\routers\dashboard.py:282:            "Review mining sequence, shovel availability, and "
+app\routers\dashboard.py:296:            "Review truck availability, utilization, maintenance "
+app\routers\dashboard.py:303:            "Review throughput bottlenecks, recovery performance, "
+app\routers\dashboard.py:308:        summary["safety_score"] < 95
+app\routers\dashboard.py:310:        or summary["critical_risks"] > 0
+app\routers\dashboard.py:314:            "Review incidents, near misses, and critical risk controls "
+app\routers\dashboard.py:334:        f"and safety score is {summary['safety_score']}%. "
+app\routers\dashboard.py:340:        "report_date": summary["report_date"],
+app\routers\dashboard.py:369:            "report_date": summary.get("report_date"),
+app\routers\dashboard.py:425:                    "Review truck availability, utilization, maintenance "
+app\routers\dashboard.py:443:                    "Review throughput bottlenecks, recovery performance, "
+app\routers\dashboard.py:450:        summary["safety_score"] < 95
+app\routers\dashboard.py:452:        or summary["critical_risks"] > 0
+app\routers\dashboard.py:461:                    f"Incidents: {summary['safety']}, "
+app\routers\dashboard.py:462:                    f"critical risks: {summary['critical_risks']}, "
+app\routers\dashboard.py:463:                    f"safety score: {summary['safety_score']}%."
+app\routers\dashboard.py:466:                    "Review safety incidents, near misses, and critical "
+app\routers\dashboard.py:510:        "report_date": summary["report_date"],
+app\routers\dashboard.py:538:            "report_date": summary.get("report_date"),
+app\routers\dashboard.py:609:                "Review truck availability, utilization, maintenance "
+app\routers\dashboard.py:624:                "Review throughput bottlenecks, recovery performance, "
+app\routers\dashboard.py:631:        summary["safety_score"] < 95
+app\routers\dashboard.py:633:        or summary["critical_risks"] > 0
+app\routers\dashboard.py:643:                "Review incidents, near misses, and critical risk "
+app\routers\dashboard.py:680:        "report_date": summary["report_date"],
+app\routers\executive_kpi_pdf.py:145:        "Confirm accountable ownership and monitor recovery against "
+app\routers\executive_recommendations.py:53:                "truck_availability": 87,
+app\routers\executive_recommendations.py:55:                "shovel_availability": 92,
+app\routers\executive_recommendations.py:77:            "truck_availability": 87,
+app\routers\executive_recommendations.py:79:            "shovel_availability": 92,
+app\routers\predictions.py:504:            "safety_score",
+app\routers\production.py:45:                report_date,
+app\routers\production.py:46:                ore_plan,
+app\routers\production.py:47:                ore_actual,
+app\routers\production.py:48:                waste_plan,
+app\routers\production.py:49:                waste_actual
+app\routers\production.py:51:            ORDER BY report_date DESC
+app\routers\production.py:63:                "report_date": None,
+app\routers\production.py:64:                "ore_plan": 0,
+app\routers\production.py:65:                "ore_actual": 0,
+app\routers\production.py:67:                "waste_plan": 0,
+app\routers\production.py:68:                "waste_actual": 0,
+app\routers\production.py:72:        ore_plan = float(
+app\routers\production.py:73:            result["ore_plan"] or 0
+app\routers\production.py:76:        ore_actual = float(
+app\routers\production.py:77:            result["ore_actual"] or 0
+app\routers\production.py:80:        waste_plan = float(
+app\routers\production.py:81:            result["waste_plan"] or 0
+app\routers\production.py:84:        waste_actual = float(
+app\routers\production.py:85:            result["waste_actual"] or 0
+app\routers\production.py:89:            ore_actual - ore_plan,
+app\routers\production.py:94:            waste_actual - waste_plan,
+app\routers\production.py:99:            "report_date": str(
+app\routers\production.py:100:                result["report_date"]
+app\routers\production.py:102:            "ore_plan": round(
+app\routers\production.py:103:                ore_plan,
+app\routers\production.py:106:            "ore_actual": round(
+app\routers\production.py:107:                ore_actual,
+app\routers\production.py:111:            "waste_plan": round(
+app\routers\production.py:112:                waste_plan,
+app\routers\production.py:115:            "waste_actual": round(
+app\routers\production.py:116:                waste_actual,
+app\routers\production.py:147:                report_date,
+app\routers\production.py:148:                ore_plan,
+app\routers\production.py:149:                ore_actual,
+app\routers\production.py:150:                waste_plan,
+app\routers\production.py:151:                waste_actual
+app\routers\production.py:153:            ORDER BY report_date DESC
+app\routers\production.py:167:                    "report_date": str(
+app\routers\production.py:168:                        row["report_date"]
+app\routers\production.py:170:                    "ore_plan": round(
+app\routers\production.py:172:                            row["ore_plan"] or 0
+app\routers\production.py:176:                    "ore_actual": round(
+app\routers\production.py:178:                            row["ore_actual"] or 0
+app\routers\production.py:182:                    "waste_plan": round(
+app\routers\production.py:184:                            row["waste_plan"] or 0
+app\routers\production.py:188:                    "waste_actual": round(
+app\routers\production.py:190:                            row["waste_actual"] or 0
+app\routers\system_health.py:81:    Lightweight API availability check.
+app\routers\upload.py:158:def validate_required_columns(
+app\routers\upload.py:160:    required_columns: list[str],
+app\routers\upload.py:169:        for column in required_columns
+app\routers\upload.py:183:def normalize_report_dates(
+app\routers\upload.py:188:    Convert report_date values to Python date values.
+app\routers\upload.py:191:    df["report_date"] = pd.to_datetime(
+app\routers\upload.py:192:        df["report_date"],
+app\routers\upload.py:196:    invalid_dates = df["report_date"].isna()
+app\routers\upload.py:209:                "Invalid report_date values found "
+app\routers\upload.py:269:            subset=["report_date"],
+app\routers\upload.py:272:    ]["report_date"].astype(
+app\routers\upload.py:300:    required_columns = [
+app\routers\upload.py:301:        "report_date",
+app\routers\upload.py:302:        "ore_plan",
+app\routers\upload.py:303:        "ore_actual",
+app\routers\upload.py:304:        "waste_plan",
+app\routers\upload.py:305:        "waste_actual",
+app\routers\upload.py:308:    validate_required_columns(
+app\routers\upload.py:310:        required_columns=required_columns,
+app\routers\upload.py:314:    df = df[required_columns].copy()
+app\routers\upload.py:316:    df = normalize_report_dates(
+app\routers\upload.py:322:        "ore_plan",
+app\routers\upload.py:323:        "ore_actual",
+app\routers\upload.py:324:        "waste_plan",
+app\routers\upload.py:325:        "waste_actual",
+app\routers\upload.py:335:        (df["ore_plan"] < 0)
+app\routers\upload.py:336:        | (df["ore_actual"] < 0)
+app\routers\upload.py:337:        | (df["waste_plan"] < 0)
+app\routers\upload.py:338:        | (df["waste_actual"] < 0)
+app\routers\upload.py:374:    - report_date
+app\routers\upload.py:375:    - availability
+app\routers\upload.py:376:    - utilization
+app\routers\upload.py:381:    required_columns = [
+app\routers\upload.py:382:        "report_date",
+app\routers\upload.py:383:        "availability",
+app\routers\upload.py:384:        "utilization",
+app\routers\upload.py:387:    validate_required_columns(
+app\routers\upload.py:389:        required_columns=required_columns,
+app\routers\upload.py:393:    df = df[required_columns].copy()
+app\routers\upload.py:395:    df = normalize_report_dates(
+app\routers\upload.py:401:        "availability",
+app\routers\upload.py:402:        "utilization",
+app\routers\upload.py:412:        (df["availability"] < 0)
+app\routers\upload.py:413:        | (df["availability"] > 100)
+app\routers\upload.py:414:        | (df["utilization"] < 0)
+app\routers\upload.py:415:        | (df["utilization"] > 100)
+app\routers\upload.py:427:                "Fleet availability and utilization "
+app\routers\upload.py:452:    - report_date
+app\routers\upload.py:453:    - throughput_plan
+app\routers\upload.py:454:    - throughput_actual
+app\routers\upload.py:455:    - recovery
+app\routers\upload.py:460:    required_columns = [
+app\routers\upload.py:461:        "report_date",
+app\routers\upload.py:462:        "throughput_plan",
+app\routers\upload.py:463:        "throughput_actual",
+app\routers\upload.py:464:        "recovery",
+app\routers\upload.py:467:    validate_required_columns(
+app\routers\upload.py:469:        required_columns=required_columns,
+app\routers\upload.py:473:    df = df[required_columns].copy()
+app\routers\upload.py:475:    df = normalize_report_dates(
+app\routers\upload.py:481:        "throughput_plan",
+app\routers\upload.py:482:        "throughput_actual",
+app\routers\upload.py:483:        "recovery",
+app\routers\upload.py:493:        (df["throughput_plan"] < 0)
+app\routers\upload.py:494:        | (df["throughput_actual"] < 0)
+app\routers\upload.py:495:        | (df["recovery"] < 0)
+app\routers\upload.py:496:        | (df["recovery"] > 100)
+app\routers\upload.py:509:                "and recovery must be between 0 and 100. "
+app\routers\upload.py:533:    - report_date
+app\routers\upload.py:534:    - incidents
+app\routers\upload.py:535:    - near_misses
+app\routers\upload.py:536:    - critical_risks
+app\routers\upload.py:537:    - safety_score
+app\routers\upload.py:542:    required_columns = [
+app\routers\upload.py:543:        "report_date",
+app\routers\upload.py:544:        "incidents",
+app\routers\upload.py:545:        "near_misses",
+app\routers\upload.py:546:        "critical_risks",
+app\routers\upload.py:547:        "safety_score",
+app\routers\upload.py:550:    validate_required_columns(
+app\routers\upload.py:552:        required_columns=required_columns,
+app\routers\upload.py:556:    df = df[required_columns].copy()
+app\routers\upload.py:558:    df = normalize_report_dates(
+app\routers\upload.py:564:        "incidents",
+app\routers\upload.py:565:        "near_misses",
+app\routers\upload.py:566:        "critical_risks",
+app\routers\upload.py:567:        "safety_score",
+app\routers\upload.py:577:        (df["incidents"] < 0)
+app\routers\upload.py:578:        | (df["near_misses"] < 0)
+app\routers\upload.py:579:        | (df["critical_risks"] < 0)
+app\routers\upload.py:580:        | (df["safety_score"] < 0)
+app\routers\upload.py:581:        | (df["safety_score"] > 100)
+app\routers\upload.py:594:                "and safety_score must be between 0 and 100. "
+app\routers\upload.py:600:        "incidents",
+app\routers\upload.py:601:        "near_misses",
+app\routers\upload.py:602:        "critical_risks",
+app\routers\upload.py:690:                      AND report_date = :report_date
+app\routers\upload.py:695:                    "report_date": row["report_date"],
+app\routers\upload.py:705:                        report_date,
+app\routers\upload.py:706:                        ore_plan,
+app\routers\upload.py:707:                        ore_actual,
+app\routers\upload.py:708:                        waste_plan,
+app\routers\upload.py:709:                        waste_actual
+app\routers\upload.py:714:                        :report_date,
+app\routers\upload.py:715:                        :ore_plan,
+app\routers\upload.py:716:                        :ore_actual,
+app\routers\upload.py:717:                        :waste_plan,
+app\routers\upload.py:718:                        :waste_actual
+app\routers\upload.py:721:                        (mine_name, report_date)
+app\routers\upload.py:723:                        ore_plan =
+app\routers\upload.py:724:                            EXCLUDED.ore_plan,
+app\routers\upload.py:725:                        ore_actual =
+app\routers\upload.py:726:                            EXCLUDED.ore_actual,
+app\routers\upload.py:727:                        waste_plan =
+app\routers\upload.py:728:                            EXCLUDED.waste_plan,
+app\routers\upload.py:729:                        waste_actual =
+app\routers\upload.py:730:                            EXCLUDED.waste_actual,
+app\routers\upload.py:737:                    "report_date": row["report_date"],
+app\routers\upload.py:738:                    "ore_plan": float(
+app\routers\upload.py:739:                        row["ore_plan"]
+app\routers\upload.py:741:                    "ore_actual": float(
+app\routers\upload.py:742:                        row["ore_actual"]
+app\routers\upload.py:744:                    "waste_plan": float(
+app\routers\upload.py:745:                        row["waste_plan"]
+app\routers\upload.py:747:                    "waste_actual": float(
+app\routers\upload.py:748:                        row["waste_actual"]
+app\routers\upload.py:832:                      AND report_date = :report_date
+app\routers\upload.py:837:                    "report_date": row["report_date"],
+app\routers\upload.py:847:                        report_date,
+app\routers\upload.py:848:                        availability,
+app\routers\upload.py:849:                        utilization
+app\routers\upload.py:854:                        :report_date,
+app\routers\upload.py:855:                        :availability,
+app\routers\upload.py:856:                        :utilization
+app\routers\upload.py:859:                        (mine_name, report_date)
+app\routers\upload.py:861:                        availability =
+app\routers\upload.py:862:                            EXCLUDED.availability,
+app\routers\upload.py:863:                        utilization =
+app\routers\upload.py:864:                            EXCLUDED.utilization,
+app\routers\upload.py:871:                    "report_date": row["report_date"],
+app\routers\upload.py:872:                    "availability": float(
+app\routers\upload.py:873:                        row["availability"]
+app\routers\upload.py:875:                    "utilization": float(
+app\routers\upload.py:876:                        row["utilization"]
+app\routers\upload.py:960:                      AND report_date = :report_date
+app\routers\upload.py:965:                    "report_date": row["report_date"],
+app\routers\upload.py:975:                        report_date,
+app\routers\upload.py:976:                        throughput_plan,
+app\routers\upload.py:977:                        throughput_actual,
+app\routers\upload.py:978:                        recovery
+app\routers\upload.py:983:                        :report_date,
+app\routers\upload.py:984:                        :throughput_plan,
+app\routers\upload.py:985:                        :throughput_actual,
+app\routers\upload.py:986:                        :recovery
+app\routers\upload.py:989:                        (mine_name, report_date)
+app\routers\upload.py:991:                        throughput_plan =
+app\routers\upload.py:992:                            EXCLUDED.throughput_plan,
+app\routers\upload.py:993:                        throughput_actual =
+app\routers\upload.py:994:                            EXCLUDED.throughput_actual,
+app\routers\upload.py:995:                        recovery =
+app\routers\upload.py:996:                            EXCLUDED.recovery,
+app\routers\upload.py:1003:                    "report_date": row["report_date"],
+app\routers\upload.py:1004:                    "throughput_plan": float(
+app\routers\upload.py:1005:                        row["throughput_plan"]
+app\routers\upload.py:1007:                    "throughput_actual": float(
+app\routers\upload.py:1008:                        row["throughput_actual"]
+app\routers\upload.py:1010:                    "recovery": float(
+app\routers\upload.py:1011:                        row["recovery"]
+app\routers\upload.py:1095:                      AND report_date = :report_date
+app\routers\upload.py:1100:                    "report_date": row["report_date"],
+app\routers\upload.py:1110:                        report_date,
+app\routers\upload.py:1111:                        incidents,
+app\routers\upload.py:1112:                        near_misses,
+app\routers\upload.py:1113:                        critical_risks,
+app\routers\upload.py:1114:                        safety_score
+app\routers\upload.py:1119:                        :report_date,
+app\routers\upload.py:1120:                        :incidents,
+app\routers\upload.py:1121:                        :near_misses,
+app\routers\upload.py:1122:                        :critical_risks,
+app\routers\upload.py:1123:                        :safety_score
+app\routers\upload.py:1126:                        (mine_name, report_date)
+app\routers\upload.py:1128:                        incidents =
+app\routers\upload.py:1129:                            EXCLUDED.incidents,
+app\routers\upload.py:1130:                        near_misses =
+app\routers\upload.py:1131:                            EXCLUDED.near_misses,
+app\routers\upload.py:1132:                        critical_risks =
+app\routers\upload.py:1133:                            EXCLUDED.critical_risks,
+app\routers\upload.py:1134:                        safety_score =
+app\routers\upload.py:1135:                            EXCLUDED.safety_score,
+app\routers\upload.py:1142:                    "report_date": row["report_date"],
+app\routers\upload.py:1143:                    "incidents": int(
+app\routers\upload.py:1144:                        row["incidents"]
+app\routers\upload.py:1146:                    "near_misses": int(
+app\routers\upload.py:1147:                        row["near_misses"]
+app\routers\upload.py:1149:                    "critical_risks": int(
+app\routers\upload.py:1150:                        row["critical_risks"]
+app\routers\upload.py:1152:                    "safety_score": float(
+app\routers\upload.py:1153:                        row["safety_score"]

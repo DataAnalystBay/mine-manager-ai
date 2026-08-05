@@ -1,0 +1,4 @@
+production_daily ['id', 'report_date', 'ore_plan', 'ore_actual', 'waste_plan', 'waste_actual', 'created_at', 'mine_name']
+fleet_daily ['id', 'report_date', 'mine_name', 'availability', 'utilization', 'created_at']
+plant_daily ['id', 'report_date', 'mine_name', 'throughput_plan', 'throughput_actual', 'recovery', 'created_at']
+safety_daily ['id', 'report_date', 'mine_name', 'incidents', 'near_misses', 'critical_risks', 'safety_score', 'created_at']
