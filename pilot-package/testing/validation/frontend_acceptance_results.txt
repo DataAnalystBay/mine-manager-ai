@@ -1,0 +1,46 @@
+
+> frontend@0.0.0 build
+> vite build
+
+[36mvite v8.1.0 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 1246 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      0.87 kB │ gzip:   0.40 kB
+dist/assets/index-CSQrP81M.css                       1.21 kB │ gzip:   0.60 kB
+dist/assets/ExecutiveActions-dRM7oZMq.css            2.28 kB │ gzip:   0.67 kB
+dist/assets/UploadReports-BV_9kwCa.css               3.33 kB │ gzip:   1.06 kB
+dist/assets/AuditTrail-9pRzqpUJ.css                  4.30 kB │ gzip:   1.17 kB
+dist/assets/SupportDiagnostics-BxdUOK8I.css          4.58 kB │ gzip:   1.15 kB
+dist/assets/Login-Cb1QQtkj.css                       5.31 kB │ gzip:   1.65 kB
+dist/assets/ExecutiveAiInsightCard-YOHiIrik.css      6.35 kB │ gzip:   1.58 kB
+dist/assets/SecurityConfiguration-CzBaiGc1.css       9.01 kB │ gzip:   2.05 kB
+dist/assets/Dashboard-qJkn6yCj.css                  53.36 kB │ gzip:   8.96 kB
+dist/assets/ExecutiveKpiDetailDialog-Dq30Pmx1.css   66.15 kB │ gzip:   9.90 kB
+dist/assets/Fleet-C8u1eZDw.js                        0.15 kB │ gzip:   0.15 kB
+dist/assets/Plant-C8u1eZDw.js                        0.15 kB │ gzip:   0.15 kB
+dist/assets/Production-C8u1eZDw.js                   0.15 kB │ gzip:   0.15 kB
+dist/assets/Safety-C8u1eZDw.js                       0.15 kB │ gzip:   0.15 kB
+dist/assets/rolldown-runtime-QTnfLwEv.js             0.69 kB │ gzip:   0.42 kB
+dist/assets/Login-D8p18_G9.js                        3.55 kB │ gzip:   1.47 kB
+dist/assets/executiveActionsApi--3P9bPlB.js          3.82 kB │ gzip:   1.33 kB
+dist/assets/ExecutiveAiInsightCard-2eono1J9.js       6.09 kB │ gzip:   1.82 kB
+dist/assets/UploadReports-By6it_Vo.js                8.13 kB │ gzip:   2.97 kB
+dist/assets/SecurityConfiguration-RXtzSKvN.js        9.24 kB │ gzip:   2.29 kB
+dist/assets/AuditTrail-CGQlvm65.js                  10.90 kB │ gzip:   3.60 kB
+dist/assets/SupportDiagnostics-q9gCk9C7.js          11.04 kB │ gzip:   3.51 kB
+dist/assets/index-C5_NIcvh.js                       14.99 kB │ gzip:   4.72 kB
+dist/assets/Settings-JZCuyNhd.js                    16.41 kB │ gzip:   4.24 kB
+dist/assets/ExecutiveReports-uVgIAv-L.js            17.91 kB │ gzip:   5.40 kB
+dist/assets/UserManagement-DZtgX8RL.js              19.35 kB │ gzip:   5.07 kB
+dist/assets/SystemHealth-C7CihmMa.js                32.58 kB │ gzip:   8.32 kB
+dist/assets/network-DeoP3Jk6.js                     44.72 kB │ gzip:  17.02 kB
+dist/assets/ExecutiveKpiDetailDialog-OvhvEqX9.js    48.63 kB │ gzip:  11.35 kB
+dist/assets/ExecutiveActions-CAAGAZQP.js            59.24 kB │ gzip:  15.18 kB
+dist/assets/Dashboard-3TFpAIzi.js                   61.91 kB │ gzip:  16.30 kB
+dist/assets/react-vendor-DB0Du98i.js               302.04 kB │ gzip:  92.85 kB
+dist/assets/mui-vendor-YUjceohk.js                 338.88 kB │ gzip: 105.02 kB
+dist/assets/vendor-BknMnM-g.js                     363.39 kB │ gzip: 122.45 kB
+dist/assets/charts-QhbBTigH.js                     370.92 kB │ gzip: 107.06 kB
+
+[32m✓ built in 812ms[39m

@@ -1,0 +1,36 @@
+Mine Manager AI Security Acceptance Results
+============================================
+
+Test date:
+2026-08-05T15:12:36+08:00
+
+Administrator dependency:
+45:def get_db():
+63:def normalize_role(role: str | None) -> str:
+86:def get_credentials_exception() -> HTTPException:
+106:def decode_access_token(
+173:def get_current_user(
+249:def require_roles(
+288:    def role_dependency(
+329:def require_administrator(
+352:def require_general_manager_or_administrator(
+381:def require_mine_management(
+412:def require_operational_editor(
+447:def require_report_uploader(
+
+Support Diagnostics authorization:
+10:from app.auth.dependencies import require_administrator
+25:    _current_user=Depends(require_administrator),
+32:    _current_user=Depends(require_administrator),
+39:    _current_user=Depends(require_administrator),
+
+Backup directory ignored:
+.gitignore:45:backups/	"backups\\database"
+
+Support diagnostics output ignored:
+.gitignore:49:support-diagnostics/	support-diagnostics
+
+Alembic revision:
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+afaaaeb915e4 (head)

@@ -1,0 +1,8 @@
+Database: mine_manager_ai
+Server version: 17.10
+Connection test: 1
+Alembic revision: afaaaeb915e4
+production_daily: 40
+fleet_daily: 40
+plant_daily: 40
+safety_daily: 40

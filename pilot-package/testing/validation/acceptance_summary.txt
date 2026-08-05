@@ -1,0 +1,83 @@
+Mine Manager AI Version 1.0
+Pilot Acceptance Summary
+========================
+
+Test date:
+2026-08-05
+
+Environment
+-----------
+Branch: sprint-10.21-pilot-ready-package
+Latest validated revision: a6b1ddf
+Python: 3.11.9
+Node: 22.23.2
+NPM: 10.9.8
+PostgreSQL client: 17.10
+PostgreSQL server: 17.10
+Alembic revision: afaaaeb915e4
+
+Database Acceptance
+-------------------
+Database connectivity: PASSED
+Production rows: 40
+Fleet rows: 40
+Plant rows: 40
+Safety rows: 40
+Alembic revision: PASSED
+
+Backend Acceptance
+------------------
+Python compileall: PASSED
+Support Diagnostics: PASSED WITH NON-BLOCKING WARNING
+Database diagnostics: HEALTHY
+Disk diagnostics: HEALTHY
+System Health integration: AVAILABLE
+Alembic current matches head: PASSED
+
+Frontend Acceptance
+-------------------
+Vite production build: PASSED
+Build errors detected: NO
+Support Diagnostics asset generated: YES
+
+Security Acceptance
+-------------------
+Administrator dependency present: YES
+Support Diagnostics authorization enforced: YES
+Backup directory ignored by Git: YES
+Support diagnostics output ignored by Git: YES
+Alembic revision current: YES
+Critical security defects identified: NONE IN CURRENT VALIDATION
+
+Backup and Restore
+------------------
+Backup creation: PASSED
+Archive verification: PASSED
+Temporary restore: PASSED
+Restored row counts: PASSED
+Alembic revision after restore: PASSED
+Temporary restore database cleanup: PASSED
+
+Documentation
+-------------
+Pilot Acceptance Checklist: COMPLETE
+Pilot Success Criteria: COMPLETE
+Pilot Sign-off Form: COMPLETE
+Pilot Test Cases AT-001 through AT-100: COMPLETE
+Pilot Acceptance Test Report: PRESENT
+Security Review Checklist: COMPLETE
+
+Open Observations
+-----------------
+1. Application file logging is currently Not Configured.
+2. Support Diagnostics overall status may display Warning because file logging is not configured.
+3. Existing unrelated working-tree changes must not be included in the Sprint 10.21.8 commit.
+4. Customer execution and signatures remain required before formal commercial acceptance.
+
+Overall Technical Result
+------------------------
+PASSED WITH NON-BLOCKING OBSERVATIONS
+
+Commercial Acceptance Status
+----------------------------
+PENDING CUSTOMER TEST EXECUTION AND SIGN-OFF
