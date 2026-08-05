@@ -1,0 +1,117 @@
+app\auth\dependencies.py:11:from app.auth.jwt_handler import ALGORITHM, SECRET_KEY
+app\auth\dependencies.py:125:            SECRET_KEY,
+app\auth\jwt_handler.py:9:SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
+app\auth\jwt_handler.py:11:if not SECRET_KEY:
+app\auth\jwt_handler.py:13:        "Missing JWT secret. Set SECRET_KEY or JWT_SECRET_KEY."
+app\auth\jwt_handler.py:16:ALGORITHM = os.getenv("ALGORITHM", "HS256")
+app\auth\jwt_handler.py:20:        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+app\auth\jwt_handler.py:42:        SECRET_KEY,
+app\database.py:8:DB_USER = os.getenv("DB_USER")
+app\database.py:9:DB_PASSWORD = os.getenv("DB_PASSWORD")
+app\database.py:10:DB_HOST = os.getenv("DB_HOST")
+app\database.py:11:DB_PORT = os.getenv("DB_PORT", "5432")
+app\database.py:12:DB_NAME = os.getenv("DB_NAME")
+app\database.py:16:    f"{DB_USER}:"
+app\database.py:17:    f"{DB_PASSWORD}@"
+app\database.py:18:    f"{DB_HOST}:"
+app\database.py:19:    f"{DB_PORT}/"
+app\database.py:20:    f"{DB_NAME}"
+app\services\deployment_readiness_service.py:15:7. CORS configuration
+app\services\deployment_readiness_service.py:193:        os.getenv("APP_ENV")
+app\services\deployment_readiness_service.py:194:        or os.getenv("ENVIRONMENT")
+app\services\deployment_readiness_service.py:195:        or os.getenv("FASTAPI_ENV")
+app\services\deployment_readiness_service.py:206:    database_host = os.getenv("DB_HOST")
+app\services\deployment_readiness_service.py:207:    database_port = os.getenv("DB_PORT")
+app\services\deployment_readiness_service.py:208:    database_name = os.getenv("DB_NAME")
+app\services\deployment_readiness_service.py:209:    database_user = os.getenv("DB_USER")
+app\services\deployment_readiness_service.py:210:    ssl_mode = os.getenv("DB_SSLMODE") or os.getenv("PGSSLMODE")
+app\services\deployment_readiness_service.py:218:        "password": _mask_value(os.getenv("DB_PASSWORD")),
+app\services\deployment_readiness_service.py:267:def check_debug_mode() -> Dict[str, Any]:
+app\services\deployment_readiness_service.py:268:    """Check whether application debug mode is disabled."""
+app\services\deployment_readiness_service.py:269:    debug_value = (
+app\services\deployment_readiness_service.py:270:        os.getenv("DEBUG")
+app\services\deployment_readiness_service.py:271:        or os.getenv("APP_DEBUG")
+app\services\deployment_readiness_service.py:272:        or os.getenv("FASTAPI_DEBUG")
+app\services\deployment_readiness_service.py:275:    debug_enabled = _normalise_boolean(debug_value)
+app\services\deployment_readiness_service.py:278:    if debug_enabled is False:
+app\services\deployment_readiness_service.py:280:            key="debug_mode",
+app\services\deployment_readiness_service.py:281:            name="Debug mode",
+app\services\deployment_readiness_service.py:284:            message="Debug mode is disabled.",
+app\services\deployment_readiness_service.py:285:            details={"debug": False},
+app\services\deployment_readiness_service.py:288:    if debug_enabled is True:
+app\services\deployment_readiness_service.py:290:            key="debug_mode",
+app\services\deployment_readiness_service.py:291:            name="Debug mode",
+app\services\deployment_readiness_service.py:294:            message="Debug mode is enabled.",
+app\services\deployment_readiness_service.py:295:            details={"debug": True},
+app\services\deployment_readiness_service.py:296:            recommendation="Set DEBUG=false before deployment.",
+app\services\deployment_readiness_service.py:300:        key="debug_mode",
+app\services\deployment_readiness_service.py:301:        name="Debug mode",
+app\services\deployment_readiness_service.py:304:        message="Debug mode is not explicitly configured.",
+app\services\deployment_readiness_service.py:305:        details={"debug": None},
+app\services\deployment_readiness_service.py:306:        recommendation="Add DEBUG=false to the deployment environment variables.",
+app\services\deployment_readiness_service.py:310:def check_secret_key() -> Dict[str, Any]:
+app\services\deployment_readiness_service.py:313:        os.getenv("SECRET_KEY")
+app\services\deployment_readiness_service.py:314:        or os.getenv("JWT_SECRET_KEY")
+app\services\deployment_readiness_service.py:315:        or os.getenv("AUTH_SECRET_KEY")
+app\services\deployment_readiness_service.py:320:            key="secret_key",
+app\services\deployment_readiness_service.py:326:                "Configure SECRET_KEY or JWT_SECRET_KEY with a securely generated "
+app\services\deployment_readiness_service.py:344:            key="secret_key",
+app\services\deployment_readiness_service.py:358:            key="secret_key",
+app\services\deployment_readiness_service.py:371:        key="secret_key",
+app\services\deployment_readiness_service.py:386:    database_url = os.getenv("DATABASE_URL")
+app\services\deployment_readiness_service.py:389:        "DB_HOST",
+app\services\deployment_readiness_service.py:390:        "DB_NAME",
+app\services\deployment_readiness_service.py:391:        "DB_USER",
+app\services\deployment_readiness_service.py:392:        "DB_PASSWORD",
+app\services\deployment_readiness_service.py:396:        variable: bool(os.getenv(variable))
+app\services\deployment_readiness_service.py:436:            "Configure DATABASE_URL or all DB_HOST, DB_NAME, DB_USER, "
+app\services\deployment_readiness_service.py:437:            "and DB_PASSWORD environment variables."
+app\services\deployment_readiness_service.py:862:def check_cors_configuration() -> Dict[str, Any]:
+app\services\deployment_readiness_service.py:863:    """Review deployment CORS origins supplied through environment variables."""
+app\services\deployment_readiness_service.py:865:        os.getenv("CORS_ORIGINS")
+app\services\deployment_readiness_service.py:866:        or os.getenv("ALLOWED_ORIGINS")
+app\services\deployment_readiness_service.py:881:            key="cors_configuration",
+app\services\deployment_readiness_service.py:882:            name="CORS configuration",
+app\services\deployment_readiness_service.py:885:            message="No environment-based CORS origins were detected.",
+app\services\deployment_readiness_service.py:888:                "Configure CORS_ORIGINS with the deployed frontend domain. "
+app\services\deployment_readiness_service.py:897:            key="cors_configuration",
+app\services\deployment_readiness_service.py:898:            name="CORS configuration",
+app\services\deployment_readiness_service.py:901:            message="Wildcard CORS is configured in the production environment.",
+app\services\deployment_readiness_service.py:916:            key="cors_configuration",
+app\services\deployment_readiness_service.py:917:            name="CORS configuration",
+app\services\deployment_readiness_service.py:920:            message="Production CORS configuration still contains local origins.",
+app\services\deployment_readiness_service.py:932:        key="cors_configuration",
+app\services\deployment_readiness_service.py:933:        name="CORS configuration",
+app\services\deployment_readiness_service.py:936:        message="CORS origins are explicitly configured.",
+app\services\deployment_readiness_service.py:944:        os.getenv("FORCE_HTTPS")
+app\services\deployment_readiness_service.py:945:        or os.getenv("HTTPS_ONLY")
+app\services\deployment_readiness_service.py:946:        or os.getenv("SECURE_COOKIES")
+app\services\deployment_readiness_service.py:991:        os.getenv("DEMO_MODE")
+app\services\deployment_readiness_service.py:992:        or os.getenv("ENABLE_DEMO_MODE")
+app\services\deployment_readiness_service.py:1050:    log_level = os.getenv("LOG_LEVEL")
+app\services\deployment_readiness_service.py:1052:    if not log_level:
+app\services\deployment_readiness_service.py:1058:            message="LOG_LEVEL is not explicitly configured.",
+app\services\deployment_readiness_service.py:1059:            details={"log_level": None},
+app\services\deployment_readiness_service.py:1061:                "Set LOG_LEVEL=INFO for pilot or production deployments."
+app\services\deployment_readiness_service.py:1065:    normalised_level = log_level.strip().upper()
+app\services\deployment_readiness_service.py:1071:        "DEBUG",
+app\services\deployment_readiness_service.py:1081:            message="LOG_LEVEL contains an unrecognised value.",
+app\services\deployment_readiness_service.py:1082:            details={"log_level": normalised_level},
+app\services\deployment_readiness_service.py:1084:                "Use CRITICAL, ERROR, WARNING, INFO, or DEBUG."
+app\services\deployment_readiness_service.py:1089:        normalised_level == "DEBUG"
+app\services\deployment_readiness_service.py:1097:            message="Production logging is configured at DEBUG level.",
+app\services\deployment_readiness_service.py:1098:            details={"log_level": normalised_level},
+app\services\deployment_readiness_service.py:1100:                "Use LOG_LEVEL=INFO or LOG_LEVEL=WARNING in production."
+app\services\deployment_readiness_service.py:1110:        details={"log_level": normalised_level},
+app\services\deployment_readiness_service.py:1324:    checks.append(check_debug_mode())
+app\services\deployment_readiness_service.py:1325:    checks.append(check_secret_key())
+app\services\deployment_readiness_service.py:1326:    checks.append(check_cors_configuration())
+app\services\system_health_service.py:23:APP_VERSION = os.getenv(
+app\services\system_health_service.py:28:ENVIRONMENT = os.getenv(
+app\services\system_health_service.py:57:        os.getenv(
+app\services\system_health_service.py:626:    azure_key = os.getenv(
+app\services\system_health_service.py:630:    openai_key = os.getenv(
+app\services\system_health_service.py:674:        os.getenv(
+src\api\predictionsApi.js:4:  import.meta.env.VITE_API_BASE_URL ||
+src\api\userApi.js:2:  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+src\config\apiConfig.js:4:  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"

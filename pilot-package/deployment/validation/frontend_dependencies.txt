@@ -1,0 +1,24 @@
+frontend@0.0.0 C:\Projects\mine-manager-ai\frontend
+├── @emotion/react@11.14.0
+├── @emotion/styled@11.14.1
+├── @eslint/js@10.0.1
+├── @mui/icons-material@9.1.1
+├── @mui/material@9.1.2
+├── @types/react-dom@19.2.3
+├── @types/react@19.2.17
+├── @vitejs/plugin-react@6.0.3
+├── axios@1.18.1
+├── eslint-plugin-react-hooks@7.1.1
+├── eslint-plugin-react-refresh@0.5.3
+├── eslint@10.6.0
+├── globals@17.7.0
+├── jwt-decode@4.0.0
+├── react-dom@19.2.7
+├── react-dropzone@15.0.0
+├── react-icons@5.7.0
+├── react-router-dom@7.18.1
+├── react@19.2.7
+├── recharts@3.9.1
+├── vite@8.1.0
+└── xlsx@0.20.3
+
