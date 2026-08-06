@@ -1,8 +1,12 @@
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from app.auth.dependencies import (
+    get_current_user,
+    require_operational_editor,
+)
 from app.services.executive_recommendation.recommendation_engine import (
     generate_executive_recommendation,
 )
@@ -11,17 +15,24 @@ from app.services.executive_recommendation.recommendation_engine import (
 router = APIRouter(
     prefix="/api/executive-recommendations",
     tags=["Executive Recommendations"],
+    dependencies=[
+        Depends(get_current_user),
+    ],
 )
 
 
 class ExecutiveRecommendationRequest(BaseModel):
     kpi_key: str = Field(
         ...,
+        min_length=1,
+        max_length=100,
         examples=["ore_production"],
     )
 
     kpi_name: str = Field(
         ...,
+        min_length=1,
+        max_length=255,
         examples=["Ore Production"],
     )
 
@@ -52,8 +63,9 @@ class ExecutiveRecommendationRequest(BaseModel):
 @router.get("/test")
 def get_test_executive_recommendation():
     """
-    Return a deterministic ore-production recommendation
-    for API and Swagger testing.
+    Return a deterministic executive recommendation.
+
+    All authenticated users may access this endpoint.
     """
 
     return generate_executive_recommendation(
@@ -71,19 +83,29 @@ def get_test_executive_recommendation():
     )
 
 
-@router.post("/generate")
+@router.post(
+    "/generate",
+    dependencies=[
+        Depends(require_operational_editor),
+    ],
+)
 def generate_recommendation(
     request: ExecutiveRecommendationRequest,
 ):
     """
-    Generate an executive recommendation from supplied
-    KPI values and operational context.
+    Generate an executive recommendation.
+
+    Allowed roles:
+    - Superintendent
+    - Mine Manager
+    - General Manager
+    - Administrator
     """
 
     return generate_executive_recommendation(
-        kpi_key=request.kpi_key,
-        kpi_name=request.kpi_name,
+        kpi_key=request.kpi_key.strip(),
+        kpi_name=request.kpi_name.strip(),
         current_value=request.current_value,
         target_value=request.target_value,
-        context=request.context,
+        context=request.context or {},
     )

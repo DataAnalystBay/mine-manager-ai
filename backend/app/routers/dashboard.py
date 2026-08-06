@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import get_current_user
 from app.database import SessionLocal
 
 from app.services.analytics_engine_service import get_shared_analytics
 
-from fastapi import HTTPException, Query
 
 from app.schemas.kpi_detail import KpiDetailResponse
 from app.services.kpi_detail_service import get_kpi_detail
@@ -27,6 +27,7 @@ from app.services.trend_engine_service import (
 router = APIRouter(
     prefix="/api/dashboard",
     tags=["Dashboard"],
+    dependencies=[Depends(get_current_user)],
 )
 
 

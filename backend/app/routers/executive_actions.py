@@ -11,6 +11,11 @@ from fastapi import (
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import (
+    get_current_user,
+    require_mine_management,
+    require_operational_editor,
+)
 from app.database import get_db
 
 from app.schemas.executive_action import (
@@ -44,6 +49,9 @@ from app.services.kpi_context_service import (
 router = APIRouter(
     prefix="/api/executive-actions",
     tags=["Executive Actions"],
+    dependencies=[
+        Depends(get_current_user),
+    ],
 )
 
 
@@ -62,15 +70,32 @@ VALID_PRIORITIES = {
 }
 
 
+# ============================================================
+# CREATE EXECUTIVE ACTION
+# ============================================================
+
 @router.post(
     "",
     response_model=ExecutiveActionResponse,
     status_code=http_status.HTTP_201_CREATED,
+    dependencies=[
+        Depends(require_operational_editor),
+    ],
 )
 def create_executive_action(
     action_data: ExecutiveActionCreate,
     db: Session = Depends(get_db),
 ):
+    """
+    Create a new executive action.
+
+    Allowed roles:
+    - Superintendent
+    - Mine Manager
+    - General Manager
+    - Administrator
+    """
+
     existing_action = get_action_by_key(
         db=db,
         action_key=action_data.action_key,
@@ -91,7 +116,7 @@ def create_executive_action(
             action_data=action_data,
         )
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
 
         raise HTTPException(
@@ -100,8 +125,12 @@ def create_executive_action(
                 "An executive action with this "
                 "action_key already exists."
             ),
-        )
+        ) from exc
 
+
+# ============================================================
+# LIST EXECUTIVE ACTIONS
+# ============================================================
 
 @router.get(
     "",
@@ -122,6 +151,12 @@ def get_executive_actions(
     ),
     db: Session = Depends(get_db),
 ):
+    """
+    Return executive actions with optional filters.
+
+    All authenticated roles may view actions.
+    """
+
     normalized_status = None
     normalized_priority = None
     normalized_kpi_key = None
@@ -175,6 +210,10 @@ def get_executive_actions(
     )
 
 
+# ============================================================
+# EXECUTIVE ACTION SUMMARY
+# ============================================================
+
 @router.get(
     "/summary",
     response_model=ExecutiveActionSummary,
@@ -182,8 +221,20 @@ def get_executive_actions(
 def get_executive_actions_summary(
     db: Session = Depends(get_db),
 ):
-    return get_action_summary(db=db)
+    """
+    Return executive-action summary metrics.
 
+    All authenticated roles may view the summary.
+    """
+
+    return get_action_summary(
+        db=db,
+    )
+
+
+# ============================================================
+# EXECUTIVE ACTION ANALYTICS
+# ============================================================
 
 @router.get(
     "/analytics",
@@ -192,8 +243,20 @@ def get_executive_actions_summary(
 def get_executive_actions_analytics(
     db: Session = Depends(get_db),
 ):
-    return get_action_analytics(db=db)
+    """
+    Return executive-action analytics.
 
+    All authenticated roles may view analytics.
+    """
+
+    return get_action_analytics(
+        db=db,
+    )
+
+
+# ============================================================
+# ACTION BY KEY
+# ============================================================
 
 @router.get(
     "/by-key/{action_key}",
@@ -203,6 +266,12 @@ def get_executive_action_by_key(
     action_key: str,
     db: Session = Depends(get_db),
 ):
+    """
+    Return one executive action by action key.
+
+    All authenticated roles may view actions.
+    """
+
     action = get_action_by_key(
         db=db,
         action_key=action_key,
@@ -216,6 +285,10 @@ def get_executive_action_by_key(
 
     return action
 
+
+# ============================================================
+# ACTION KPI CONTEXT
+# ============================================================
 
 @router.get(
     "/{action_id}/kpi-context",
@@ -233,6 +306,8 @@ def get_executive_action_kpi_context(
 
     Related-action calculations receive the current action ID so the
     action being viewed is excluded from its own related-action count.
+
+    All authenticated roles may view KPI context.
     """
 
     action = get_action_by_id(
@@ -272,6 +347,10 @@ def get_executive_action_kpi_context(
     }
 
 
+# ============================================================
+# ACTION BY ID
+# ============================================================
+
 @router.get(
     "/{action_id}",
     response_model=ExecutiveActionResponse,
@@ -280,6 +359,12 @@ def get_executive_action(
     action_id: int,
     db: Session = Depends(get_db),
 ):
+    """
+    Return one executive action by database ID.
+
+    All authenticated roles may view actions.
+    """
+
     action = get_action_by_id(
         db=db,
         action_id=action_id,
@@ -294,15 +379,32 @@ def get_executive_action(
     return action
 
 
+# ============================================================
+# UPDATE EXECUTIVE ACTION
+# ============================================================
+
 @router.patch(
     "/{action_id}",
     response_model=ExecutiveActionResponse,
+    dependencies=[
+        Depends(require_operational_editor),
+    ],
 )
 def update_executive_action(
     action_id: int,
     action_data: ExecutiveActionUpdate,
     db: Session = Depends(get_db),
 ):
+    """
+    Update an existing executive action.
+
+    Allowed roles:
+    - Superintendent
+    - Mine Manager
+    - General Manager
+    - Administrator
+    """
+
     action = get_action_by_id(
         db=db,
         action_id=action_id,
@@ -321,15 +423,32 @@ def update_executive_action(
     )
 
 
+# ============================================================
+# UPDATE ACTION STATUS
+# ============================================================
+
 @router.patch(
     "/{action_id}/status",
     response_model=ExecutiveActionResponse,
+    dependencies=[
+        Depends(require_operational_editor),
+    ],
 )
 def change_executive_action_status(
     action_id: int,
     status_data: ExecutiveActionStatusUpdate,
     db: Session = Depends(get_db),
 ):
+    """
+    Change an executive action's status.
+
+    Allowed roles:
+    - Superintendent
+    - Mine Manager
+    - General Manager
+    - Administrator
+    """
+
     action = get_action_by_id(
         db=db,
         action_id=action_id,
@@ -348,14 +467,30 @@ def change_executive_action_status(
     )
 
 
+# ============================================================
+# DELETE EXECUTIVE ACTION
+# ============================================================
+
 @router.delete(
     "/{action_id}",
     status_code=http_status.HTTP_204_NO_CONTENT,
+    dependencies=[
+        Depends(require_mine_management),
+    ],
 )
 def remove_executive_action(
     action_id: int,
     db: Session = Depends(get_db),
 ):
+    """
+    Permanently delete an executive action.
+
+    Allowed roles:
+    - Mine Manager
+    - General Manager
+    - Administrator
+    """
+
     action = get_action_by_id(
         db=db,
         action_id=action_id,

@@ -5,6 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import (
+    get_current_user,
+    require_operational_editor,
+)
 from app.database import get_db
 from app.services.executive_pdf.executive_action_pdf_data import (
     load_pdf_actions_for_kpi,
@@ -23,6 +27,9 @@ from app.services.executive_pdf.executive_pdf_service import (
 router = APIRouter(
     prefix="/api/executive-kpi",
     tags=["Executive KPI PDF"],
+    dependencies=[
+        Depends(get_current_user),
+    ],
 )
 
 
@@ -250,7 +257,12 @@ def preview_executive_pdf_branding(
 # ==================================================
 
 
-@router.get("/export-pdf/test")
+@router.get(
+    "/export-pdf/test",
+    dependencies=[
+        Depends(require_operational_editor),
+    ],
+)
 def export_test_executive_kpi_pdf(
     db: Session = Depends(get_db),
 ):
@@ -354,7 +366,12 @@ def export_test_executive_kpi_pdf(
 # ==================================================
 
 
-@router.get("/{kpi_key}/export-pdf")
+@router.get(
+    "/{kpi_key}/export-pdf",
+    dependencies=[
+        Depends(require_operational_editor),
+    ],
+)
 def export_executive_kpi_pdf(
     kpi_key: str,
 

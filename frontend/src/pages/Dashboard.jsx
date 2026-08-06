@@ -15,6 +15,8 @@ import { useConfig } from "../context/ConfigContext";
 import { getSharedAnalytics } from "../services/dashboardApi";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import DashboardDataState from "../components/dashboard/DashboardDataState";
+import ExecutiveInsightsPanel from "../components/executive/ExecutiveInsightsPanel";
+import PredictionSummaryPanel from "../components/predictive/PredictionSummaryPanel";
 
 import {
   FiBarChart2,
@@ -97,19 +99,23 @@ function applyScenarioAdjustments(baseValues, scenario) {
   if (scenario === "Fleet Breakdown") {
     return {
       ...baseValues,
-      fleetPerformance: "72.5",
-      mineHealthScore: Math.max(baseValues.mineHealthScore - 12, 0),
+      orePerformance: "94.0",
+      wastePerformance: "90.0",
+      fleetPerformance: "71.1",
+      plantPerformance: "97.0",
+      safetyIncidents: 0,
+      mineHealthScore: 78,
       priorityAction:
-        "Recover fleet availability and assign maintenance recovery plan",
+        "Launch the fleet recovery plan and prioritize repairs on the highest-downtime trucks",
       riskMessage:
-        "Fleet utilization has dropped due to equipment breakdown risk. Haulage capacity requires immediate attention.",
-      healthStatus: "Watch",
-      actionSeverity: "Medium",
+        "Fleet availability has declined to 68.8%, fleet utilization is 71.1%, and average breakdown duration has increased to 9.0 hours per truck. Production and maintenance recovery require coordinated management action.",
+      healthStatus: "High Priority",
+      actionSeverity: "High",
       trends: {
-        ore: "-5.8%",
-        waste: "-7.2%",
-        fleet: "-14.5%",
-        plant: "-1.2%",
+        ore: "-6.0%",
+        waste: "-10.0%",
+        fleet: "-18.9%",
+        plant: "-3.0%",
         safety: "0",
       },
     };
@@ -557,7 +563,10 @@ export default function Dashboard() {
         try {
           setDemoLoading(true);
 
-          const result = await loadDemoData();
+          const result = await loadDemoData({
+            scenario: demoScenario,
+            mine_name: mineName,
+          });
           console.log("Demo data loaded:", result);
 
           setDemoData(result.data);
@@ -581,7 +590,7 @@ export default function Dashboard() {
         }
       },
     });
-  }, [demoScenario, runScenarioTransition, showToast]);
+  }, [demoScenario, mineName, runScenarioTransition, showToast]);
 
   const handleResetDemo = useCallback(async () => {
     await runScenarioTransition({
@@ -589,7 +598,9 @@ export default function Dashboard() {
       minimumDuration: 700,
       action: async () => {
         try {
-          await resetDemoData();
+          await resetDemoData({
+            mine_name: mineName,
+          });
 
           setDemoData(null);
           setDemoLoaded(false);
@@ -611,7 +622,7 @@ export default function Dashboard() {
         }
       },
     });
-  }, [runScenarioTransition, showToast]);
+  }, [mineName, runScenarioTransition, showToast]);
 
   const loadSharedAnalytics = useCallback(async () => {
     try {
@@ -1349,7 +1360,12 @@ export default function Dashboard() {
               unit="%"
               target="90%"
               icon={KPI_ICONS.fleet}
-              badge="Avail 91%"
+              badge={
+                demoLoaded &&
+                demoScenario === "Fleet Breakdown"
+                  ? "Availability 68.8%"
+                  : "Availability 91%"
+              }
               trend={scenarioValues.trends?.fleet}
               accent="#2563eb"
               soft="#dbeafe"
@@ -1605,6 +1621,21 @@ export default function Dashboard() {
               ])}
             </div>
           </ExecutivePanel>
+        </section>
+
+        <section style={{ marginTop: 24 }}>
+          <ExecutiveInsightsPanel
+            mineName={mineName}
+            scenario={
+              demoLoaded
+                ? demoScenario
+                : ""
+            }
+          />
+        </section>
+
+        <section style={{ marginTop: 24 }}>
+          <PredictionSummaryPanel mineName={mineName} />
         </section>
 
         <div

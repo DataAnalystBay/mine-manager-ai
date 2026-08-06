@@ -44,6 +44,13 @@ const INITIAL_FILTERS = {
   endDate: "",
 };
 
+const INITIAL_SUMMARY = {
+  totalLogs: 0,
+  successfulLogs: 0,
+  failedLogs: 0,
+  todayLogs: 0,
+};
+
 
 function formatDateTime(value) {
   if (!value) {
@@ -151,6 +158,9 @@ function AuditTrail() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
+  const [summary, setSummary] =
+    useState(INITIAL_SUMMARY);
+
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] =
     useState(DEFAULT_PAGE_SIZE);
@@ -229,9 +239,24 @@ function AuditTrail() {
       setTotal(
         Number(response?.total) || 0
       );
+
+      setSummary({
+        totalLogs:
+          Number(response?.total_logs) || 0,
+
+        successfulLogs:
+          Number(response?.successful_logs) || 0,
+
+        failedLogs:
+          Number(response?.failed_logs) || 0,
+
+        todayLogs:
+          Number(response?.today_logs) || 0,
+      });
     } catch (requestError) {
       setItems([]);
       setTotal(0);
+      setSummary(INITIAL_SUMMARY);
 
       setError(
         requestError?.userMessage ||
@@ -351,6 +376,131 @@ function AuditTrail() {
           {error}
         </Alert>
       )}
+
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, minmax(0, 1fr))",
+            lg: "repeat(4, minmax(0, 1fr))",
+          },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.25,
+            border: "1px solid #e5e7eb",
+            borderRadius: "14px",
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: "#64748b" }}
+          >
+            Total Logs
+          </Typography>
+
+          <Typography
+            variant="h4"
+            sx={{
+              mt: 0.75,
+              fontWeight: 800,
+              color: "#0f172a",
+            }}
+          >
+            {summary.totalLogs}
+          </Typography>
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.25,
+            border: "1px solid #bbf7d0",
+            borderRadius: "14px",
+            bgcolor: "#f0fdf4",
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: "#166534" }}
+          >
+            Successful
+          </Typography>
+
+          <Typography
+            variant="h4"
+            sx={{
+              mt: 0.75,
+              fontWeight: 800,
+              color: "#166534",
+            }}
+          >
+            {summary.successfulLogs}
+          </Typography>
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.25,
+            border: "1px solid #fecaca",
+            borderRadius: "14px",
+            bgcolor: "#fef2f2",
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: "#b91c1c" }}
+          >
+            Failed
+          </Typography>
+
+          <Typography
+            variant="h4"
+            sx={{
+              mt: 0.75,
+              fontWeight: 800,
+              color: "#b91c1c",
+            }}
+          >
+            {summary.failedLogs}
+          </Typography>
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.25,
+            border: "1px solid #bfdbfe",
+            borderRadius: "14px",
+            bgcolor: "#eff6ff",
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: "#1d4ed8" }}
+          >
+            Today&apos;s Activity
+          </Typography>
+
+          <Typography
+            variant="h4"
+            sx={{
+              mt: 0.75,
+              fontWeight: 800,
+              color: "#1d4ed8",
+            }}
+          >
+            {summary.todayLogs}
+          </Typography>
+        </Paper>
+      </Box>
 
 
       <Paper

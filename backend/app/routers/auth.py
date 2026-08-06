@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -17,6 +17,10 @@ router = APIRouter(
 
 
 def get_db():
+    """
+    Provide a database session and close it after the request.
+    """
+
     db = SessionLocal()
 
     try:
@@ -26,12 +30,34 @@ def get_db():
 
 
 class RegisterRequest(BaseModel):
-    company_name: str
-    mine_name: str
-    full_name: str
+    """
+    Initial system-registration payload.
+
+    Public registration creates only the first company
+    and its first Administrator account.
+    """
+
+    company_name: str = Field(
+        min_length=2,
+        max_length=255,
+    )
+
+    mine_name: str = Field(
+        min_length=2,
+        max_length=255,
+    )
+
+    full_name: str = Field(
+        min_length=2,
+        max_length=255,
+    )
+
     email: EmailStr
-    password: str
-    role: str = "Administrator"
+
+    password: str = Field(
+        min_length=10,
+        max_length=128,
+    )
 
 
 class LoginResponse(BaseModel):
@@ -52,12 +78,75 @@ class CurrentUserResponse(BaseModel):
     is_active: bool
 
 
-@router.post("/register")
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+)
 def register_user(
     request: RegisterRequest,
     db: Session = Depends(get_db),
 ):
-    normalized_email = request.email.lower().strip()
+    """
+    Create the first company and first Administrator.
+
+    Once any user exists, public registration is disabled.
+    Additional users must be created through the
+    Administrator-protected User Management API.
+    """
+
+    existing_user_count = db.query(User).count()
+
+    if existing_user_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Public registration is disabled. "
+                "Ask an Administrator to create the user."
+            ),
+        )
+
+    normalized_company_name = (
+        request.company_name.strip()
+    )
+
+    normalized_mine_name = (
+        request.mine_name.strip()
+    )
+
+    normalized_full_name = (
+        request.full_name.strip()
+    )
+
+    normalized_email = (
+        request.email.lower().strip()
+    )
+
+    if len(normalized_company_name) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Company name must contain at least "
+                "2 non-space characters."
+            ),
+        )
+
+    if len(normalized_mine_name) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Mine name must contain at least "
+                "2 non-space characters."
+            ),
+        )
+
+    if len(normalized_full_name) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Full name must contain at least "
+                "2 non-space characters."
+            ),
+        )
 
     existing_user = (
         db.query(User)
@@ -72,8 +161,8 @@ def register_user(
         )
 
     company = Company(
-        company_name=request.company_name.strip(),
-        mine_name=request.mine_name.strip(),
+        company_name=normalized_company_name,
+        mine_name=normalized_mine_name,
         is_active=True,
     )
 
@@ -83,26 +172,42 @@ def register_user(
 
         user = User(
             company_id=company.id,
-            full_name=request.full_name.strip(),
+            full_name=normalized_full_name,
             email=normalized_email,
-            hashed_password=hash_password(request.password),
-            role=request.role.strip(),
+            hashed_password=hash_password(
+                request.password
+            ),
+            role="Administrator",
             is_active=True,
         )
 
         db.add(user)
         db.commit()
+
         db.refresh(company)
         db.refresh(user)
 
-    except Exception:
+    except HTTPException:
         db.rollback()
         raise
 
+    except Exception as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "Unable to complete initial registration."
+            ),
+        ) from exc
+
     return {
-        "message": "User registered successfully",
+        "message": (
+            "Initial Administrator registered successfully"
+        ),
         "user_id": user.id,
         "company_id": company.id,
+        "role": user.role,
     }
 
 
@@ -114,7 +219,13 @@ def login_user(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    normalized_email = form_data.username.lower().strip()
+    """
+    Authenticate an active user and issue a JWT access token.
+    """
+
+    normalized_email = (
+        form_data.username.lower().strip()
+    )
 
     user = (
         db.query(User)
@@ -185,13 +296,21 @@ def login_user(
     response_model=CurrentUserResponse,
 )
 def get_authenticated_user(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
+    """
+    Return the currently authenticated user.
+    """
+
     return {
         "id": current_user.id,
         "company_id": current_user.company_id,
         "full_name": current_user.full_name,
         "email": current_user.email,
         "role": current_user.role,
-        "is_active": bool(current_user.is_active),
+        "is_active": bool(
+            current_user.is_active
+        ),
     }

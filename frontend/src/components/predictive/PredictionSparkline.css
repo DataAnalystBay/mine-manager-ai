@@ -1,0 +1,100 @@
+.prediction-sparkline {
+  margin-top: 18px;
+  padding: 14px 16px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.prediction-sparkline svg {
+  display: block;
+  width: 100%;
+  height: 72px;
+  overflow: visible;
+}
+
+.prediction-sparkline__line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.prediction-sparkline__point {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.prediction-sparkline--improving .prediction-sparkline__line {
+  stroke: #22c55e;
+}
+
+.prediction-sparkline--improving .prediction-sparkline__point {
+  fill: #22c55e;
+}
+
+.prediction-sparkline--declining .prediction-sparkline__line {
+  stroke: #ef4444;
+}
+
+.prediction-sparkline--declining .prediction-sparkline__point {
+  fill: #ef4444;
+}
+
+.prediction-sparkline--stable .prediction-sparkline__line {
+  stroke: #f59e0b;
+}
+
+.prediction-sparkline--stable .prediction-sparkline__point {
+  fill: #f59e0b;
+}
+
+.prediction-sparkline__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.prediction-sparkline__labels span {
+  flex: 1;
+  text-align: center;
+}
+
+.prediction-sparkline__labels span:first-child {
+  text-align: left;
+}
+
+.prediction-sparkline__labels span:last-child {
+  text-align: right;
+}
+
+.prediction-sparkline--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .prediction-sparkline {
+    padding: 12px;
+  }
+
+  .prediction-sparkline svg {
+    height: 64px;
+  }
+
+  .prediction-sparkline__labels {
+    font-size: 10px;
+  }
+}

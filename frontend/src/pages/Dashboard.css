@@ -1739,7 +1739,13 @@
     padding: 16px;
   }
 
+  .dashboard-section {
+  width: 100%;
+  margin-top: 24px;
+}
   .executive-config-grid {
     border-radius: 14px;
   }
+  
 }
+

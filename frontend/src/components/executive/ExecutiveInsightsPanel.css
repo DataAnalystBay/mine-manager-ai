@@ -1,0 +1,358 @@
+/* =====================================================
+   Mine Manager AI
+   Executive Insights Panel
+   Sprint 10.18.7
+   ===================================================== */
+
+.executive-insights-panel {
+  position: relative;
+  margin-top: 26px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dfe7f1;
+  border-radius: 20px;
+  box-shadow:
+    0 14px 36px rgba(15, 23, 42, 0.07),
+    0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.executive-insights-panel::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #4f46e5,
+    #16a34a
+  );
+}
+
+/* Header */
+
+.executive-insights-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 76px;
+  padding: 16px 20px;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbff 0%,
+      #ffffff 55%,
+      #f7fee7 100%
+    );
+  border-bottom: 1px solid #e7edf5;
+}
+
+.executive-insights-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+
+.executive-insights-panel-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #4f46e5
+    );
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.executive-insights-panel-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.executive-insights-panel-copy {
+  min-width: 0;
+}
+
+.executive-insights-panel-eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.executive-insights-panel-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.executive-insights-panel-period {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+/* Header controls */
+
+.executive-insights-panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.executive-insights-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 10px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.executive-insights-refresh {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #d7e0eb;
+  border-radius: 11px;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.executive-insights-refresh:hover:not(:disabled) {
+  color: #2563eb;
+  border-color: #93c5fd;
+  box-shadow: 0 5px 13px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.executive-insights-refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Content */
+
+.executive-insights-panel-content {
+  padding: 20px;
+}
+
+.executive-insights-headline {
+  position: relative;
+  margin-bottom: 18px;
+  padding: 16px 18px 16px 20px;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      135deg,
+      #eff6ff,
+      #f8fafc
+    );
+  border: 1px solid #dbeafe;
+  border-radius: 15px;
+}
+
+.executive-insights-headline::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  content: "";
+  background: #2563eb;
+}
+
+.executive-insights-headline-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.executive-insights-headline p {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.executive-insights-list {
+  display: grid;
+  gap: 18px;
+}
+
+/* Remove the card's old external top spacing inside this panel */
+
+.executive-insights-panel .executive-ai-insight {
+  margin-top: 0;
+}
+
+/* Loading */
+
+.executive-insights-loading {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  color: #64748b;
+  text-align: center;
+}
+
+.executive-insights-loading-spinner {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  border: 3px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: executive-insights-spin 750ms linear infinite;
+}
+
+.executive-insights-loading p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* Error */
+
+.executive-insights-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 17px;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+}
+
+.executive-insights-error svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #ea580c;
+}
+
+.executive-insights-error strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.executive-insights-error p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* Empty */
+
+.executive-insights-empty {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  padding: 24px;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Responsive */
+
+@media (max-width: 720px) {
+  .executive-insights-panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .executive-insights-panel-controls {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .executive-insights-panel-content {
+    padding: 16px;
+  }
+
+  .executive-insights-headline p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .executive-insights-panel {
+    border-radius: 16px;
+  }
+
+  .executive-insights-panel-header {
+    padding: 15px;
+  }
+
+  .executive-insights-panel-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .executive-insights-panel-title {
+    font-size: 16px;
+  }
+
+  .executive-insights-panel-content {
+    padding: 13px;
+  }
+}
+
+@keyframes executive-insights-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .executive-insights-loading-spinner {
+    animation: none;
+  }
+
+  .executive-insights-refresh {
+    transition: none;
+  }
+}

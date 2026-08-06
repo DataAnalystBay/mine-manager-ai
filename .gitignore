@@ -47,3 +47,16 @@ backups/
 *.dump
 *.sql.gz
 support-diagnostics/
+
+# Local development backup copies
+*_before_*.py
+*_before_*.js
+*_before_*.jsx
+*_before_*.css
+
+# Runtime uploads
+backend/uploads/
+
+# Local source-code inventories
+backend/*_inventory.txt
+backend/security_auth_router.txt
