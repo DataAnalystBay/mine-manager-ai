@@ -1,0 +1,23 @@
+Mine Manager AI Final Pilot Verification Environment
+=====================================================
+
+Verification date:
+2026-08-06T10:13:17+08:00
+
+Git branch:
+sprint-10.21-pilot-ready-package
+
+Git revision:
+2ff6ff7 Sprint 10.21.8 add pilot acceptance testing package
+
+Python:
+Python 3.11.9
+
+Node:
+v22.23.2
+
+NPM:
+10.9.8
+
+PostgreSQL client:
+psql (PostgreSQL) 17.10

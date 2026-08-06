@@ -1,0 +1,88 @@
+ M backend/app/auth/dependencies.py
+ M backend/app/config.py
+ M backend/app/routers/ai.py
+ M backend/app/routers/analytics.py
+ M backend/app/routers/audit_logs.py
+ M backend/app/routers/auth.py
+ M backend/app/routers/briefing.py
+ M backend/app/routers/dashboard.py
+ M backend/app/routers/demo.py
+ M backend/app/routers/executive_actions.py
+ M backend/app/routers/executive_kpi_pdf.py
+ M backend/app/routers/executive_recommendations.py
+ M backend/app/routers/production.py
+ M backend/app/routers/reports.py
+ M backend/app/routers/system_health.py
+ M backend/app/routers/upload.py
+ M backend/app/services/demo_data_service.py
+ M backend/app/services/system_health_service.py
+ M frontend/src/App.css
+ M frontend/src/api/demoApi.js
+ M frontend/src/api/systemHealthApi.js
+ M frontend/src/components/audit/AuditFilterBar.css
+ M frontend/src/components/executive/ExecutiveAiInsightCard.css
+ M frontend/src/components/executive/ExecutiveAiInsightCard.jsx
+ M frontend/src/index.css
+ M frontend/src/pages/AuditTrail.jsx
+ M frontend/src/pages/Dashboard.css
+ M frontend/src/pages/Dashboard.jsx
+ M frontend/src/pages/SystemHealth.jsx
+ M pilot-package/operations/INCIDENT_RESPONSE.md
+ M pilot-package/operations/SUPPORT_GUIDE.md
+?? (
+?? "ample datasets\357\200\242"
+?? backend/app/main_before_10_18_2.py
+?? backend/app/routers/demo_before_10_18_8_2.py
+?? backend/app/routers/deployment_readiness.py
+?? backend/app/routers/executive_insights.py
+?? backend/app/routers/executive_insights_before_10_18_8_4.py
+?? backend/app/routers/predictions.py
+?? backend/app/services/audit_excel_service.py
+?? backend/app/services/demo_data_service_before_10_18_8_2.py
+?? backend/app/services/deployment_readiness_service.py
+?? backend/app/services/executive_summary_service_v2.py
+?? backend/app/services/predictive/
+?? backend/endpoint_authorization_inventory.txt
+?? backend/inspect_demo_data.py
+?? backend/security_auth_router.txt
+?? backend/security_endpoint_inventory.txt
+?? backend/uploads/fleet_Mine_Manager_AI_Fleet_30_Day_Sample.xlsx
+?? backend/uploads/fleet_Mine_Manager_AI_Fleet_30_Day_Sample_With_Truck_ID.xlsx
+?? backend/uploads/fleet_fleet_test.xlsx
+?? backend/uploads/plant_Mine_Manager_AI_Plant_30_Day_Sample.xlsx
+?? backend/uploads/plant_plant_test.xlsx
+?? backend/uploads/production_Mine_Manager_AI_Production_30_Day_Sample.xlsx
+?? backend/uploads/safety_Mine_Manager_AI_Safety_30_Day_Sample.xlsx
+?? backend/uploads/safety_safety_test.xlsx
+?? cd
+?? frontend/src/api/demoApi_before_10_18_8_2.js
+?? frontend/src/api/deploymentReadinessApi.js
+?? frontend/src/api/executiveInsightsApi.js
+?? frontend/src/api/executiveInsightsApi_before_10_18_8_4.js
+?? frontend/src/api/predictionsApi.js
+?? frontend/src/components/executive/ExecutiveAiInsightCard_before_10_18_4.jsx
+?? frontend/src/components/executive/ExecutiveAiInsightCard_before_10_18_7_2.css
+?? frontend/src/components/executive/ExecutiveAiInsightCard_before_10_18_7_2.jsx
+?? frontend/src/components/executive/ExecutiveInsightsPanel.css
+?? frontend/src/components/executive/ExecutiveInsightsPanel.jsx
+?? frontend/src/components/executive/ExecutiveInsightsPanel_before_10_18_7.jsx
+?? frontend/src/components/executive/ExecutiveInsightsPanel_before_10_18_8_4.jsx
+?? frontend/src/components/predictive/
+?? frontend/src/components/system-health/
+?? frontend/src/pages/Dashboard_before_10_18_8_2.jsx
+?? frontend/src/pages/Dashboard_before_10_18_8_4.jsx
+?? frontend/src/pages/SecurityConfiguration.css
+?? frontend/src/pages/SecurityConfiguration.jsx
+?? git
+?? mkdir
+?? pilot-package/final-verification/
+?? pilot-package/release-notes/
+?? "tallation guide\357\200\242"
+?? tree
+?? {
+
+Ignored security-sensitive paths
+================================
+.gitignore:5:backend/.env	"backend\\.env"
+.gitignore:45:backups/	"backups\\database"
+.gitignore:49:support-diagnostics/	support-diagnostics

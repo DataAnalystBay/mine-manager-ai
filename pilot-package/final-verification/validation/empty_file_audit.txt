@@ -1,0 +1,19 @@
+
+FullName                                                                                            Length
+--------                                                                                            ------
+C:\Projects\mine-manager-ai\pilot-package\final-verification\FINAL_PILOT_READINESS_REPORT.md             0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\GO_NO_GO_CHECKLIST.md                       0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\RELEASE_SCOPE_INVENTORY.md                  0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\backend_final_results.txt        0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\database_final_results.txt       0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\final_readiness_summary.txt      0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\frontend_final_results.txt       0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\git_hygiene_results.txt          0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\markdown_ending_audit.txt        0
+C:\Projects\mine-manager-ai\pilot-package\final-verification\validation\secret_scan_results.txt          0
+C:\Projects\mine-manager-ai\pilot-package\release-notes\CHANGELOG.md                                     0
+C:\Projects\mine-manager-ai\pilot-package\release-notes\KNOWN_LIMITATIONS.md                             0
+C:\Projects\mine-manager-ai\pilot-package\release-notes\VERSION_1.0_RELEASE_NOTES.md                     0
+
+
+
