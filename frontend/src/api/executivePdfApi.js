@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://127.0.0.1:8000";
+const { API_BASE_URL } from "../config/apiConfig";
 
 export async function exportExecutiveKpiPdf({
   kpiKey,
@@ -11,7 +11,7 @@ export async function exportExecutiveKpiPdf({
   includeCompletedActions = true,
 }) {
   const response = await axios.get(
-    `${API_BASE}/api/executive-kpi/${kpiKey}/export-pdf`,
+    `${API_BASE_URL}/api/executive-kpi/${kpiKey}/export-pdf`,
     {
       params: {
         mine_name: mineName,
