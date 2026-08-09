@@ -1,9 +1,32 @@
 import axios from "axios";
 import { DASHBOARD_API_URL } from "../config/apiConfig";
 
+const dashboardClient = axios.create({
+  baseURL: DASHBOARD_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 20000,
+});
+
+dashboardClient.interceptors.request.use(
+  (config) => {
+    const token =
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("token");
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 export const getExecutiveSummary = async (mineName) => {
-  const response = await axios.get(
-    `${DASHBOARD_API_URL}/executive-summary`,
+  const response = await dashboardClient.get(
+    "/executive-summary",
     {
       params: {
         mine_name: mineName,
@@ -15,8 +38,8 @@ export const getExecutiveSummary = async (mineName) => {
 };
 
 export const getAIBriefing = async (mineName) => {
-  const response = await axios.get(
-    `${DASHBOARD_API_URL}/ai-briefing`,
+  const response = await dashboardClient.get(
+    "/ai-briefing",
     {
       params: {
         mine_name: mineName,
@@ -28,8 +51,8 @@ export const getAIBriefing = async (mineName) => {
 };
 
 export const getPriorityActions = async (mineName) => {
-  const response = await axios.get(
-    `${DASHBOARD_API_URL}/priority-actions`,
+  const response = await dashboardClient.get(
+    "/priority-actions",
     {
       params: {
         mine_name: mineName,
@@ -41,8 +64,8 @@ export const getPriorityActions = async (mineName) => {
 };
 
 export const getRiskRegister = async (mineName) => {
-  const response = await axios.get(
-    `${DASHBOARD_API_URL}/risk-register`,
+  const response = await dashboardClient.get(
+    "/risk-register",
     {
       params: {
         mine_name: mineName,
@@ -54,8 +77,8 @@ export const getRiskRegister = async (mineName) => {
 };
 
 export const getHealthHistory = async (mineName) => {
-  const response = await axios.get(
-    `${DASHBOARD_API_URL}/health-history`,
+  const response = await dashboardClient.get(
+    "/health-history",
     {
       params: {
         mine_name: mineName,
@@ -67,8 +90,8 @@ export const getHealthHistory = async (mineName) => {
 };
 
 export const getTrendAnalysis = async (mineName) => {
-  const response = await axios.get(
-    `${DASHBOARD_API_URL}/trend-analysis`,
+  const response = await dashboardClient.get(
+    "/trend-analysis",
     {
       params: {
         mine_name: mineName,
@@ -93,8 +116,8 @@ export const getSharedAnalytics = async (
   days = 7
 ) => {
   try {
-    const response = await axios.get(
-      `${DASHBOARD_API_URL}/shared-analytics`,
+    const response = await dashboardClient.get(
+      "/shared-analytics",
       {
         params: {
           mine_name: mineName,
@@ -105,7 +128,10 @@ export const getSharedAnalytics = async (
 
     return response.data;
   } catch (error) {
-    console.error("Failed to load shared analytics:", error);
+    console.error(
+      "Failed to load shared analytics:",
+      error
+    );
     throw error;
   }
 };
@@ -116,8 +142,8 @@ export const getKpiDetail = async (
   days = 7
 ) => {
   try {
-    const response = await axios.get(
-      `${DASHBOARD_API_URL}/kpi-detail`,
+    const response = await dashboardClient.get(
+      "/kpi-detail",
       {
         params: {
           mine_name: mineName,
@@ -129,7 +155,12 @@ export const getKpiDetail = async (
 
     return response.data;
   } catch (error) {
-    console.error("Failed to load KPI detail:", error);
+    console.error(
+      "Failed to load KPI detail:",
+      error
+    );
     throw error;
   }
 };
+
+export default dashboardClient;
