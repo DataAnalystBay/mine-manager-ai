@@ -112,7 +112,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_origin_regex=(
-        r"https://mine-manager-ai-[a-zA-Z0-9-]+\.vercel\.app"
+        r"https://mine-manager(?:-ai)?-[a-zA-Z0-9-]+\.vercel\.app"
     ),
     allow_credentials=True,
     allow_methods=[
