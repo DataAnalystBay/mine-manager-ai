@@ -417,6 +417,384 @@ def generate_workforce_demo(
 
     return data
 
+# --------------------------------------------------
+# High Performing Mine Scenario Generators
+# --------------------------------------------------
+
+def generate_high_performing_production_demo(
+    days: int = 30,
+) -> List[Dict[str, Any]]:
+    """
+    Generate deterministic production records for a
+    consistently high-performing mining operation.
+    """
+
+    data: List[Dict[str, Any]] = []
+    today = date.today()
+    days = _normalize_days(days)
+
+    for i in range(days):
+        report_date = _report_date(
+            today,
+            days,
+            i,
+        )
+
+        progress = _progress_ratio(
+            i,
+            days,
+        )
+
+        ore_plan = 52000 + ((i % 5) * 250)
+        waste_plan = 100000 + ((i % 4) * 500)
+
+        ore_ratio = _interpolate(
+            1.01,
+            1.042,
+            progress,
+        )
+
+        waste_ratio = _interpolate(
+            1.00,
+            1.026,
+            progress,
+        )
+
+        data.append({
+            "report_date": report_date.isoformat(),
+            "ore_plan": ore_plan,
+            "ore_actual": int(
+                ore_plan * ore_ratio
+            ),
+            "waste_plan": waste_plan,
+            "waste_actual": int(
+                waste_plan * waste_ratio
+            ),
+        })
+
+    return data
+
+
+def generate_high_performing_fleet_demo(
+    days: int = 30,
+) -> List[Dict[str, Any]]:
+    """
+    Generate deterministic healthy fleet performance.
+    """
+
+    data: List[Dict[str, Any]] = []
+    today = date.today()
+    days = _normalize_days(days)
+
+    trucks = [
+        "CAT793-01",
+        "CAT793-02",
+        "CAT793-03",
+        "CAT793-04",
+        "CAT793-05",
+    ]
+
+    offsets = [-0.8, -0.4, 0.0, 0.4, 0.8]
+
+    for i in range(days):
+        report_date = _report_date(
+            today,
+            days,
+            i,
+        )
+
+        progress = _progress_ratio(
+            i,
+            days,
+        )
+
+        base_availability = _interpolate(
+            90.0,
+            93.0,
+            progress,
+        )
+
+        base_utilization = _interpolate(
+            88.0,
+            91.5,
+            progress,
+        )
+
+        base_breakdown = _interpolate(
+            1.8,
+            0.8,
+            progress,
+        )
+
+        base_idle = _interpolate(
+            3.0,
+            1.8,
+            progress,
+        )
+
+        for truck, offset in zip(
+            trucks,
+            offsets,
+        ):
+            data.append({
+                "report_date":
+                    report_date.isoformat(),
+                "truck_id": truck,
+                "availability": round(
+                    base_availability + offset,
+                    1,
+                ),
+                "utilization": round(
+                    base_utilization + offset,
+                    1,
+                ),
+                "breakdown_hours": round(
+                    max(
+                        0.0,
+                        base_breakdown
+                        - (offset * 0.1),
+                    ),
+                    1,
+                ),
+                "idle_hours": round(
+                    max(
+                        0.0,
+                        base_idle
+                        - (offset * 0.1),
+                    ),
+                    1,
+                ),
+            })
+
+    return data
+
+
+def generate_high_performing_plant_demo(
+    days: int = 30,
+) -> List[Dict[str, Any]]:
+    """
+    Generate deterministic stable plant performance.
+    """
+
+    data: List[Dict[str, Any]] = []
+    today = date.today()
+    days = _normalize_days(days)
+
+    for i in range(days):
+        report_date = _report_date(
+            today,
+            days,
+            i,
+        )
+
+        progress = _progress_ratio(
+            i,
+            days,
+        )
+
+        throughput_plan = (
+            45500 + ((i % 4) * 150)
+        )
+
+        throughput_ratio = _interpolate(
+            0.95,
+            0.972,
+            progress,
+        )
+
+        data.append({
+            "report_date":
+                report_date.isoformat(),
+            "throughput_plan":
+                throughput_plan,
+            "throughput_actual": int(
+                throughput_plan
+                * throughput_ratio
+            ),
+            "recovery": round(
+                _interpolate(
+                    89.5,
+                    91.5,
+                    progress,
+                ),
+                1,
+            ),
+            "downtime_hours": round(
+                _interpolate(
+                    2.0,
+                    0.8,
+                    progress,
+                ),
+                1,
+            ),
+        })
+
+    return data
+
+
+def generate_high_performing_safety_demo(
+    days: int = 30,
+) -> List[Dict[str, Any]]:
+    """
+    Generate deterministic strong safety performance.
+    """
+
+    data: List[Dict[str, Any]] = []
+    today = date.today()
+    days = _normalize_days(days)
+
+    for i in range(days):
+        report_date = _report_date(
+            today,
+            days,
+            i,
+        )
+
+        data.append({
+            "report_date":
+                report_date.isoformat(),
+            "near_misses":
+                1 if i % 10 == 0 else 0,
+            "hazards_reported":
+                5 + (i % 3),
+            "open_actions":
+                3 + (i % 3),
+            "critical_risks": 0,
+            "recordable_incidents": 0,
+        })
+
+    return data
+
+
+def generate_high_performing_maintenance_demo(
+    days: int = 30,
+) -> List[Dict[str, Any]]:
+    """
+    Generate deterministic healthy maintenance KPIs.
+    """
+
+    data: List[Dict[str, Any]] = []
+    today = date.today()
+    days = _normalize_days(days)
+
+    for i in range(days):
+        report_date = _report_date(
+            today,
+            days,
+            i,
+        )
+
+        progress = _progress_ratio(
+            i,
+            days,
+        )
+
+        data.append({
+            "report_date":
+                report_date.isoformat(),
+            "pm_compliance": round(
+                _interpolate(
+                    91.0,
+                    96.0,
+                    progress,
+                ),
+                1,
+            ),
+            "backlog_work_orders": int(
+                round(
+                    _interpolate(
+                        35,
+                        22,
+                        progress,
+                    )
+                )
+            ),
+            "planned_work_percent": round(
+                _interpolate(
+                    75.0,
+                    84.0,
+                    progress,
+                ),
+                1,
+            ),
+            "unplanned_work_percent": round(
+                _interpolate(
+                    25.0,
+                    16.0,
+                    progress,
+                ),
+                1,
+            ),
+            "equipment_availability": round(
+                _interpolate(
+                    90.0,
+                    94.0,
+                    progress,
+                ),
+                1,
+            ),
+        })
+
+    return data
+
+
+def generate_high_performing_workforce_demo(
+    days: int = 30,
+) -> List[Dict[str, Any]]:
+    """
+    Generate deterministic stable workforce KPIs.
+    """
+
+    data: List[Dict[str, Any]] = []
+    today = date.today()
+    days = _normalize_days(days)
+
+    for i in range(days):
+        report_date = _report_date(
+            today,
+            days,
+            i,
+        )
+
+        progress = _progress_ratio(
+            i,
+            days,
+        )
+
+        data.append({
+            "report_date":
+                report_date.isoformat(),
+            "attendance_rate": round(
+                _interpolate(
+                    95.0,
+                    97.0,
+                    progress,
+                ),
+                1,
+            ),
+            "overtime_hours": int(
+                round(
+                    _interpolate(
+                        135,
+                        105,
+                        progress,
+                    )
+                )
+            ),
+            "fatigue_cases":
+                1 if i % 14 == 0 else 0,
+            "training_compliance": round(
+                _interpolate(
+                    94.0,
+                    98.0,
+                    progress,
+                ),
+                1,
+            ),
+            "contractor_headcount": 160,
+        })
+
+    return data
 
 # --------------------------------------------------
 # Fleet Breakdown Scenario Generators
@@ -953,9 +1331,9 @@ def generate_all_demo_data(
     """
     Generate the complete Demo Mode dataset.
 
-    Fleet Breakdown is now deterministic so all related
-    dashboard metrics tell one consistent operational
-    story.
+    High Performing Mine and Fleet Breakdown are
+    deterministic so all related dashboard metrics tell
+    one consistent operational story.
 
     Other scenarios continue using the generic generators
     until their dedicated implementations are added.
@@ -981,7 +1359,48 @@ def generate_all_demo_data(
     ):
         normalized_scenario = DEFAULT_SCENARIO
 
-    if normalized_scenario == "Fleet Breakdown":
+    if normalized_scenario == "High Performing Mine":
+        production = (
+            generate_high_performing_production_demo(
+                days=normalized_days,
+            )
+        )
+
+        fleet = (
+            generate_high_performing_fleet_demo(
+                days=normalized_days,
+            )
+        )
+
+        plant = (
+            generate_high_performing_plant_demo(
+                days=normalized_days,
+            )
+        )
+
+        safety = (
+            generate_high_performing_safety_demo(
+                days=normalized_days,
+            )
+        )
+
+        maintenance = (
+            generate_high_performing_maintenance_demo(
+                days=normalized_days,
+            )
+        )
+
+        workforce = (
+            generate_high_performing_workforce_demo(
+                days=normalized_days,
+            )
+        )
+
+        scenario_status = (
+            "high_performing_deterministic"
+        )
+
+    elif normalized_scenario == "Fleet Breakdown":
         production = (
             generate_fleet_breakdown_production_demo(
                 days=normalized_days,
@@ -1048,9 +1467,6 @@ def generate_all_demo_data(
         )
 
         scenario_status_map = {
-            "High Performing Mine":
-                "high_performing_generic",
-
             "Plant Bottleneck":
                 "plant_bottleneck_branch_ready",
 

@@ -25,6 +25,7 @@ SEVERITY_ORDER = {
 
 SUPPORTED_DEMO_SCENARIOS = {
     "Fleet Breakdown",
+    "High Performing Mine",
 }
 
 
@@ -1265,6 +1266,544 @@ def _build_fleet_breakdown_insights(
     }
 
 
+
+# --------------------------------------------------
+# High Performing Mine Demo Insight Builder
+# --------------------------------------------------
+
+def _build_high_performing_mine_insights(
+    mine_name: str,
+) -> Dict[str, Any]:
+    """
+    Generate deterministic executive insights for the
+    High Performing Mine demo scenario.
+    """
+
+    demo_data = generate_all_demo_data(
+        scenario="High Performing Mine",
+        mine_name=mine_name,
+    )
+
+    production_records = (
+        demo_data.get("production") or []
+    )
+    fleet_records = (
+        demo_data.get("fleet") or []
+    )
+    plant_records = (
+        demo_data.get("plant") or []
+    )
+    safety_records = (
+        demo_data.get("safety") or []
+    )
+    maintenance_records = (
+        demo_data.get("maintenance") or []
+    )
+    workforce_records = (
+        demo_data.get("workforce") or []
+    )
+
+    if (
+        not production_records
+        or not fleet_records
+        or not plant_records
+        or not safety_records
+    ):
+        return {
+            "demo_data": demo_data,
+            "insights": [],
+            "report_date": None,
+            "reporting_period": (
+                _build_demo_reporting_period(
+                    demo_data
+                )
+            ),
+            "overall_trend": {
+                "direction": "No Data",
+                "change_percent": 0.0,
+                "summary": (
+                    "High Performing Mine demo data "
+                    "is incomplete."
+                ),
+            },
+        }
+
+    latest_production = production_records[-1]
+    latest_plant = plant_records[-1]
+    latest_safety = safety_records[-1]
+
+    latest_maintenance = (
+        maintenance_records[-1]
+        if maintenance_records
+        else {}
+    )
+
+    latest_workforce = (
+        workforce_records[-1]
+        if workforce_records
+        else {}
+    )
+
+    latest_fleet = _get_latest_records(
+        fleet_records,
+        5,
+    )
+
+    ore_plan = _safe_float(
+        latest_production.get("ore_plan")
+    )
+    ore_actual = _safe_float(
+        latest_production.get("ore_actual")
+    )
+
+    waste_plan = _safe_float(
+        latest_production.get("waste_plan")
+    )
+    waste_actual = _safe_float(
+        latest_production.get("waste_actual")
+    )
+
+    ore_performance = (
+        _calculate_performance_percent(
+            ore_actual,
+            ore_plan,
+        )
+    )
+
+    waste_performance = (
+        _calculate_performance_percent(
+            waste_actual,
+            waste_plan,
+        )
+    )
+
+    ore_variance = (
+        _calculate_variance_percent(
+            ore_actual,
+            ore_plan,
+        )
+    )
+
+    fleet_availability = _average([
+        item.get("availability")
+        for item in latest_fleet
+    ])
+
+    fleet_utilization = _average([
+        item.get("utilization")
+        for item in latest_fleet
+    ])
+
+    throughput_plan = _safe_float(
+        latest_plant.get("throughput_plan")
+    )
+
+    throughput_actual = _safe_float(
+        latest_plant.get(
+            "throughput_actual"
+        )
+    )
+
+    plant_performance = (
+        _calculate_performance_percent(
+            throughput_actual,
+            throughput_plan,
+        )
+    )
+
+    recovery = _safe_float(
+        latest_plant.get("recovery")
+    )
+
+    recordable_incidents = _safe_int(
+        latest_safety.get(
+            "recordable_incidents"
+        )
+    )
+
+    critical_risks = _safe_int(
+        latest_safety.get(
+            "critical_risks"
+        )
+    )
+
+    pm_compliance = _safe_float(
+        latest_maintenance.get(
+            "pm_compliance"
+        )
+    )
+
+    maintenance_backlog = _safe_int(
+        latest_maintenance.get(
+            "backlog_work_orders"
+        )
+    )
+
+    equipment_availability = _safe_float(
+        latest_maintenance.get(
+            "equipment_availability"
+        )
+    )
+
+    attendance_rate = _safe_float(
+        latest_workforce.get(
+            "attendance_rate"
+        )
+    )
+
+    training_compliance = _safe_float(
+        latest_workforce.get(
+            "training_compliance"
+        )
+    )
+
+    insights: List[Dict[str, Any]] = []
+
+    insights.append({
+        "insight_key":
+            "high-performance-production",
+        "category": "Production",
+        "kpi_name": "Ore Production",
+        "severity": "low",
+        "priority":
+            "Maintain operating discipline",
+        "title":
+            "Production Performance Above Plan",
+        "summary": (
+            f"Ore production is operating at "
+            f"{ore_performance:.1f}% of plan, "
+            f"with waste movement also sustaining "
+            f"{waste_performance:.1f}% of plan."
+        ),
+        "trend": {
+            "direction": "Improving",
+            "change_percent":
+                ore_variance,
+            "summary": (
+                "Production delivery remains above "
+                "planned levels while maintaining "
+                "balanced ore and waste movement."
+            ),
+        },
+        "likely_driver": (
+            "Stable fleet availability, disciplined "
+            "shift execution, and consistent operating "
+            "conditions are supporting production."
+        ),
+        "estimated_impact":
+            _build_demo_impact(
+                value=max(
+                    ore_actual - ore_plan,
+                    0.0,
+                ),
+                unit="tonnes/day",
+                description=(
+                    "Production is delivering tonnes "
+                    "above the current daily ore plan."
+                ),
+                method=(
+                    "Ore actual minus ore plan"
+                ),
+            ),
+        "recommended_priority": (
+            "Protect the current operating rhythm, "
+            "maintain dispatch discipline, and avoid "
+            "creating downstream constraints through "
+            "uncontrolled overproduction."
+        ),
+        "confidence": 0.94,
+        "confidence_label":
+            "Deterministic demo confidence",
+        "current_value": ore_actual,
+        "target_value": ore_plan,
+        "performance_percent":
+            ore_performance,
+        "variance_percent":
+            ore_variance,
+        "status": "Above Plan",
+        "report_date":
+            latest_production.get(
+                "report_date"
+            ),
+        "source": {
+            "type":
+                "deterministic_demo_orchestrator",
+            "engines": [
+                "Demo Scenario Engine",
+                "Production KPI Analysis",
+            ],
+        },
+    })
+
+    insights.append({
+        "insight_key":
+            "high-performance-fleet",
+        "category": "Fleet",
+        "kpi_name": "Fleet Performance",
+        "severity": "low",
+        "priority":
+            "Protect fleet reliability",
+        "title":
+            "Fleet Reliability Supporting Plan",
+        "summary": (
+            f"Average fleet availability is "
+            f"{fleet_availability:.1f}% and "
+            f"utilization is "
+            f"{fleet_utilization:.1f}%."
+        ),
+        "trend": {
+            "direction": "Improving",
+            "change_percent": 3.5,
+            "summary": (
+                "Fleet availability and utilization "
+                "are improving while breakdown and "
+                "idle time remain controlled."
+            ),
+        },
+        "likely_driver": (
+            "Improved equipment reliability and "
+            "maintenance execution are supporting "
+            "effective haulage capacity."
+        ),
+        "estimated_impact":
+            _build_demo_impact(
+                value=fleet_availability,
+                unit="percent",
+                description=(
+                    "High fleet availability is "
+                    "protecting production capacity."
+                ),
+                method=(
+                    "Average latest fleet availability"
+                ),
+            ),
+        "recommended_priority": (
+            "Maintain preventive maintenance "
+            "compliance and protect planned "
+            "maintenance windows despite strong "
+            "operational performance."
+        ),
+        "confidence": 0.93,
+        "confidence_label":
+            "Deterministic demo confidence",
+        "current_value":
+            fleet_availability,
+        "target_value": 90.0,
+        "performance_percent":
+            fleet_utilization,
+        "variance_percent": round(
+            fleet_availability - 90.0,
+            1,
+        ),
+        "status": "Above Plan",
+        "report_date":
+            latest_production.get(
+                "report_date"
+            ),
+        "supporting_metrics": {
+            "fleet_availability":
+                fleet_availability,
+            "fleet_utilization":
+                fleet_utilization,
+            "pm_compliance":
+                pm_compliance,
+            "maintenance_backlog":
+                maintenance_backlog,
+            "equipment_availability":
+                equipment_availability,
+        },
+        "source": {
+            "type":
+                "deterministic_demo_orchestrator",
+            "engines": [
+                "Demo Scenario Engine",
+                "Fleet KPI Analysis",
+                "Maintenance Performance Analysis",
+            ],
+        },
+    })
+
+    insights.append({
+        "insight_key":
+            "high-performance-plant",
+        "category": "Plant",
+        "kpi_name": "Plant Performance",
+        "severity": "low",
+        "priority":
+            "Maintain plant stability",
+        "title":
+            "Plant Performance Stable",
+        "summary": (
+            f"Plant throughput is operating at "
+            f"{plant_performance:.1f}% of plan "
+            f"with recovery at "
+            f"{recovery:.1f}%."
+        ),
+        "trend": {
+            "direction": "Improving",
+            "change_percent": 2.2,
+            "summary": (
+                "Throughput and recovery are stable "
+                "with reduced downtime."
+            ),
+        },
+        "likely_driver": (
+            "Stable ore feed, controlled downtime, "
+            "and consistent plant operating conditions."
+        ),
+        "estimated_impact":
+            _build_demo_impact(
+                value=recovery,
+                unit="percent",
+                description=(
+                    "Stable recovery supports reliable "
+                    "metal production performance."
+                ),
+                method=(
+                    "Latest deterministic plant record"
+                ),
+            ),
+        "recommended_priority": (
+            "Maintain feed consistency, continue "
+            "monitoring recovery, and avoid pushing "
+            "throughput beyond sustainable operating "
+            "limits."
+        ),
+        "confidence": 0.91,
+        "confidence_label":
+            "Deterministic demo confidence",
+        "current_value":
+            throughput_actual,
+        "target_value":
+            throughput_plan,
+        "performance_percent":
+            plant_performance,
+        "variance_percent": round(
+            plant_performance - 100.0,
+            1,
+        ),
+        "status": "Stable",
+        "report_date":
+            latest_plant.get(
+                "report_date"
+            ),
+        "supporting_metrics": {
+            "recovery": recovery,
+        },
+        "source": {
+            "type":
+                "deterministic_demo_orchestrator",
+            "engines": [
+                "Demo Scenario Engine",
+                "Plant KPI Analysis",
+            ],
+        },
+    })
+
+    insights.append({
+        "insight_key":
+            "high-performance-safety",
+        "category": "Safety",
+        "kpi_name": "Safety Performance",
+        "severity": "low",
+        "priority":
+            "Maintain safety discipline",
+        "title":
+            "Safety Performance Controlled",
+        "summary": (
+            f"Recordable incidents remain at "
+            f"{recordable_incidents} and critical "
+            f"risks remain at {critical_risks}."
+        ),
+        "trend": {
+            "direction": "Stable",
+            "change_percent": 0.0,
+            "summary": (
+                "Strong operational performance is "
+                "being maintained without deterioration "
+                "in safety outcomes."
+            ),
+        },
+        "likely_driver": (
+            "Consistent operating discipline, hazard "
+            "management, and stable workforce execution."
+        ),
+        "estimated_impact":
+            _build_demo_impact(
+                value=recordable_incidents,
+                unit="incidents",
+                description=(
+                    "No recordable incidents are "
+                    "present in the current scenario."
+                ),
+                method=(
+                    "Latest deterministic safety record"
+                ),
+            ),
+        "recommended_priority": (
+            "Avoid complacency during strong production "
+            "performance and continue verification of "
+            "critical controls and field leadership."
+        ),
+        "confidence": 0.95,
+        "confidence_label":
+            "Deterministic demo confidence",
+        "current_value":
+            recordable_incidents,
+        "target_value": 0,
+        "performance_percent": 100.0,
+        "variance_percent": 0.0,
+        "status": "Controlled",
+        "report_date":
+            latest_safety.get(
+                "report_date"
+            ),
+        "supporting_metrics": {
+            "critical_risks":
+                critical_risks,
+            "attendance_rate":
+                attendance_rate,
+            "training_compliance":
+                training_compliance,
+        },
+        "source": {
+            "type":
+                "deterministic_demo_orchestrator",
+            "engines": [
+                "Demo Scenario Engine",
+                "Safety KPI Analysis",
+                "Workforce Readiness Analysis",
+            ],
+        },
+    })
+
+    return {
+        "demo_data": demo_data,
+        "insights": insights,
+        "report_date":
+            latest_production.get(
+                "report_date"
+            ),
+        "reporting_period":
+            _build_demo_reporting_period(
+                demo_data
+            ),
+        "overall_trend": {
+            "direction": "Improving",
+            "change_percent": 4.2,
+            "summary": (
+                "The High Performing Mine scenario "
+                "shows production above plan, strong "
+                "fleet reliability, stable plant "
+                "performance, and controlled safety "
+                "risk. Management priority is to "
+                "protect sustainable performance "
+                "without creating operational strain."
+            ),
+        },
+    }
+
+
 # --------------------------------------------------
 # Response Helpers
 # --------------------------------------------------
@@ -1405,6 +1944,56 @@ def _get_demo_executive_summary(
         scenario=scenario,
         generated_at=generated_at,
     )
+
+    if scenario == "High Performing Mine":
+        result = (
+            _build_high_performing_mine_insights(
+                mine_name=mine_name
+            )
+        )
+
+        insights = _sort_insights(
+            result.get("insights") or []
+        )
+
+        severity_counts = (
+            _count_severities(
+                insights
+            )
+        )
+
+        trend_data = (
+            result.get("overall_trend")
+            or {}
+        )
+
+        return {
+            **base_response,
+            "status": "success",
+            "report_date": (
+                result.get("report_date")
+            ),
+            "reporting_period": (
+                result.get(
+                    "reporting_period",
+                    DEFAULT_REPORTING_PERIOD,
+                )
+            ),
+            "executive_headline": (
+                _build_executive_headline(
+                    insights=insights,
+                    trend_data=trend_data,
+                )
+            ),
+            "overall_trend": trend_data,
+            "total_insights": len(
+                insights
+            ),
+            "severity_counts": (
+                severity_counts
+            ),
+            "insights": insights,
+        }
 
     if scenario == "Fleet Breakdown":
         result = (
