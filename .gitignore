@@ -60,3 +60,24 @@ backend/uploads/
 # Local source-code inventories
 backend/*_inventory.txt
 backend/security_auth_router.txt
+
+# --------------------------------------------------
+# Commercial pilot customer data
+# --------------------------------------------------
+
+# Never commit customer operational data
+pilot-package/commercial/customer-data/*
+!pilot-package/commercial/customer-data/.gitkeep
+!pilot-package/commercial/customer-data/README.md
+
+# Common customer data formats
+pilot-package/commercial/**/*.xlsx
+pilot-package/commercial/**/*.xls
+pilot-package/commercial/**/*.csv
+pilot-package/commercial/**/*.zip
+pilot-package/commercial/**/*.json
+
+# Customer-specific secrets/configuration
+pilot-package/commercial/**/*.env
+pilot-package/commercial/**/*credentials*
+pilot-package/commercial/**/*secret*
