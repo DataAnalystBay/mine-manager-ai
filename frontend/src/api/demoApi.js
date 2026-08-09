@@ -1,6 +1,28 @@
 import axios from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 
+const demoClient = axios.create({
+  baseURL: `${API_BASE_URL}/api/demo`,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 20000,
+});
+
+demoClient.interceptors.request.use(
+  (config) => {
+    const token =
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("token");
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 function normalizeDemoPayload(payload = {}) {
   const scenario = String(
@@ -22,21 +44,19 @@ function normalizeDemoPayload(payload = {}) {
   };
 }
 
-
 export async function loadDemoData(
   payload = {}
 ) {
   const requestPayload =
     normalizeDemoPayload(payload);
 
-  const response = await axios.post(
-    `${API_BASE_URL}/api/demo/load`,
+  const response = await demoClient.post(
+    "/load",
     requestPayload
   );
 
   return response.data;
 }
-
 
 export async function resetDemoData(
   payload = {}
@@ -47,8 +67,8 @@ export async function resetDemoData(
       ""
   ).trim();
 
-  const response = await axios.post(
-    `${API_BASE_URL}/api/demo/reset`,
+  const response = await demoClient.post(
+    "/reset",
     mineName
       ? {
           mine_name: mineName,
@@ -58,3 +78,5 @@ export async function resetDemoData(
 
   return response.data;
 }
+
+export default demoClient;
