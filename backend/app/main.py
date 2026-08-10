@@ -22,6 +22,7 @@ from app.routers import (
     executive_insights,
     executive_kpi_pdf,
     executive_recommendations,
+    fleet,
     production,
     system_health,
     upload,
@@ -140,6 +141,7 @@ app.include_router(config.router)
 
 # Core operational modules
 app.include_router(production.router)
+app.include_router(fleet.router)
 app.include_router(analytics.router)
 app.include_router(ai.router)
 app.include_router(briefing.router)
