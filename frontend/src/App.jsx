@@ -1,75 +1,152 @@
-import React, { Suspense, lazy } from "react";
+import React, {
+  Suspense,
+  lazy,
+} from "react";
+
 import {
   BrowserRouter,
   Route,
   Routes,
 } from "react-router-dom";
 
-import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import MainLayout from "./layout/MainLayout";
+import {
+  AuthProvider,
+} from "./context/AuthContext";
 
-/* ---------- Lazy-loaded Pages ---------- */
+import ProtectedRoute
+  from "./components/ProtectedRoute";
 
-const Login = lazy(() => import("./pages/Login"));
+import MainLayout
+  from "./layout/MainLayout";
 
-const Dashboard = lazy(() =>
-  import("./pages/Dashboard")
+
+/* ============================================================
+   Lazy-loaded Pages
+   ============================================================ */
+
+const Login = lazy(
+  () =>
+    import(
+      "./pages/Login"
+    )
 );
 
-const UploadReports = lazy(() =>
-  import("./pages/UploadReports")
+
+const Dashboard = lazy(
+  () =>
+    import(
+      "./pages/Dashboard"
+    )
 );
 
-const Production = lazy(() =>
-  import("./pages/Production")
+
+const UploadReports = lazy(
+  () =>
+    import(
+      "./pages/UploadReports"
+    )
 );
 
-const Fleet = lazy(() =>
-  import("./pages/Fleet")
+
+const Production = lazy(
+  () =>
+    import(
+      "./pages/Production"
+    )
 );
 
-const Plant = lazy(() =>
-  import("./pages/Plant")
+
+const Fleet = lazy(
+  () =>
+    import(
+      "./pages/Fleet"
+    )
 );
 
-const Safety = lazy(() =>
-  import("./pages/Safety")
+
+const Plant = lazy(
+  () =>
+    import(
+      "./pages/Plant"
+    )
 );
 
-const Settings = lazy(() =>
-  import("./pages/Settings")
+
+const Safety = lazy(
+  () =>
+    import(
+      "./pages/Safety"
+    )
 );
 
-const ExecutiveReports = lazy(() =>
-  import("./pages/ExecutiveReports")
+
+const Settings = lazy(
+  () =>
+    import(
+      "./pages/Settings"
+    )
 );
 
-const ExecutiveActions = lazy(() =>
-  import("./pages/ExecutiveActions")
+
+const ExecutiveReports = lazy(
+  () =>
+    import(
+      "./pages/ExecutiveReports"
+    )
 );
 
-const SystemHealth = lazy(() =>
-  import("./pages/SystemHealth")
+
+const ExecutiveActions = lazy(
+  () =>
+    import(
+      "./pages/ExecutiveActions"
+    )
 );
 
-const SupportDiagnostics = lazy(() =>
-  import("./pages/SupportDiagnostics")
+
+const SystemHealth = lazy(
+  () =>
+    import(
+      "./pages/SystemHealth"
+    )
 );
 
-const UserManagement = lazy(() =>
-  import("./pages/UserManagement")
+
+const SupportDiagnostics = lazy(
+  () =>
+    import(
+      "./pages/SupportDiagnostics"
+    )
 );
 
-const AuditTrail = lazy(() =>
-  import("./pages/AuditTrail")
+
+const UserManagement = lazy(
+  () =>
+    import(
+      "./pages/UserManagement"
+    )
 );
 
-const SecurityConfiguration = lazy(() =>
-  import("./pages/SecurityConfiguration")
+
+const AuditTrail = lazy(
+  () =>
+    import(
+      "./pages/AuditTrail"
+    )
 );
 
-/* ---------- Loading Screen ---------- */
+
+const SecurityConfiguration = lazy(
+  () =>
+    import(
+      "./pages/SecurityConfiguration"
+    )
+);
+
+
+/* ============================================================
+   Loading Screen
+   ============================================================ */
 
 function PageLoader() {
   return (
@@ -77,25 +154,34 @@ function PageLoader() {
       style={{
         minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#f4f7fb",
+        justifyContent:
+          "center",
+        alignItems:
+          "center",
+        background:
+          "#f4f7fb",
       }}
     >
       <div
         style={{
-          textAlign: "center",
+          textAlign:
+            "center",
         }}
       >
         <div
           style={{
             width: 48,
             height: 48,
-            margin: "0 auto 16px",
-            border: "4px solid #dbeafe",
-            borderTop: "4px solid #2563eb",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
+            margin:
+              "0 auto 16px",
+            border:
+              "4px solid #dbeafe",
+            borderTop:
+              "4px solid #2563eb",
+            borderRadius:
+              "50%",
+            animation:
+              "spin 1s linear infinite",
           }}
         />
 
@@ -103,44 +189,81 @@ function PageLoader() {
           style={{
             fontSize: 16,
             fontWeight: 700,
-            color: "#1e3a8a",
+            color:
+              "#1e3a8a",
           }}
         >
           Loading Mine Manager AI...
         </div>
 
-        <style>{`
-          @keyframes spin {
-            from {
-              transform: rotate(0deg);
-            }
+        <style>
+          {`
+            @keyframes spin {
+              from {
+                transform: rotate(0deg);
+              }
 
-            to {
-              transform: rotate(360deg);
+              to {
+                transform: rotate(360deg);
+              }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </div>
   );
 }
 
-/* ---------- Application ---------- */
+
+/* ============================================================
+   Administrator Route Helper
+   ============================================================ */
+
+function AdminRoute({
+  children,
+}) {
+  return (
+    <ProtectedRoute
+      allowedRoles={[
+        "Administrator",
+      ]}
+    >
+      {children}
+    </ProtectedRoute>
+  );
+}
+
+
+/* ============================================================
+   Application
+   ============================================================ */
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
+        <Suspense
+          fallback={
+            <PageLoader />
+          }
+        >
           <Routes>
-            {/* ---------- Public Routes ---------- */}
+
+            {/* ===============================================
+                Public Routes
+                =============================================== */}
 
             <Route
               path="/login"
-              element={<Login />}
+              element={
+                <Login />
+              }
             />
 
-            {/* ---------- Protected Routes ---------- */}
+
+            {/* ===============================================
+                Authenticated Application
+                =============================================== */}
 
             <Route
               element={
@@ -149,89 +272,154 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              {/* ---------- Main Dashboard ---------- */}
+
+              {/* =============================================
+                  Main Dashboard
+                  ============================================= */}
 
               <Route
                 path="/"
-                element={<Dashboard />}
+                element={
+                  <Dashboard />
+                }
               />
 
-              {/* ---------- Operational Data ---------- */}
+
+              {/* =============================================
+                  Operational Data
+                  ============================================= */}
 
               <Route
                 path="/upload"
-                element={<UploadReports />}
+                element={
+                  <UploadReports />
+                }
               />
+
 
               <Route
                 path="/production"
-                element={<Production />}
+                element={
+                  <Production />
+                }
               />
+
 
               <Route
                 path="/fleet"
-                element={<Fleet />}
+                element={
+                  <Fleet />
+                }
               />
+
 
               <Route
                 path="/plant"
-                element={<Plant />}
+                element={
+                  <Plant />
+                }
               />
+
 
               <Route
                 path="/safety"
-                element={<Safety />}
+                element={
+                  <Safety />
+                }
               />
 
-              {/* ---------- Executive Intelligence ---------- */}
+
+              {/* =============================================
+                  Executive Intelligence
+                  ============================================= */}
 
               <Route
                 path="/reports"
-                element={<ExecutiveReports />}
+                element={
+                  <ExecutiveReports />
+                }
               />
+
 
               <Route
                 path="/executive-actions"
-                element={<ExecutiveActions />}
+                element={
+                  <ExecutiveActions />
+                }
               />
 
-              {/* ---------- Administration ---------- */}
+
+              {/* =============================================
+                  Administrator Routes
+                  ============================================= */}
 
               <Route
                 path="/users"
-                element={<UserManagement />}
+                element={
+                  <AdminRoute>
+                    <UserManagement />
+                  </AdminRoute>
+                }
               />
+
 
               <Route
                 path="/audit-trail"
-                element={<AuditTrail />}
+                element={
+                  <AdminRoute>
+                    <AuditTrail />
+                  </AdminRoute>
+                }
               />
+
 
               <Route
                 path="/system-health"
-                element={<SystemHealth />}
+                element={
+                  <AdminRoute>
+                    <SystemHealth />
+                  </AdminRoute>
+                }
               />
+
 
               <Route
                 path="/support-diagnostics"
-                element={<SupportDiagnostics />}
+                element={
+                  <AdminRoute>
+                    <SupportDiagnostics />
+                  </AdminRoute>
+                }
               />
+
 
               <Route
                 path="/security-configuration"
-                element={<SecurityConfiguration />}
+                element={
+                  <AdminRoute>
+                    <SecurityConfiguration />
+                  </AdminRoute>
+                }
               />
+
 
               <Route
                 path="/settings"
-                element={<Settings />}
+                element={
+                  <AdminRoute>
+                    <Settings />
+                  </AdminRoute>
+                }
               />
+
             </Route>
+
           </Routes>
         </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );
 }
+
 
 export default App;
