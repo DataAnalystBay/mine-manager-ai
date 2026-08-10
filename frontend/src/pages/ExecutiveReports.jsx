@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+} from "react";
+
 import axios from "axios";
 
-import { API_BASE_URL } from "../config/apiConfig";
+import {
+  API_BASE_URL,
+} from "../config/apiConfig";
 
 import {
   Alert,
@@ -15,23 +20,81 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import InsightsIcon from "@mui/icons-material/Insights";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
 
-import ReportHeader from "../components/reports/ReportHeader";
-import ReportCard from "../components/reports/ReportCard";
-import ExportCard from "../components/reports/ExportCard";
-import ReportHistoryTable from "../components/reports/ReportHistoryTable";
+import ReportHeader
+  from "../components/reports/ReportHeader";
 
+import ReportCard
+  from "../components/reports/ReportCard";
+
+import ExportCard
+  from "../components/reports/ExportCard";
+
+import ReportHistoryTable
+  from "../components/reports/ReportHistoryTable";
+
+
+/* ============================================================
+   Authenticated Report Download Client
+   ============================================================ */
+
+const reportDownloadClient =
+  axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 60000,
+  });
+
+
+reportDownloadClient.interceptors.request.use(
+  (config) => {
+    const token =
+      localStorage.getItem(
+        "access_token"
+      ) ||
+      localStorage.getItem(
+        "token"
+      );
+
+    if (token) {
+      config.headers.Authorization =
+        `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) =>
+    Promise.reject(error)
+);
+
+
+/* ============================================================
+   Executive Reports Page
+   ============================================================ */
 
 function ExecutiveReports() {
-  const [loadingReport, setLoadingReport] = useState(null);
+  const [
+    loadingReport,
+    setLoadingReport,
+  ] = useState(null);
 
-  const [notification, setNotification] = useState({
+
+  const [
+    notification,
+    setNotification,
+  ] = useState({
     open: false,
     severity: "success",
     message: "",
   });
 
 
-  const showNotification = (severity, message) => {
+  /* ==========================================================
+     Notifications
+     ========================================================== */
+
+  const showNotification = (
+    severity,
+    message
+  ) => {
     setNotification({
       open: true,
       severity,
@@ -40,200 +103,344 @@ function ExecutiveReports() {
   };
 
 
-  const closeNotification = (_, reason) => {
-    if (reason === "clickaway") {
+  const closeNotification = (
+    _,
+    reason
+  ) => {
+    if (
+      reason === "clickaway"
+    ) {
       return;
     }
 
-    setNotification((current) => ({
-      ...current,
-      open: false,
-    }));
+    setNotification(
+      (current) => ({
+        ...current,
+        open: false,
+      })
+    );
   };
 
+
+  /* ==========================================================
+     Download Filename Helper
+     ========================================================== */
 
   const extractFilename = (
     contentDisposition,
     fallbackFilename
   ) => {
-    if (!contentDisposition) {
+    if (
+      !contentDisposition
+    ) {
       return fallbackFilename;
     }
 
-    const utf8Match = contentDisposition.match(
-      /filename\*=UTF-8''([^;]+)/i
-    );
+    const utf8Match =
+      contentDisposition.match(
+        /filename\*=UTF-8''([^;]+)/i
+      );
 
-    if (utf8Match?.[1]) {
+    if (
+      utf8Match?.[1]
+    ) {
       return decodeURIComponent(
-        utf8Match[1].replace(/["']/g, "")
+        utf8Match[1].replace(
+          /["']/g,
+          ""
+        )
       );
     }
 
-    const standardMatch = contentDisposition.match(
-      /filename="?([^"]+)"?/i
-    );
+    const standardMatch =
+      contentDisposition.match(
+        /filename="?([^"]+)"?/i
+      );
 
-    if (standardMatch?.[1]) {
-      return standardMatch[1].trim();
+    if (
+      standardMatch?.[1]
+    ) {
+      return standardMatch[
+        1
+      ].trim();
     }
 
     return fallbackFilename;
   };
 
 
-  const downloadFile = async ({
-    reportKey,
-    endpoint,
-    fallbackFilename,
-    mimeType,
-    successMessage,
-  }) => {
-    if (loadingReport) {
-      return;
-    }
+  /* ==========================================================
+     Shared Authenticated Download Function
+     ========================================================== */
 
-    setLoadingReport(reportKey);
-
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}${endpoint}`,
-        {
-          responseType: "blob",
-        }
-      );
-
-      const contentType =
-        response.headers["content-type"] || mimeType;
-
-      const fileBlob = new Blob(
-        [response.data],
-        {
-          type: contentType,
-        }
-      );
-
-      const contentDisposition =
-        response.headers["content-disposition"];
-
-      const filename = extractFilename(
-        contentDisposition,
-        fallbackFilename
-      );
-
-      const fileUrl =
-        window.URL.createObjectURL(fileBlob);
-
-      const link = document.createElement("a");
-
-      link.href = fileUrl;
-      link.setAttribute("download", filename);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      window.URL.revokeObjectURL(fileUrl);
-
-      showNotification(
-        "success",
-        successMessage
-      );
-    } catch (error) {
-      console.error(
-        `${reportKey} download failed:`,
-        error
-      );
-
-      let errorMessage =
-        "Unable to generate the report. Please confirm the backend is running.";
-
-      if (error.response?.status === 401) {
-        errorMessage =
-          "Your session has expired. Please sign in again.";
-      } else if (error.response?.status === 403) {
-        errorMessage =
-          "You do not have permission to download this report.";
-      } else if (error.response?.status >= 500) {
-        errorMessage =
-          "The report service encountered an error. Please review the backend logs.";
+  const downloadFile =
+    async ({
+      reportKey,
+      endpoint,
+      fallbackFilename,
+      mimeType,
+      successMessage,
+    }) => {
+      if (loadingReport) {
+        return;
       }
 
-      showNotification(
-        "error",
-        errorMessage
+      setLoadingReport(
+        reportKey
       );
-    } finally {
-      setLoadingReport(null);
-    }
-  };
+
+      try {
+        const response =
+          await reportDownloadClient.get(
+            endpoint,
+            {
+              responseType:
+                "blob",
+            }
+          );
 
 
-  const downloadExecutivePowerPoint = () =>
-    downloadFile({
-      reportKey: "powerpoint",
-      endpoint: "/reports/powerpoint",
-      fallbackFilename:
-        "Mine_Manager_AI_Executive_Board_Pack.pptx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      successMessage:
-        "Executive PowerPoint Board Pack generated successfully.",
-    });
+        const contentType =
+          response.headers[
+            "content-type"
+          ] ||
+          mimeType;
 
 
-  const downloadDailyPdf = () =>
-    downloadFile({
-      reportKey: "daily",
-      endpoint: "/reports/daily/pdf",
-      fallbackFilename:
-        "Daily_Executive_Report.pdf",
-      mimeType: "application/pdf",
-      successMessage:
-        "Daily Executive Report generated successfully.",
-    });
+        const fileBlob =
+          new Blob(
+            [
+              response.data,
+            ],
+            {
+              type:
+                contentType,
+            }
+          );
 
 
-  const downloadWeeklyPdf = () =>
-    downloadFile({
-      reportKey: "weekly",
-      endpoint: "/reports/weekly/pdf",
-      fallbackFilename:
-        "Weekly_Operations_Report.pdf",
-      mimeType: "application/pdf",
-      successMessage:
-        "Weekly Operations Report generated successfully.",
-    });
+        const contentDisposition =
+          response.headers[
+            "content-disposition"
+          ];
 
 
-  const downloadMonthlyPdf = () =>
-    downloadFile({
-      reportKey: "monthly",
-      endpoint: "/reports/monthly/pdf",
-      fallbackFilename:
-        "Monthly_KPI_Pack.pdf",
-      mimeType: "application/pdf",
-      successMessage:
-        "Monthly KPI Pack generated successfully.",
-    });
+        const filename =
+          extractFilename(
+            contentDisposition,
+            fallbackFilename
+          );
 
 
-  const downloadExecutiveExcel = () =>
-    downloadFile({
-      reportKey: "excel",
-      endpoint: "/reports/excel",
-      fallbackFilename:
-        "Mine_Manager_AI_Executive_Export.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      successMessage:
-        "Executive Excel workbook exported successfully.",
-    });
+        const fileUrl =
+          window.URL.createObjectURL(
+            fileBlob
+          );
+
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href =
+          fileUrl;
+
+        link.setAttribute(
+          "download",
+          filename
+        );
+
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        link.remove();
+
+
+        window.URL.revokeObjectURL(
+          fileUrl
+        );
+
+
+        showNotification(
+          "success",
+          successMessage
+        );
+      } catch (error) {
+        console.error(
+          `${reportKey} download failed:`,
+          error
+        );
+
+
+        let errorMessage =
+          "Unable to generate the report. Please confirm the backend is running.";
+
+
+        if (
+          error.response?.status ===
+          401
+        ) {
+          errorMessage =
+            "Your session has expired. Please sign in again.";
+        } else if (
+          error.response?.status ===
+          403
+        ) {
+          errorMessage =
+            "You do not have permission to download this report.";
+        } else if (
+          error.response?.status >=
+          500
+        ) {
+          errorMessage =
+            "The report service encountered an error. Please review the backend logs.";
+        }
+
+
+        showNotification(
+          "error",
+          errorMessage
+        );
+      } finally {
+        setLoadingReport(
+          null
+        );
+      }
+    };
+
+
+  /* ==========================================================
+     PowerPoint
+     ========================================================== */
+
+  const downloadExecutivePowerPoint =
+    () =>
+      downloadFile({
+        reportKey:
+          "powerpoint",
+
+        endpoint:
+          "/reports/powerpoint",
+
+        fallbackFilename:
+          "Mine_Manager_AI_Executive_Board_Pack.pptx",
+
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+        successMessage:
+          "Executive PowerPoint Board Pack generated successfully.",
+      });
+
+
+  /* ==========================================================
+     Daily PDF
+     ========================================================== */
+
+  const downloadDailyPdf =
+    () =>
+      downloadFile({
+        reportKey:
+          "daily",
+
+        endpoint:
+          "/reports/daily/pdf",
+
+        fallbackFilename:
+          "Daily_Executive_Report.pdf",
+
+        mimeType:
+          "application/pdf",
+
+        successMessage:
+          "Daily Executive Report generated successfully.",
+      });
+
+
+  /* ==========================================================
+     Weekly PDF
+     ========================================================== */
+
+  const downloadWeeklyPdf =
+    () =>
+      downloadFile({
+        reportKey:
+          "weekly",
+
+        endpoint:
+          "/reports/weekly/pdf",
+
+        fallbackFilename:
+          "Weekly_Operations_Report.pdf",
+
+        mimeType:
+          "application/pdf",
+
+        successMessage:
+          "Weekly Operations Report generated successfully.",
+      });
+
+
+  /* ==========================================================
+     Monthly PDF
+     ========================================================== */
+
+  const downloadMonthlyPdf =
+    () =>
+      downloadFile({
+        reportKey:
+          "monthly",
+
+        endpoint:
+          "/reports/monthly/pdf",
+
+        fallbackFilename:
+          "Monthly_KPI_Pack.pdf",
+
+        mimeType:
+          "application/pdf",
+
+        successMessage:
+          "Monthly KPI Pack generated successfully.",
+      });
+
+
+  /* ==========================================================
+     Excel
+     ========================================================== */
+
+  const downloadExecutiveExcel =
+    () =>
+      downloadFile({
+        reportKey:
+          "excel",
+
+        endpoint:
+          "/reports/excel",
+
+        fallbackFilename:
+          "Mine_Manager_AI_Executive_Export.xlsx",
+
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+        successMessage:
+          "Executive Excel workbook exported successfully.",
+      });
 
 
   const isGenerating =
     loadingReport !== null;
 
+
+  /* ==========================================================
+     UI
+     ========================================================== */
 
   return (
     <Box
@@ -243,28 +450,59 @@ function ExecutiveReports() {
           sm: 3,
           lg: 4,
         },
-        minHeight: "100vh",
-        bgcolor: "#f8fafc",
+
+        minHeight:
+          "100vh",
+
+        bgcolor:
+          "#f8fafc",
       }}
     >
       <ReportHeader />
+
 
       <Grid
         container
         spacing={3}
       >
-        <Grid size={{ xs: 12, md: 6 }}>
+
+        {/* ==================================================
+            Executive Board Pack
+            ================================================== */}
+
+        <Grid
+          size={{
+            xs: 12,
+            md: 6,
+          }}
+        >
           <ReportCard
-            title="Executive Board Pack"
-            subtitle="Board-ready PowerPoint presentation for executive operational reviews."
-            frequency="On demand"
-            format="PPTX"
-            badge="NEW"
+            title=
+              "Executive Board Pack"
+
+            subtitle=
+              "Board-ready PowerPoint presentation for executive operational reviews."
+
+            frequency=
+              "On demand"
+
+            format=
+              "PPTX"
+
+            badge=
+              "NEW"
+
             featured
+
             loading={
-              loadingReport === "powerpoint"
+              loadingReport ===
+              "powerpoint"
             }
-            icon={<SlideshowIcon />}
+
+            icon={
+              <SlideshowIcon />
+            }
+
             sections={[
               "Executive KPI Summary",
               "Production Trend",
@@ -273,28 +511,57 @@ function ExecutiveReports() {
               "Management Actions",
               "Executive Recommendations",
             ]}
+
             buttonText={
-              loadingReport === "powerpoint"
+              loadingReport ===
+              "powerpoint"
                 ? "Generating PowerPoint..."
                 : "Generate PowerPoint"
             }
-            disabled={isGenerating}
+
+            disabled={
+              isGenerating
+            }
+
             onClick={
               downloadExecutivePowerPoint
             }
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+
+        {/* ==================================================
+            Daily Executive Report
+            ================================================== */}
+
+        <Grid
+          size={{
+            xs: 12,
+            md: 6,
+          }}
+        >
           <ReportCard
-            title="Daily Executive Report"
-            subtitle="Meeting-ready daily summary for mine leadership."
-            frequency="Daily"
-            format="PDF"
+            title=
+              "Daily Executive Report"
+
+            subtitle=
+              "Meeting-ready daily summary for mine leadership."
+
+            frequency=
+              "Daily"
+
+            format=
+              "PDF"
+
             loading={
-              loadingReport === "daily"
+              loadingReport ===
+              "daily"
             }
-            icon={<DescriptionIcon />}
+
+            icon={
+              <DescriptionIcon />
+            }
+
             sections={[
               "Executive Summary",
               "Production Performance",
@@ -302,26 +569,57 @@ function ExecutiveReports() {
               "Safety & Risk Overview",
               "Priority Actions",
             ]}
+
             buttonText={
-              loadingReport === "daily"
+              loadingReport ===
+              "daily"
                 ? "Generating PDF..."
                 : "Generate PDF"
             }
-            disabled={isGenerating}
-            onClick={downloadDailyPdf}
+
+            disabled={
+              isGenerating
+            }
+
+            onClick={
+              downloadDailyPdf
+            }
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+
+        {/* ==================================================
+            Weekly Operations Report
+            ================================================== */}
+
+        <Grid
+          size={{
+            xs: 12,
+            md: 6,
+          }}
+        >
           <ReportCard
-            title="Weekly Operations Report"
-            subtitle="Operational trend review for weekly performance meetings."
-            frequency="Weekly"
-            format="PDF"
+            title=
+              "Weekly Operations Report"
+
+            subtitle=
+              "Operational trend review for weekly performance meetings."
+
+            frequency=
+              "Weekly"
+
+            format=
+              "PDF"
+
             loading={
-              loadingReport === "weekly"
+              loadingReport ===
+              "weekly"
             }
-            icon={<CalendarMonthIcon />}
+
+            icon={
+              <CalendarMonthIcon />
+            }
+
             sections={[
               "Weekly KPI Trends",
               "Department Performance",
@@ -329,26 +627,57 @@ function ExecutiveReports() {
               "AI Recommendations",
               "Action Follow-up",
             ]}
+
             buttonText={
-              loadingReport === "weekly"
+              loadingReport ===
+              "weekly"
                 ? "Generating PDF..."
                 : "Generate PDF"
             }
-            disabled={isGenerating}
-            onClick={downloadWeeklyPdf}
+
+            disabled={
+              isGenerating
+            }
+
+            onClick={
+              downloadWeeklyPdf
+            }
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+
+        {/* ==================================================
+            Monthly KPI Pack
+            ================================================== */}
+
+        <Grid
+          size={{
+            xs: 12,
+            md: 6,
+          }}
+        >
           <ReportCard
-            title="Monthly KPI Pack"
-            subtitle="Executive KPI pack for monthly leadership review."
-            frequency="Monthly"
-            format="PDF"
+            title=
+              "Monthly KPI Pack"
+
+            subtitle=
+              "Executive KPI pack for monthly leadership review."
+
+            frequency=
+              "Monthly"
+
+            format=
+              "PDF"
+
             loading={
-              loadingReport === "monthly"
+              loadingReport ===
+              "monthly"
             }
-            icon={<InsightsIcon />}
+
+            icon={
+              <InsightsIcon />
+            }
+
             sections={[
               "Mine Health Score",
               "Monthly KPI Summary",
@@ -356,25 +685,53 @@ function ExecutiveReports() {
               "Risk Register",
               "Management Commentary",
             ]}
+
             buttonText={
-              loadingReport === "monthly"
+              loadingReport ===
+              "monthly"
                 ? "Generating PDF..."
                 : "Generate PDF"
             }
-            disabled={isGenerating}
-            onClick={downloadMonthlyPdf}
+
+            disabled={
+              isGenerating
+            }
+
+            onClick={
+              downloadMonthlyPdf
+            }
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+
+        {/* ==================================================
+            Excel Export
+            ================================================== */}
+
+        <Grid
+          size={{
+            xs: 12,
+            md: 6,
+          }}
+        >
           <ExportCard
-            title="Excel Export"
-            subtitle="Export operational datasets for analysis, sharing, and Power BI."
-            frequency="On demand"
-            format="XLSX"
+            title=
+              "Excel Export"
+
+            subtitle=
+              "Export operational datasets for analysis, sharing, and Power BI."
+
+            frequency=
+              "On demand"
+
+            format=
+              "XLSX"
+
             loading={
-              loadingReport === "excel"
+              loadingReport ===
+              "excel"
             }
+
             sections={[
               "Executive Summary",
               "Production Dataset",
@@ -383,41 +740,88 @@ function ExecutiveReports() {
               "Safety Dataset",
               "KPI Definitions",
             ]}
+
             buttonText={
-              loadingReport === "excel"
+              loadingReport ===
+              "excel"
                 ? "Generating Excel..."
                 : "Export Excel"
             }
-            disabled={isGenerating}
-            onClick={downloadExecutiveExcel}
+
+            disabled={
+              isGenerating
+            }
+
+            onClick={
+              downloadExecutiveExcel
+            }
           />
         </Grid>
+
       </Grid>
+
+
+      {/* ====================================================
+          Report History
+          ==================================================== */}
 
       <ReportHistoryTable />
 
+
+      {/* ====================================================
+          Notifications
+          ==================================================== */}
+
       <Snackbar
-        open={notification.open}
-        autoHideDuration={5000}
-        onClose={closeNotification}
+        open={
+          notification.open
+        }
+
+        autoHideDuration={
+          5000
+        }
+
+        onClose={
+          closeNotification
+        }
+
         anchorOrigin={{
-          vertical: "top",
-          horizontal: "right",
+          vertical:
+            "top",
+
+          horizontal:
+            "right",
         }}
       >
         <Alert
-          onClose={closeNotification}
-          severity={notification.severity}
-          variant="filled"
+          onClose={
+            closeNotification
+          }
+
+          severity={
+            notification.severity
+          }
+
+          variant=
+            "filled"
+
           sx={{
-            width: "100%",
-            borderRadius: "12px",
-            fontWeight: 700,
+            width:
+              "100%",
+
+            borderRadius:
+              "12px",
+
+            fontWeight:
+              700,
           }}
         >
-          {notification.message}
+          {
+            notification.message
+          }
         </Alert>
       </Snackbar>
+
     </Box>
   );
 }
