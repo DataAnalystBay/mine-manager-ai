@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,8 +51,69 @@ from app.routers import (
 # --------------------------------------------------
 
 APP_NAME = "Mine Manager AI"
-APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
-APP_ENVIRONMENT = os.getenv("APP_ENV", "development")
+
+APP_VERSION = os.getenv(
+    "APP_VERSION",
+    "1.0.0",
+)
+
+APP_ENVIRONMENT = os.getenv(
+    "APP_ENV",
+    "development",
+)
+
+
+# --------------------------------------------------
+# Application Paths
+# --------------------------------------------------
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+LOG_DIRECTORY = Path(
+    os.getenv(
+        "LOG_DIR",
+        str(BACKEND_ROOT / "logs"),
+    )
+)
+
+UPLOAD_DIRECTORY = Path(
+    os.getenv(
+        "UPLOAD_DIR",
+        str(BACKEND_ROOT / "uploads"),
+    )
+)
+
+STATIC_DIRECTORY = BACKEND_ROOT / "app" / "static"
+
+LOGO_DIRECTORY = STATIC_DIRECTORY / "logos"
+
+
+# --------------------------------------------------
+# Runtime Directories
+# --------------------------------------------------
+
+# Required runtime directories are created automatically
+# so a fresh deployment does not require manual setup.
+
+LOG_DIRECTORY.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+UPLOAD_DIRECTORY.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+STATIC_DIRECTORY.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+LOGO_DIRECTORY.mkdir(
+    parents=True,
+    exist_ok=True,
+)
 
 
 # --------------------------------------------------
@@ -72,16 +134,11 @@ app = FastAPI(
 # Static Files
 # --------------------------------------------------
 
-STATIC_DIRECTORY = "app/static"
-
-os.makedirs(
-    STATIC_DIRECTORY,
-    exist_ok=True,
-)
-
 app.mount(
     "/static",
-    StaticFiles(directory=STATIC_DIRECTORY),
+    StaticFiles(
+        directory=str(STATIC_DIRECTORY),
+    ),
     name="static",
 )
 
@@ -100,16 +157,19 @@ default_cors_origins = [
     "https://mine-manager-ai-zeta.vercel.app",
 ]
 
+
 cors_origins_raw = os.getenv(
     "CORS_ORIGINS",
     ",".join(default_cors_origins),
 )
+
 
 cors_origins = [
     origin.strip().rstrip("/")
     for origin in cors_origins_raw.split(",")
     if origin.strip()
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -127,7 +187,9 @@ app.add_middleware(
         "OPTIONS",
     ],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"],
+    expose_headers=[
+        "Content-Disposition",
+    ],
 )
 
 
@@ -136,43 +198,119 @@ app.add_middleware(
 # --------------------------------------------------
 
 # Authentication and administration
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(audit_logs.router)
-app.include_router(config.router)
+
+app.include_router(
+    auth.router
+)
+
+app.include_router(
+    users.router
+)
+
+app.include_router(
+    audit_logs.router
+)
+
+app.include_router(
+    config.router
+)
+
 
 # Core operational modules
-app.include_router(production.router)
-app.include_router(fleet.router)
-app.include_router(plant.router)
-app.include_router(safety.router)
-app.include_router(analytics.router)
-app.include_router(ai.router)
-app.include_router(briefing.router)
-app.include_router(upload.router)
+
+app.include_router(
+    production.router
+)
+
+app.include_router(
+    fleet.router
+)
+
+app.include_router(
+    plant.router
+)
+
+app.include_router(
+    safety.router
+)
+
+app.include_router(
+    analytics.router
+)
+
+app.include_router(
+    ai.router
+)
+
+app.include_router(
+    briefing.router
+)
+
+app.include_router(
+    upload.router
+)
+
 
 # Dashboard, demo and reports
-app.include_router(dashboard.router)
-app.include_router(demo.router)
-app.include_router(reports.router)
+
+app.include_router(
+    dashboard.router
+)
+
+app.include_router(
+    demo.router
+)
+
+app.include_router(
+    reports.router
+)
+
 
 # Executive decision-support modules
-app.include_router(executive_actions.router)
-app.include_router(executive_recommendations.router)
-app.include_router(executive_insights.router)
-app.include_router(executive_kpi_pdf.router)
+
+app.include_router(
+    executive_actions.router
+)
+
+app.include_router(
+    executive_recommendations.router
+)
+
+app.include_router(
+    executive_insights.router
+)
+
+app.include_router(
+    executive_kpi_pdf.router
+)
+
 
 # System monitoring
-app.include_router(system_health.router)
+
+app.include_router(
+    system_health.router
+)
+
 
 # Prediction
-app.include_router(predictions.router)
+
+app.include_router(
+    predictions.router
+)
+
 
 # Deployment Readiness
-app.include_router(deployment_readiness.router)
+
+app.include_router(
+    deployment_readiness.router
+)
+
 
 # Support Diagnostics
-app.include_router(support_diagnostics.router)
+
+app.include_router(
+    support_diagnostics.router
+)
 
 
 # --------------------------------------------------
@@ -234,6 +372,9 @@ def api_information():
             "User Management",
             "Audit Trail",
             "Production",
+            "Fleet",
+            "Plant",
+            "Safety",
             "Analytics",
             "AI Decision Engine",
             "AI Daily Briefing",
@@ -247,6 +388,9 @@ def api_information():
             "Configuration",
             "Static Logo Hosting",
             "System Health",
+            "Predictive Intelligence",
+            "Deployment Readiness",
+            "Support Diagnostics",
         ],
         "health_endpoints": {
             "lightweight": "/health",
