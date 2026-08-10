@@ -12,6 +12,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { loadDemoData, resetDemoData } from "../api/demoApi";
 import "./Dashboard.css";
 import { useConfig } from "../context/ConfigContext";
+import useAuth from "../hooks/useAuth";
 import { getSharedAnalytics } from "../services/dashboardApi";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import DashboardDataState from "../components/dashboard/DashboardDataState";
@@ -441,6 +442,7 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedKpiKey = normalizeKpiKey(searchParams.get("kpi_key") || "");
   const { company, mine, loading } = useConfig();
+  const { user } = useAuth();
 
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
@@ -470,6 +472,16 @@ export default function Dashboard() {
   const timezone = company?.timezone || "Asia/Ulaanbaatar";
   const language = company?.language || "English";
   const shiftPattern = mine?.shift_pattern || "Day / Night Shift";
+
+  const executiveInsightsAllowedRoles = [
+    "Superintendent",
+    "Mine Manager",
+    "General Manager",
+    "Administrator",
+  ];
+
+  const canViewExecutiveInsights =
+    executiveInsightsAllowedRoles.includes(user?.role);
 
   const currentDate = useMemo(
     () =>
@@ -1623,16 +1635,18 @@ export default function Dashboard() {
           </ExecutivePanel>
         </section>
 
-        <section style={{ marginTop: 24 }}>
-          <ExecutiveInsightsPanel
-            mineName={mineName}
-            scenario={
-              demoLoaded
-                ? demoScenario
-                : ""
-            }
-          />
-        </section>
+        {canViewExecutiveInsights && (
+          <section style={{ marginTop: 24 }}>
+            <ExecutiveInsightsPanel
+              mineName={mineName}
+              scenario={
+                demoLoaded
+                  ? demoScenario
+                  : ""
+              }
+            />
+          </section>
+        )}
 
         <section style={{ marginTop: 24 }}>
           <PredictionSummaryPanel mineName={mineName} />
