@@ -4,6 +4,8 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 
 import { API_BASE_URL } from "../config/apiConfig";
+import { getAIBriefing } from "../services/dashboardApi";
+import { useConfig } from "../context/ConfigContext";
 
 import {
   FaIndustry,
@@ -141,6 +143,11 @@ const extractUploadErrorMessage = (error) => {
 
 
 function UploadReports() {
+  const { mine } = useConfig();
+
+  const mineName =
+    mine?.mine_name || "Oyu Tolgoi Surface";
+
   const storedUser = getStoredUser();
 
   const uploadedBy =
@@ -420,16 +427,70 @@ function UploadReports() {
     }
 
     try {
-      alert(
-        "AI Daily Briefing generation will be connected in the next sprint.",
+      const briefing = await getAIBriefing(
+        mineName,
       );
+
+      if (!briefing?.briefing) {
+        alert(
+          "The briefing service returned no briefing content.",
+        );
+        return;
+      }
+
+      const risks = Array.isArray(briefing.risks)
+        ? briefing.risks
+        : [];
+
+      const priorityActions = Array.isArray(
+        briefing.priority_actions,
+      )
+        ? briefing.priority_actions
+        : [];
+
+      const briefingMessage = [
+        "AI DAILY BRIEFING",
+        "",
+        briefing.briefing,
+        "",
+        "RISKS",
+        risks.length > 0
+          ? risks
+              .map(
+                (risk, index) =>
+                  `${index + 1}. ${risk}`,
+              )
+              .join("\n")
+          : "No major operational risks identified.",
+        "",
+        "PRIORITY ACTIONS",
+        priorityActions.length > 0
+          ? priorityActions
+              .map(
+                (action, index) =>
+                  `${index + 1}. ${action}`,
+              )
+              .join("\n")
+          : "No priority actions generated.",
+      ].join("\n");
+
+      alert(briefingMessage);
     } catch (error) {
       console.error(
         "Unable to generate AI Daily Briefing:",
         error,
       );
 
-      alert("Failed to generate briefing.");
+      const detail =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to generate briefing.";
+
+      alert(
+        typeof detail === "string"
+          ? detail
+          : "Failed to generate briefing.",
+      );
     }
   };
 
