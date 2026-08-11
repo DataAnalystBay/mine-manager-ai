@@ -13,6 +13,15 @@ services:
       - key: APP_ENV
         value: production
 
+      - key: DEBUG
+        value: "false"
+
+      - key: LOG_LEVEL
+        value: INFO
+
+      - key: FORCE_HTTPS
+        value: "true"
+
       - key: DB_HOST
         sync: false
 
