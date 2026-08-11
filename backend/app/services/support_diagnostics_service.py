@@ -583,15 +583,15 @@ def read_recent_log_entries(
                 break
 
         return build_status(
-            status=(
-                "available"
-                if log_files
-                else "not_configured"
-            ),
+            status="available",
             message=(
                 "Recent application log entries were collected."
                 if log_files
-                else "No application log files were found."
+                else (
+                    "No local application log files were found. "
+                    "Runtime logging remains available through the "
+                    "application hosting environment."
+                )
             ),
             response_time_ms=elapsed_ms(started_at),
             details={
@@ -599,6 +599,7 @@ def read_recent_log_entries(
                 "file_count": len(log_files),
                 "entry_count": len(entries),
                 "entries": entries,
+                "local_file_logging": bool(log_files),
             },
         )
 
