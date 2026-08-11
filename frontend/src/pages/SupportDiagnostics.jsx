@@ -695,11 +695,14 @@ function SupportDiagnostics() {
           <DetailRow
             label="Slowest service"
             value={
-              systemHealth?.details
-                ?.slowest_service?.name ||
-              systemHealth?.details
-                ?.slowest_service ||
-              "—"
+              systemHealth?.details?.slowest_service
+                ? typeof systemHealth.details.slowest_service === "string"
+                  ? systemHealth.details.slowest_service
+                  : systemHealth.details.slowest_service.name ||
+                    systemHealth.details.slowest_service.label ||
+                    systemHealth.details.slowest_service.service ||
+                    "Unavailable"
+                : "—"
             }
           />
         </DiagnosticsSection>
