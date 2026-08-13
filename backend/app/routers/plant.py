@@ -8,10 +8,9 @@ from fastapi import (
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import (
-    get_current_user,
-)
+from app.auth.dependencies import get_current_user
 from app.database import SessionLocal
+from app.services.kpi_calculation_service import calculate_plant_score
 
 
 router = APIRouter(
@@ -89,25 +88,16 @@ def get_today_plant(
             result["recovery"] or 0
         )
 
-        throughput_performance = (
-            throughput_actual /
-            throughput_plan *
-            100
-            if throughput_plan > 0
-            else 0
+        plant_performance, throughput_performance, recovery = (
+            calculate_plant_score(
+                throughput_actual,
+                throughput_plan,
+                recovery,
+            )
         )
 
         throughput_variance = (
-            throughput_actual -
-            throughput_plan
-        )
-
-        plant_performance = round(
-            (
-                throughput_performance +
-                recovery
-            ) / 2,
-            1,
+            throughput_actual - throughput_plan
         )
 
         return {
@@ -135,7 +125,10 @@ def get_today_plant(
                 recovery,
                 1,
             ),
-            "plant_performance": plant_performance,
+            "plant_performance": round(
+                plant_performance,
+                1,
+            ),
         }
 
     except Exception as exc:
@@ -203,20 +196,12 @@ def get_plant_trend(
                 row["recovery"] or 0
             )
 
-            throughput_performance = (
-                throughput_actual /
-                throughput_plan *
-                100
-                if throughput_plan > 0
-                else 0
-            )
-
-            plant_performance = round(
-                (
-                    throughput_performance +
-                    recovery
-                ) / 2,
-                1,
+            plant_performance, throughput_performance, recovery = (
+                calculate_plant_score(
+                    throughput_actual,
+                    throughput_plan,
+                    recovery,
+                )
             )
 
             data.append(
@@ -238,16 +223,18 @@ def get_plant_trend(
                         1,
                     ),
                     "throughput_variance": round(
-                        throughput_actual -
-                        throughput_plan,
+                        throughput_actual
+                        - throughput_plan,
                         1,
                     ),
                     "recovery": round(
                         recovery,
                         1,
                     ),
-                    "plant_performance":
+                    "plant_performance": round(
                         plant_performance,
+                        1,
+                    ),
                 }
             )
 

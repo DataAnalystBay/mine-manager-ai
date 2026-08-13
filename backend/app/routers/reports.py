@@ -33,6 +33,15 @@ from app.services.powerpoint_service import (
 from app.services.report_branding_service import (
     get_report_branding,
 )
+from app.services.live_kpi_service import (
+    get_live_kpi_summary,
+)
+from app.services.weekly_kpi_service import (
+    get_weekly_kpi_summary,
+)
+from app.services.monthly_kpi_service import (
+    get_monthly_kpi_summary,
+)
 from app.services.report_history_service import (
     delete_report_history,
     get_recent_report_history,
@@ -201,13 +210,19 @@ def _get_generated_by(
     ],
 )
 def download_daily_executive_pdf(
+    mine_name: str = Query(
+        default="Oyu Tolgoi Surface",
+        min_length=1,
+        max_length=100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(
         get_current_user
     ),
 ):
     """
-    Generate and download the Daily Executive Report PDF.
+    Generate and download the Daily Executive Report PDF
+    using the latest live operational KPI data.
 
     Allowed roles:
     - Superintendent
@@ -216,6 +231,25 @@ def download_daily_executive_pdf(
     - Administrator
     """
 
+    normalized_mine_name = mine_name.strip()
+
+    live_kpis = get_live_kpi_summary(
+        db=db,
+        mine_name=normalized_mine_name,
+    )
+
+    if (
+        live_kpis.get("status")
+        != "Connected to PostgreSQL"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No live operational data was found "
+                f"for mine '{normalized_mine_name}'."
+            ),
+        )
+
     filename = (
         "Daily_Executive_Report_"
         f"{datetime.now().strftime('%Y-%m-%d')}.pdf"
@@ -223,7 +257,9 @@ def download_daily_executive_pdf(
 
     return _generate_report_response(
         db=db,
-        generator=generate_daily_executive_pdf,
+        generator=lambda: generate_daily_executive_pdf(
+            live_kpis
+        ),
         report_key="daily_executive_report",
         report_name="Daily Executive Report",
         report_format="PDF",
@@ -246,13 +282,19 @@ def download_daily_executive_pdf(
     ],
 )
 def download_weekly_operations_pdf(
+    mine_name: str = Query(
+        default="Oyu Tolgoi Surface",
+        min_length=1,
+        max_length=100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(
         get_current_user
     ),
 ):
     """
-    Generate and download the Weekly Operations Report PDF.
+    Generate and download the Weekly Operations Report PDF
+    using the latest seven available reporting days.
 
     Allowed roles:
     - Superintendent
@@ -261,6 +303,25 @@ def download_weekly_operations_pdf(
     - Administrator
     """
 
+    normalized_mine_name = mine_name.strip()
+
+    weekly_kpis = get_weekly_kpi_summary(
+        db=db,
+        mine_name=normalized_mine_name,
+    )
+
+    if (
+        weekly_kpis.get("status")
+        != "Connected to PostgreSQL"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No weekly operational data was found "
+                f"for mine '{normalized_mine_name}'."
+            ),
+        )
+
     filename = (
         "Weekly_Operations_Report_"
         f"{datetime.now().strftime('%Y-%m-%d')}.pdf"
@@ -268,7 +329,9 @@ def download_weekly_operations_pdf(
 
     return _generate_report_response(
         db=db,
-        generator=generate_weekly_operations_pdf,
+        generator=lambda: generate_weekly_operations_pdf(
+            weekly_kpis
+        ),
         report_key="weekly_operations_report",
         report_name="Weekly Operations Report",
         report_format="PDF",
@@ -291,13 +354,19 @@ def download_weekly_operations_pdf(
     ],
 )
 def download_monthly_kpi_pdf(
+    mine_name: str = Query(
+        default="Oyu Tolgoi Surface",
+        min_length=1,
+        max_length=100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(
         get_current_user
     ),
 ):
     """
-    Generate and download the Monthly KPI Pack PDF.
+    Generate and download the Monthly KPI Pack PDF
+    using the latest 30 available reporting days.
 
     Allowed roles:
     - Superintendent
@@ -306,6 +375,25 @@ def download_monthly_kpi_pdf(
     - Administrator
     """
 
+    normalized_mine_name = mine_name.strip()
+
+    monthly_kpis = get_monthly_kpi_summary(
+        db=db,
+        mine_name=normalized_mine_name,
+    )
+
+    if (
+        monthly_kpis.get("status")
+        != "Connected to PostgreSQL"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No monthly operational data was found "
+                f"for mine '{normalized_mine_name}'."
+            ),
+        )
+
     filename = (
         "Monthly_KPI_Pack_"
         f"{datetime.now().strftime('%Y-%m-%d')}.pdf"
@@ -313,7 +401,9 @@ def download_monthly_kpi_pdf(
 
     return _generate_report_response(
         db=db,
-        generator=generate_monthly_kpi_pdf,
+        generator=lambda: generate_monthly_kpi_pdf(
+            monthly_kpis
+        ),
         report_key="monthly_kpi_pack",
         report_name="Monthly KPI Pack",
         report_format="PDF",

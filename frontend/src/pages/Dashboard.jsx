@@ -13,7 +13,10 @@ import { loadDemoData, resetDemoData } from "../api/demoApi";
 import "./Dashboard.css";
 import { useConfig } from "../context/ConfigContext";
 import useAuth from "../hooks/useAuth";
-import { getSharedAnalytics } from "../services/dashboardApi";
+import {
+  getExecutiveSummary,
+  getSharedAnalytics,
+} from "../services/dashboardApi";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import DashboardDataState from "../components/dashboard/DashboardDataState";
 import ExecutiveInsightsPanel from "../components/executive/ExecutiveInsightsPanel";
@@ -447,6 +450,11 @@ export default function Dashboard() {
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
   const [demoData, setDemoData] = useState(null);
+
+  const [executiveSummary, setExecutiveSummary] = useState(null);
+  const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(true);
+  const [executiveSummaryError, setExecutiveSummaryError] = useState("");
+
   const [toast, setToast] = useState(null);
   const [demoScenario, setDemoScenario] = useState("High Performing Mine");
   const [scenarioTransition, setScenarioTransition] = useState(false);
@@ -500,7 +508,7 @@ export default function Dashboard() {
         hour: "2-digit",
         minute: "2-digit",
       }),
-    [demoData, sharedAnalytics, demoScenario]
+    [demoData, executiveSummary, sharedAnalytics, demoScenario]
   );
 
   const showToast = useCallback((type, title, message) => {
@@ -510,6 +518,27 @@ export default function Dashboard() {
       setToast(null);
     }, 3500);
   }, []);
+
+  const loadExecutiveSummary = useCallback(async () => {
+    try {
+      setExecutiveSummaryLoading(true);
+      setExecutiveSummaryError("");
+
+      const data = await getExecutiveSummary(mineName);
+      setExecutiveSummary(data);
+    } catch (error) {
+      console.error("Executive summary load failed:", error);
+      setExecutiveSummaryError(
+        "Unable to load the latest live executive KPI summary."
+      );
+    } finally {
+      setExecutiveSummaryLoading(false);
+    }
+  }, [mineName]);
+
+  useEffect(() => {
+    loadExecutiveSummary();
+  }, [loadExecutiveSummary]);
 
   const runScenarioTransition = useCallback(
     async ({
@@ -618,6 +647,8 @@ export default function Dashboard() {
           setDemoLoaded(false);
           setDemoScenario("High Performing Mine");
 
+          await loadExecutiveSummary();
+
           showToast(
             "success",
             "Demo Reset",
@@ -634,7 +665,12 @@ export default function Dashboard() {
         }
       },
     });
-  }, [mineName, runScenarioTransition, showToast]);
+  }, [
+    loadExecutiveSummary,
+    mineName,
+    runScenarioTransition,
+    showToast,
+  ]);
 
   const loadSharedAnalytics = useCallback(async () => {
     try {
@@ -656,50 +692,187 @@ export default function Dashboard() {
   }, [loadSharedAnalytics]);
 
   const baseValues = useMemo(() => {
-    const latestProduction = demoData?.production?.at(-1);
-    const latestFleet = demoData?.fleet?.slice(-5) || [];
-    const latestPlant = demoData?.plant?.at(-1);
-    const latestSafety = demoData?.safety?.at(-1);
+    const readNumber = (...values) => {
+      for (const value of values) {
+        if (value === null || value === undefined || value === "") {
+          continue;
+        }
 
-    const orePerformance = latestProduction
-      ? (
-          (latestProduction.ore_actual / latestProduction.ore_plan) *
-          100
-        ).toFixed(1)
-      : "100.5";
+        const numericValue = Number(value);
 
-    const wastePerformance = latestProduction
-      ? (
-          (latestProduction.waste_actual / latestProduction.waste_plan) *
-          100
-        ).toFixed(1)
-      : "100.2";
+        if (Number.isFinite(numericValue)) {
+          return numericValue;
+        }
+      }
 
-    const fleetPerformance = latestFleet.length
-      ? (
-          latestFleet.reduce((sum, item) => sum + item.utilization, 0) /
-          latestFleet.length
-        ).toFixed(1)
-      : "90";
+      return null;
+    };
 
-    const plantPerformance = latestPlant
-      ? (
-          (latestPlant.throughput_actual / latestPlant.throughput_plan) *
-          100
-        ).toFixed(1)
-      : "96.1";
+    const formatOneDecimal = (value, fallback = "0.0") => {
+      const numericValue = readNumber(value);
+      return numericValue === null ? fallback : numericValue.toFixed(1);
+    };
 
-    const safetyIncidents = latestSafety
-      ? latestSafety.recordable_incidents
-      : 0;
+    /*
+     * Demo Mode intentionally continues to use the scenario dataset.
+     * Live Mode uses /api/dashboard/executive-summary as the source of truth.
+     */
+    if (demoLoaded) {
+      const latestProduction = demoData?.production?.at(-1);
+      const latestFleet = demoData?.fleet?.slice(-5) || [];
+      const latestPlant = demoData?.plant?.at(-1);
+      const latestSafety = demoData?.safety?.at(-1);
 
-    const mineHealthScore = Math.round(
-      (Number(orePerformance) +
-        Number(wastePerformance) +
-        Number(fleetPerformance) +
-        Number(plantPerformance) +
-        (safetyIncidents === 0 ? 100 : 70)) /
-        5
+      const orePerformance = latestProduction
+        ? (
+            (latestProduction.ore_actual / latestProduction.ore_plan) *
+            100
+          ).toFixed(1)
+        : "0.0";
+
+      const wastePerformance = latestProduction
+        ? (
+            (latestProduction.waste_actual / latestProduction.waste_plan) *
+            100
+          ).toFixed(1)
+        : "0.0";
+
+      const fleetPerformance = latestFleet.length
+        ? (
+            latestFleet.reduce(
+              (sum, item) =>
+                sum +
+                Number(
+                  item.utilization ??
+                    item.fleet_performance ??
+                    0
+                ),
+              0
+            ) / latestFleet.length
+          ).toFixed(1)
+        : "0.0";
+
+      const plantPerformance = latestPlant
+        ? (
+            (latestPlant.throughput_actual / latestPlant.throughput_plan) *
+            100
+          ).toFixed(1)
+        : "0.0";
+
+      const safetyIncidents =
+        readNumber(
+          latestSafety?.recordable_incidents,
+          latestSafety?.incidents
+        ) ?? 0;
+
+      const safetyScore =
+        readNumber(latestSafety?.safety_score) ??
+        (safetyIncidents === 0 ? 100 : 70);
+
+      const fleetAvailability = readNumber(
+        latestFleet.at(-1)?.availability
+      );
+
+      const plantThroughputPerformance = latestPlant
+        ? readNumber(latestPlant.throughput_plan) > 0
+          ? Number(
+              (
+                (Number(latestPlant.throughput_actual) /
+                  Number(latestPlant.throughput_plan)) *
+                100
+              ).toFixed(1)
+            )
+          : null
+        : null;
+
+      const mineHealthScore = Math.round(
+        (Number(orePerformance) +
+          Number(wastePerformance) +
+          Number(fleetPerformance) +
+          Number(plantPerformance) +
+          safetyScore) /
+          5
+      );
+
+      return {
+        orePerformance,
+        wastePerformance,
+        fleetPerformance,
+        plantPerformance,
+        safetyIncidents,
+        safetyScore,
+        fleetAvailability,
+        plantThroughputPerformance,
+        mineHealthScore,
+      };
+    }
+
+    const summary = executiveSummary?.summary ?? executiveSummary ?? {};
+
+    const orePerformance = formatOneDecimal(
+      readNumber(
+        summary.ore_performance,
+        summary.orePerformance,
+        summary.ore
+      )
+    );
+
+    const wastePerformance = formatOneDecimal(
+      readNumber(
+        summary.waste_movement,
+        summary.waste_performance,
+        summary.wastePerformance,
+        summary.waste
+      )
+    );
+
+    const fleetPerformance = formatOneDecimal(
+      readNumber(
+        summary.fleet_performance,
+        summary.fleetPerformance,
+        summary.fleet
+      )
+    );
+
+    const plantPerformance = formatOneDecimal(
+      readNumber(
+        summary.plant_performance,
+        summary.plantPerformance,
+        summary.plant
+      )
+    );
+
+    const safetyIncidents =
+      readNumber(
+        summary.safety_incidents,
+        summary.recordable_incidents,
+        summary.incidents,
+        summary.safety
+      ) ?? 0;
+
+    const safetyScore =
+      readNumber(
+        summary.safety_score,
+        summary.safetyScore
+      ) ?? 0;
+
+    const mineHealthScore =
+      readNumber(
+        summary.mine_health_score,
+        summary.mineHealthScore,
+        summary.mine_health,
+        summary.health
+      ) ?? 0;
+
+    const fleetAvailability = readNumber(
+      summary.fleet_availability,
+      summary.availability
+    );
+
+    const plantThroughputPerformance = readNumber(
+      summary.throughput_performance,
+      summary.plant_throughput_performance,
+      summary.throughput
     );
 
     return {
@@ -708,9 +881,12 @@ export default function Dashboard() {
       fleetPerformance,
       plantPerformance,
       safetyIncidents,
+      safetyScore,
+      fleetAvailability,
+      plantThroughputPerformance,
       mineHealthScore,
     };
-  }, [demoData]);
+  }, [demoData, demoLoaded, executiveSummary]);
 
   const scenarioValues = useMemo(() => {
     if (demoLoaded) {
@@ -1011,6 +1187,20 @@ export default function Dashboard() {
           padding: "4px 0 18px",
         }}
       >
+        {executiveSummaryError && !demoLoaded && (
+          <div className="dashboard-state-banner">
+            <DashboardDataState
+              type="error"
+              title="Live executive KPI summary unavailable"
+              message="The latest uploaded KPI summary could not be retrieved from the backend."
+              actionLabel="Retry executive summary"
+              onRetry={loadExecutiveSummary}
+              retrying={executiveSummaryLoading}
+              compact
+            />
+          </div>
+        )}
+
         {sharedAnalyticsError && (
           <div className="dashboard-state-banner">
             <DashboardDataState
@@ -1373,10 +1563,16 @@ export default function Dashboard() {
               target="90%"
               icon={KPI_ICONS.fleet}
               badge={
-                demoLoaded &&
-                demoScenario === "Fleet Breakdown"
+                demoLoaded && demoScenario === "Fleet Breakdown"
                   ? "Availability 68.8%"
-                  : "Availability 91%"
+                  : demoLoaded
+                  ? "Demo"
+                  : baseValues.fleetAvailability !== null &&
+                    baseValues.fleetAvailability !== undefined
+                  ? `Availability ${Number(
+                      baseValues.fleetAvailability
+                    ).toFixed(1)}%`
+                  : "Live"
               }
               trend={scenarioValues.trends?.fleet}
               accent="#2563eb"
@@ -1390,7 +1586,16 @@ export default function Dashboard() {
               unit="%"
               target="95%"
               icon={KPI_ICONS.plant}
-              badge="Throughput 99.5%"
+              badge={
+                demoLoaded
+                  ? "Demo"
+                  : baseValues.plantThroughputPerformance !== null &&
+                    baseValues.plantThroughputPerformance !== undefined
+                  ? `Throughput ${Number(
+                      baseValues.plantThroughputPerformance
+                    ).toFixed(1)}%`
+                  : "Live"
+              }
               trend={scenarioValues.trends?.plant}
               accent="#7c3aed"
               soft="#ede9fe"
@@ -1404,9 +1609,13 @@ export default function Dashboard() {
               target="0"
               icon={KPI_ICONS.safety}
               badge={
-                scenarioValues.safetyIncidents === 0
-                  ? "Score 100%"
-                  : "Action Required"
+                demoLoaded
+                  ? scenarioValues.safetyIncidents === 0
+                    ? "Score 100%"
+                    : "Action Required"
+                  : `Score ${Number(
+                      baseValues.safetyScore ?? 0
+                    ).toFixed(1)}%`
               }
               trend={scenarioValues.trends?.safety}
               accent="#ef4444"

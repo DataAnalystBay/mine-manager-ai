@@ -27,16 +27,26 @@ import CategoryRoundedIcon from "@mui/icons-material/CategoryRounded";
 import useExecutiveActionAnalytics from "../../hooks/useExecutiveActionAnalytics";
 
 const EMPTY_ANALYTICS = {
-  total_actions: 0,
-  completed_actions: 0,
   completion_rate: 0,
   average_days_to_close: 0,
-  overdue_actions: 0,
+  overdue_percentage: 0,
+  active_actions: 0,
   critical_actions: 0,
-  priority_distribution: {},
-  status_distribution: {},
+  blocked_actions: 0,
+  actions_by_priority: {
+    low: 0,
+    medium: 0,
+    high: 0,
+    critical: 0,
+  },
+  actions_by_status: {
+    open: 0,
+    in_progress: 0,
+    completed: 0,
+    blocked: 0,
+  },
   top_owners: [],
-  top_kpi_categories: [],
+  top_kpis: [],
 };
 
 function toNumber(value, fallback = 0) {
@@ -550,15 +560,20 @@ function ExecutiveActionAnalytics({
     [analytics]
   );
 
+  const actionsByPriority =
+    normalizedAnalytics.actions_by_priority || {};
+
+  const actionsByStatus =
+    normalizedAnalytics.actions_by_status || {};
+
   const priorityDistribution = useMemo(
-    () =>
-      normalizeDistribution(normalizedAnalytics.priority_distribution),
-    [normalizedAnalytics.priority_distribution]
+    () => normalizeDistribution(actionsByPriority),
+    [actionsByPriority]
   );
 
   const statusDistribution = useMemo(
-    () => normalizeDistribution(normalizedAnalytics.status_distribution),
-    [normalizedAnalytics.status_distribution]
+    () => normalizeDistribution(actionsByStatus),
+    [actionsByStatus]
   );
 
   const topOwners = useMemo(
@@ -567,19 +582,20 @@ function ExecutiveActionAnalytics({
   );
 
   const topCategories = useMemo(
-    () =>
-      normalizeRankedItems(
-        normalizedAnalytics.top_kpi_categories ||
-          normalizedAnalytics.top_categories
-      ),
-    [
-      normalizedAnalytics.top_kpi_categories,
-      normalizedAnalytics.top_categories,
-    ]
+    () => normalizeRankedItems(normalizedAnalytics.top_kpis),
+    [normalizedAnalytics.top_kpis]
   );
 
-  const totalActions = toNumber(normalizedAnalytics.total_actions);
-  const completedActions = toNumber(normalizedAnalytics.completed_actions);
+  const openActions = toNumber(actionsByStatus.open);
+  const inProgressActions = toNumber(actionsByStatus.in_progress);
+  const completedActions = toNumber(actionsByStatus.completed);
+  const blockedActions = toNumber(actionsByStatus.blocked);
+
+  const totalActions =
+    openActions +
+    inProgressActions +
+    completedActions +
+    blockedActions;
 
   const completionRate = toNumber(
     normalizedAnalytics.completion_rate,
@@ -590,8 +606,32 @@ function ExecutiveActionAnalytics({
     normalizedAnalytics.average_days_to_close
   );
 
-  const overdueActions = toNumber(normalizedAnalytics.overdue_actions);
-  const criticalActions = toNumber(normalizedAnalytics.critical_actions);
+  const criticalActions = toNumber(
+    normalizedAnalytics.critical_actions
+  );
+
+  const activeActions = toNumber(
+    normalizedAnalytics.active_actions
+  );
+
+  const overduePercentage = toNumber(
+    normalizedAnalytics.overdue_percentage
+  );
+
+  /*
+   * The current backend analytics response exposes overdue_percentage
+   * rather than the raw overdue action count.
+   *
+   * Recover the display count from:
+   *
+   * overdue_percentage = overdue_actions / active_actions * 100
+   */
+  const overdueActions =
+    activeActions > 0
+      ? Math.round(
+          (overduePercentage / 100) * activeActions
+        )
+      : 0;
 
   const handleRefresh = async () => {
     try {

@@ -1396,12 +1396,28 @@ def _build_risk_slide(
                     f"Latest availability is {availability:.1f}%.",
                 )
             )
+        elif availability < 90:
+            risks.append(
+                (
+                    "Medium",
+                    "Fleet availability below target",
+                    f"Latest availability is {availability:.1f}%.",
+                )
+            )
 
         if utilization < 75:
             risks.append(
                 (
+                    "High",
+                    "Fleet utilization constraint",
+                    f"Latest utilization is {utilization:.1f}%.",
+                )
+            )
+        elif utilization < 90:
+            risks.append(
+                (
                     "Medium",
-                    "Fleet utilization opportunity",
+                    "Fleet utilization below target",
                     f"Latest utilization is {utilization:.1f}%.",
                 )
             )
