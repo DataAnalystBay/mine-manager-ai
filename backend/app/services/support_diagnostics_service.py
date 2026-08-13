@@ -20,7 +20,7 @@ from app.database import engine
 # ============================================================
 
 APPLICATION_NAME = "Mine Manager AI"
-DEFAULT_APPLICATION_VERSION = "1.0.0"
+DEFAULT_APPLICATION_VERSION = "1.0.3"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = BACKEND_ROOT.parent

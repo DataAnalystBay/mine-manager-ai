@@ -54,7 +54,7 @@ APP_NAME = "Mine Manager AI"
 
 APP_VERSION = os.getenv(
     "APP_VERSION",
-    "1.0.0",
+    "1.0.3",
 )
 
 APP_ENVIRONMENT = os.getenv(
