@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useState,
 } from "react";
 
@@ -31,6 +31,7 @@ import ExportCard
 
 import ReportHistoryTable
   from "../components/reports/ReportHistoryTable";
+import { useLanguage } from "../context/LanguageContext";
 
 
 /* ============================================================
@@ -71,6 +72,7 @@ reportDownloadClient.interceptors.request.use(
    ============================================================ */
 
 function ExecutiveReports() {
+  const { t } = useLanguage();
   const [
     loadingReport,
     setLoadingReport,
@@ -278,7 +280,7 @@ function ExecutiveReports() {
 
 
         let errorMessage =
-          "Unable to generate the report. Please confirm the backend is running.";
+          t("reports.reportGenerateError");
 
 
         if (
@@ -286,19 +288,19 @@ function ExecutiveReports() {
           401
         ) {
           errorMessage =
-            "Your session has expired. Please sign in again.";
+            t("reports.sessionExpired");
         } else if (
           error.response?.status ===
           403
         ) {
           errorMessage =
-            "You do not have permission to download this report.";
+            t("reports.noReportPermission");
         } else if (
           error.response?.status >=
           500
         ) {
           errorMessage =
-            "The report service encountered an error. Please review the backend logs.";
+            t("reports.reportServiceError");
         }
 
 
@@ -334,7 +336,7 @@ function ExecutiveReports() {
           "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 
         successMessage:
-          "Executive PowerPoint Board Pack generated successfully.",
+          t("reports.powerPointSuccess"),
       });
 
 
@@ -358,7 +360,7 @@ function ExecutiveReports() {
           "application/pdf",
 
         successMessage:
-          "Daily Executive Report generated successfully.",
+          t("reports.dailySuccess"),
       });
 
 
@@ -382,7 +384,7 @@ function ExecutiveReports() {
           "application/pdf",
 
         successMessage:
-          "Weekly Operations Report generated successfully.",
+          t("reports.weeklySuccess"),
       });
 
 
@@ -406,7 +408,7 @@ function ExecutiveReports() {
           "application/pdf",
 
         successMessage:
-          "Monthly KPI Pack generated successfully.",
+          t("reports.monthlySuccess"),
       });
 
 
@@ -430,7 +432,7 @@ function ExecutiveReports() {
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 
         successMessage:
-          "Executive Excel workbook exported successfully.",
+          t("reports.excelSuccess"),
       });
 
 
@@ -477,20 +479,16 @@ function ExecutiveReports() {
           }}
         >
           <ReportCard
-            title=
-              "Executive Board Pack"
+            title={t("reports.executiveBoardPack")}
 
-            subtitle=
-              "Board-ready PowerPoint presentation for executive operational reviews."
+            subtitle={t("reports.executiveBoardPackSubtitle")}
 
-            frequency=
-              "On demand"
+            frequency={t("reports.onDemand")}
 
             format=
               "PPTX"
 
-            badge=
-              "NEW"
+            badge={t("reports.newLabel")}
 
             featured
 
@@ -504,19 +502,19 @@ function ExecutiveReports() {
             }
 
             sections={[
-              "Executive KPI Summary",
-              "Production Trend",
-              "Fleet, Plant & Safety",
-              "Key Operational Risks",
-              "Management Actions",
-              "Executive Recommendations",
+              t("reports.executiveKpiSummary"),
+              t("reports.productionTrend"),
+              t("reports.fleetPlantSafety"),
+              t("reports.keyOperationalRisks"),
+              t("reports.managementActions"),
+              t("reports.executiveRecommendations"),
             ]}
 
             buttonText={
               loadingReport ===
               "powerpoint"
-                ? "Generating PowerPoint..."
-                : "Generate PowerPoint"
+                ? t("reports.generatingPowerPoint")
+                : t("reports.generatePowerPoint")
             }
 
             disabled={
@@ -541,14 +539,11 @@ function ExecutiveReports() {
           }}
         >
           <ReportCard
-            title=
-              "Daily Executive Report"
+            title={t("reports.dailyExecutiveReport")}
 
-            subtitle=
-              "Meeting-ready daily summary for mine leadership."
+            subtitle={t("reports.dailyExecutiveReportSubtitle")}
 
-            frequency=
-              "Daily"
+            frequency={t("reports.daily")}
 
             format=
               "PDF"
@@ -563,18 +558,18 @@ function ExecutiveReports() {
             }
 
             sections={[
-              "Executive Summary",
-              "Production Performance",
-              "Fleet & Plant Status",
-              "Safety & Risk Overview",
-              "Priority Actions",
+              t("reports.executiveSummary"),
+              t("reports.productionPerformance"),
+              t("reports.fleetPlantStatus"),
+              t("reports.safetyRiskOverview"),
+              t("reports.priorityActions"),
             ]}
 
             buttonText={
               loadingReport ===
               "daily"
-                ? "Generating PDF..."
-                : "Generate PDF"
+                ? t("reports.generatingPdf")
+                : t("reports.generatePdf")
             }
 
             disabled={
@@ -599,14 +594,11 @@ function ExecutiveReports() {
           }}
         >
           <ReportCard
-            title=
-              "Weekly Operations Report"
+            title={t("reports.weeklyOperationsReport")}
 
-            subtitle=
-              "Operational trend review for weekly performance meetings."
+            subtitle={t("reports.weeklyOperationsReportSubtitle")}
 
-            frequency=
-              "Weekly"
+            frequency={t("reports.weekly")}
 
             format=
               "PDF"
@@ -621,18 +613,18 @@ function ExecutiveReports() {
             }
 
             sections={[
-              "Weekly KPI Trends",
-              "Department Performance",
-              "Risk Movement",
-              "AI Recommendations",
-              "Action Follow-up",
+              t("reports.weeklyKpiTrends"),
+              t("reports.departmentPerformance"),
+              t("reports.riskMovement"),
+              t("reports.aiRecommendations"),
+              t("reports.actionFollowUp"),
             ]}
 
             buttonText={
               loadingReport ===
               "weekly"
-                ? "Generating PDF..."
-                : "Generate PDF"
+                ? t("reports.generatingPdf")
+                : t("reports.generatePdf")
             }
 
             disabled={
@@ -657,14 +649,11 @@ function ExecutiveReports() {
           }}
         >
           <ReportCard
-            title=
-              "Monthly KPI Pack"
+            title={t("reports.monthlyKpiPack")}
 
-            subtitle=
-              "Executive KPI pack for monthly leadership review."
+            subtitle={t("reports.monthlyKpiPackSubtitle")}
 
-            frequency=
-              "Monthly"
+            frequency={t("reports.monthly")}
 
             format=
               "PDF"
@@ -679,18 +668,18 @@ function ExecutiveReports() {
             }
 
             sections={[
-              "Mine Health Score",
-              "Monthly KPI Summary",
-              "Production Variance",
-              "Risk Register",
-              "Management Commentary",
+              t("reports.mineHealthScore"),
+              t("reports.monthlyKpiSummary"),
+              t("reports.productionVariance"),
+              t("reports.riskRegister"),
+              t("reports.managementCommentary"),
             ]}
 
             buttonText={
               loadingReport ===
               "monthly"
-                ? "Generating PDF..."
-                : "Generate PDF"
+                ? t("reports.generatingPdf")
+                : t("reports.generatePdf")
             }
 
             disabled={
@@ -721,8 +710,7 @@ function ExecutiveReports() {
             subtitle=
               "Export operational datasets for analysis, sharing, and Power BI."
 
-            frequency=
-              "On demand"
+            frequency={t("reports.onDemand")}
 
             format=
               "XLSX"
@@ -733,7 +721,7 @@ function ExecutiveReports() {
             }
 
             sections={[
-              "Executive Summary",
+              t("reports.executiveSummary"),
               "Production Dataset",
               "Fleet Dataset",
               "Plant Dataset",
@@ -744,8 +732,8 @@ function ExecutiveReports() {
             buttonText={
               loadingReport ===
               "excel"
-                ? "Generating Excel..."
-                : "Export Excel"
+                ? t("reports.generatingExcel")
+                : t("reports.exportExcel")
             }
 
             disabled={
@@ -828,3 +816,4 @@ function ExecutiveReports() {
 
 
 export default ExecutiveReports;
+

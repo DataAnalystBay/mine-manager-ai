@@ -16,22 +16,256 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
-  Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
+import {
+  useLanguage,
+} from "../context/LanguageContext";
+
 
 const ABOVE_PLAN_COLOR = "#16a34a";
 const BELOW_PLAN_COLOR = "#dc2626";
 const PLAN_COLOR = "#2563eb";
+const GRID_COLOR = "#e8edf3";
+const AXIS_COLOR = "#64748b";
 
+
+/* ============================================================
+   Helpers
+   ============================================================ */
+
+function getNiceAxisConfig(
+  values = []
+) {
+  const finiteValues =
+    values
+      .map(Number)
+      .filter(
+        (value) =>
+          Number.isFinite(value) &&
+          value >= 0
+      );
+
+  const rawMax =
+    Math.max(
+      0,
+      ...finiteValues
+    );
+
+  if (rawMax <= 0) {
+    return {
+      domainMax: 1000,
+      ticks: [
+        0,
+        250,
+        500,
+        750,
+        1000,
+      ],
+    };
+  }
+
+  const paddedMax =
+    rawMax * 1.12;
+
+  const roughStep =
+    paddedMax / 5;
+
+  const magnitude =
+    10 **
+    Math.floor(
+      Math.log10(
+        Math.max(
+          roughStep,
+          1
+        )
+      )
+    );
+
+  const normalized =
+    roughStep /
+    magnitude;
+
+  let niceMultiplier = 1;
+
+  if (normalized <= 1) {
+    niceMultiplier = 1;
+  } else if (normalized <= 2) {
+    niceMultiplier = 2;
+  } else if (normalized <= 2.5) {
+    niceMultiplier = 2.5;
+  } else if (normalized <= 5) {
+    niceMultiplier = 5;
+  } else {
+    niceMultiplier = 10;
+  }
+
+  const step =
+    niceMultiplier *
+    magnitude;
+
+  const domainMax =
+    Math.ceil(
+      paddedMax /
+      step
+    ) * step;
+
+  const ticks = [];
+
+  for (
+    let value = 0;
+    value <= domainMax + step * 0.01;
+    value += step
+  ) {
+    ticks.push(
+      Math.round(value)
+    );
+  }
+
+  return {
+    domainMax,
+    ticks,
+  };
+}
+
+
+function getLatestPositivePlan(
+  data = [],
+  planKey
+) {
+  for (
+    let index =
+      data.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const plan =
+      Number(
+        data[index]?.[planKey]
+      );
+
+    if (
+      Number.isFinite(plan) &&
+      plan > 0
+    ) {
+      return plan;
+    }
+  }
+
+  return 0;
+}
+
+
+function getTickInterval(
+  count
+) {
+  if (count <= 8) {
+    return 0;
+  }
+
+  if (count <= 16) {
+    return 1;
+  }
+
+  if (count <= 24) {
+    return 2;
+  }
+
+  return 3;
+}
+
+
+/* ============================================================
+   Target Line Label
+   ============================================================ */
+
+function TargetLineLabel({
+  viewBox,
+  value,
+}) {
+  if (
+    !viewBox ||
+    !Number.isFinite(
+      Number(value)
+    )
+  ) {
+    return null;
+  }
+
+  const {
+    x,
+    y,
+    width,
+  } = viewBox;
+
+  const label =
+    Number(value)
+      .toLocaleString();
+
+  const badgeWidth =
+    Math.max(
+      48,
+      label.length * 7 + 14
+    );
+
+  const badgeHeight = 22;
+
+  const badgeX =
+    x +
+    width -
+    badgeWidth +
+    5;
+
+  const badgeY =
+    y -
+    badgeHeight / 2;
+
+  return (
+    <g>
+      <rect
+        x={badgeX}
+        y={badgeY}
+        width={badgeWidth}
+        height={badgeHeight}
+        rx={5}
+        fill={PLAN_COLOR}
+      />
+
+      <text
+        x={
+          badgeX +
+          badgeWidth / 2
+        }
+        y={badgeY + 14.5}
+        fill="#ffffff"
+        fontFamily='Arial, "Helvetica Neue", sans-serif'
+        fontSize="10"
+        fontWeight="800"
+        textAnchor="middle"
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+
+/* ============================================================
+   Component
+   ============================================================ */
 
 function ProductionTrendChart({
   data = [],
 }) {
+  const {
+    t,
+  } = useLanguage();
+
   const [mode, setMode] =
     useState("ore");
 
@@ -60,75 +294,160 @@ function ProductionTrendChart({
 
   const title =
     mode === "ore"
-      ? "Ore Production"
-      : "Waste Movement";
-
-
-  const chartData = useMemo(() => {
-    if (!Array.isArray(data)) {
-      return [];
-    }
-
-    return data.map((item) => {
-      const plan =
-        Number(
-          item?.[planKey] ?? 0
+      ? t(
+          "production.oreProduction"
+        )
+      : t(
+          "production.wasteMovement"
         );
 
-      const actual =
-        Number(
-          item?.[actualKey] ?? 0
-        );
 
-      const variance =
-        actual - plan;
+  /*
+   * Use the latest available positive plan as the selected
+   * operating target. This intentionally produces the horizontal
+   * target line used in the approved Production UI instead of a
+   * changing daily plan curve.
+   */
+  const targetValue =
+    useMemo(
+      () =>
+        getLatestPositivePlan(
+          Array.isArray(data)
+            ? data
+            : [],
+          planKey
+        ),
+      [
+        data,
+        planKey,
+      ]
+    );
 
-      const variancePercent =
-        plan > 0
-          ? (
-              variance /
-              plan
-            ) * 100
-          : 0;
 
-      const isAtOrAbovePlan =
-        actual >= plan;
+  /*
+   * Daily bar color is evaluated against the same horizontal
+   * selected-period target so the red/green bars and target line
+   * communicate one consistent management threshold.
+   */
+  const chartData =
+    useMemo(() => {
+      if (!Array.isArray(data)) {
+        return [];
+      }
 
-      return {
-        ...item,
+      return data.map(
+        (item) => {
+          const actual =
+            Number(
+              item?.[
+                actualKey
+              ] ?? 0
+            );
 
-        chart_plan:
-          plan,
+          const dailyPlan =
+            Number(
+              item?.[
+                planKey
+              ] ?? 0
+            );
 
-        chart_actual:
-          actual,
+          const effectivePlan =
+            targetValue > 0
+              ? targetValue
+              : dailyPlan;
 
-        actual_above_plan:
-          isAtOrAbovePlan
-            ? actual
-            : null,
+          const variance =
+            actual -
+            effectivePlan;
 
-        actual_below_plan:
-          isAtOrAbovePlan
-            ? null
-            : actual,
+          const variancePercent =
+            effectivePlan > 0
+              ? (
+                  variance /
+                  effectivePlan
+                ) * 100
+              : 0;
 
-        variance,
+          const isAtOrAbovePlan =
+            effectivePlan > 0
+              ? actual >=
+                effectivePlan
+              : actual > 0;
 
-        variance_percent:
-          variancePercent,
+          return {
+            ...item,
 
-        performance_status:
-          isAtOrAbovePlan
-            ? "At / Above Plan"
-            : "Below Plan",
-      };
-    });
-  }, [
-    data,
-    planKey,
-    actualKey,
-  ]);
+            chart_plan:
+              effectivePlan,
+
+            source_daily_plan:
+              dailyPlan,
+
+            chart_actual:
+              actual,
+
+            actual_above_plan:
+              isAtOrAbovePlan
+                ? actual
+                : null,
+
+            actual_below_plan:
+              isAtOrAbovePlan
+                ? null
+                : actual,
+
+            variance,
+
+            variance_percent:
+              variancePercent,
+
+            performance_status:
+              isAtOrAbovePlan
+                ? t(
+                    "production.atOrAbovePlan"
+                  )
+                : t(
+                    "production.belowPlan"
+                  ),
+          };
+        }
+      );
+    }, [
+      data,
+      planKey,
+      actualKey,
+      targetValue,
+      t,
+    ]);
+
+
+  const axisConfig =
+    useMemo(
+      () =>
+        getNiceAxisConfig([
+          targetValue,
+          ...chartData.map(
+            (item) =>
+              item.chart_actual
+          ),
+        ]),
+      [
+        chartData,
+        targetValue,
+      ]
+    );
+
+
+  const xAxisInterval =
+    useMemo(
+      () =>
+        getTickInterval(
+          chartData.length
+        ),
+      [
+        chartData.length,
+      ]
+    );
 
 
   const formatTonnes = (
@@ -142,9 +461,17 @@ function ProductionTrendChart({
         numericValue
       ) >= 1000
     ) {
-      return `${Math.round(
-        numericValue / 1000
-      )}k`;
+      const thousands =
+        numericValue /
+        1000;
+
+      return Number.isInteger(
+        thousands
+      )
+        ? `${thousands}k`
+        : `${thousands.toFixed(
+            1
+          )}k`;
     }
 
     return numericValue
@@ -163,7 +490,9 @@ function ProductionTrendChart({
       String(date);
 
     if (
-      value.length >= 10
+      /^\d{4}-\d{2}-\d{2}/.test(
+        value
+      )
     ) {
       return value.slice(
         5,
@@ -183,6 +512,10 @@ function ProductionTrendChart({
     ).toLocaleString()} t`;
   };
 
+
+  /* ==========================================================
+     Tooltip
+     ========================================================== */
 
   function CustomTooltip({
     active,
@@ -228,32 +561,35 @@ function ProductionTrendChart({
     return (
       <Box
         sx={{
-          minWidth: 205,
-          px: 1.75,
-          py: 1.4,
+          minWidth: 220,
+          px: 1.8,
+          py: 1.5,
           bgcolor: "#ffffff",
           border:
-            "1px solid #e2e8f0",
-          borderRadius: 2,
+            "1px solid #dfe5ec",
+          borderRadius: 2.5,
           boxShadow:
-            "0 8px 24px rgba(15, 23, 42, 0.12)",
+            "0 12px 28px rgba(15, 23, 42, 0.11)",
         }}
       >
         <Typography
           sx={{
             mb: 1,
-            color: "#0f172a",
+            color:
+              "#0f172a",
             fontSize: 11,
             fontWeight: 800,
           }}
         >
-          {label}
+          {formatDate(
+            label
+          )}
         </Typography>
 
 
         <Box
           sx={{
-            mb: 0.4,
+            mb: 0.45,
             display: "flex",
             justifyContent:
               "space-between",
@@ -262,11 +598,14 @@ function ProductionTrendChart({
         >
           <Typography
             sx={{
-              color: "#64748b",
+              color:
+                "#64748b",
               fontSize: 11,
             }}
           >
-            Plan
+            {t(
+              "production.plan"
+            )}
           </Typography>
 
           <Typography
@@ -286,7 +625,7 @@ function ProductionTrendChart({
 
         <Box
           sx={{
-            mb: 0.4,
+            mb: 0.45,
             display: "flex",
             justifyContent:
               "space-between",
@@ -295,11 +634,14 @@ function ProductionTrendChart({
         >
           <Typography
             sx={{
-              color: "#64748b",
+              color:
+                "#64748b",
               fontSize: 11,
             }}
           >
-            Actual
+            {t(
+              "production.actual"
+            )}
           </Typography>
 
           <Typography
@@ -330,11 +672,14 @@ function ProductionTrendChart({
         >
           <Typography
             sx={{
-              color: "#64748b",
+              color:
+                "#64748b",
               fontSize: 11,
             }}
           >
-            Variance
+            {t(
+              "production.variance"
+            )}
           </Typography>
 
           <Typography
@@ -345,11 +690,14 @@ function ProductionTrendChart({
                   : BELOW_PLAN_COLOR,
               fontSize: 11,
               fontWeight: 800,
+              textAlign:
+                "right",
             }}
           >
             {variance >= 0
               ? "+"
               : ""}
+
             {variance.toLocaleString()}
             {" t "}
 
@@ -357,6 +705,7 @@ function ProductionTrendChart({
             {variancePercent >= 0
               ? "+"
               : ""}
+
             {variancePercent.toFixed(
               1
             )}
@@ -373,7 +722,8 @@ function ProductionTrendChart({
               "center",
             px: 1,
             py: 0.35,
-            borderRadius: 999,
+            borderRadius:
+              999,
 
             bgcolor:
               isAtOrAbovePlan
@@ -390,8 +740,12 @@ function ProductionTrendChart({
           }}
         >
           {isAtOrAbovePlan
-            ? "AT / ABOVE PLAN"
-            : "BELOW PLAN"}
+            ? t(
+                "production.atOrAbovePlan"
+              ).toUpperCase()
+            : t(
+                "production.belowPlan"
+              ).toUpperCase()}
         </Box>
       </Box>
     );
@@ -402,12 +756,16 @@ function ProductionTrendChart({
     <Card
       elevation={0}
       sx={{
-        height: "100%",
+        height:
+          "100%",
         border:
-          "1px solid #e2e8f0",
-        borderRadius: 3,
+          "none",
+        borderRadius:
+          0,
         boxShadow:
-          "0 4px 16px rgba(15, 23, 42, 0.04)",
+          "none",
+        bgcolor:
+          "transparent",
       }}
     >
       <CardContent
@@ -415,14 +773,14 @@ function ProductionTrendChart({
           p: {
             xs: 2,
             md: 2,
-            lg: 1.75,
+            lg: 2,
           },
 
           "&:last-child": {
             pb: {
-              xs: 2,
-              md: 2,
-              lg: 1.75,
+              xs: 1.5,
+              md: 1.5,
+              lg: 1.5,
             },
           },
         }}
@@ -434,7 +792,7 @@ function ProductionTrendChart({
 
         <Box
           sx={{
-            mb: 1.25,
+            mb: 1.2,
             display:
               "flex",
             justifyContent:
@@ -443,27 +801,32 @@ function ProductionTrendChart({
               "center",
             flexWrap:
               "wrap",
-            gap: 1.5,
+            gap: 1.25,
           }}
         >
           <Box>
             <Typography
               sx={{
                 color:
-                  "#0f172a",
+                  "#334155",
                 fontSize: {
                   xs: 15,
-                  lg: 16,
+                  lg: 17,
                 },
-                fontWeight: 900,
+                fontWeight:
+                  800,
+                letterSpacing:
+                  "-0.01em",
               }}
             >
-              Production Performance Trend
+              {t(
+                "production.productionPerformanceTrend"
+              )}
             </Typography>
 
             <Typography
               sx={{
-                mt: 0.25,
+                mt: 0.35,
                 color:
                   "#64748b",
                 fontSize: {
@@ -472,8 +835,11 @@ function ProductionTrendChart({
                 },
               }}
             >
-              {title}: actual performance
-              against plan, last 30 days
+              {title}:{" "}
+
+              {t(
+                "production.chartActualAgainstPlan"
+              )}
             </Typography>
           </Box>
 
@@ -488,26 +854,55 @@ function ProductionTrendChart({
             sx={{
               "& .MuiToggleButton-root":
                 {
-                  minWidth: 48,
-                  px: 1.4,
+                  minWidth: 54,
+                  px: 1.5,
                   py: 0.55,
+                  color:
+                    "#64748b",
+                  borderColor:
+                    "#dbe3ec",
                   textTransform:
                     "none",
                   fontSize: 10,
-                  fontWeight: 800,
+                  fontWeight:
+                    800,
+
+                  "&:hover": {
+                    bgcolor:
+                      "#f8fafc",
+                  },
+
+                  "&.Mui-selected": {
+                    bgcolor:
+                      "#eef7f1",
+                    color:
+                      "#15803d",
+                    borderColor:
+                      "#b9dfc8",
+                  },
+
+                  "&.Mui-selected:hover":
+                    {
+                      bgcolor:
+                        "#e8f4ed",
+                    },
                 },
             }}
           >
             <ToggleButton
               value="ore"
             >
-              Ore
+              {t(
+                "production.ore"
+              )}
             </ToggleButton>
 
             <ToggleButton
               value="waste"
             >
-              Waste
+              {t(
+                "production.waste"
+              )}
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
@@ -519,14 +914,14 @@ function ProductionTrendChart({
 
         <Box
           sx={{
-            mb: 0.75,
+            mb: 0.9,
             display:
               "flex",
             alignItems:
               "center",
             flexWrap:
               "wrap",
-            gap: 2,
+            gap: 1.8,
           }}
         >
 
@@ -541,11 +936,10 @@ function ProductionTrendChart({
           >
             <Box
               sx={{
-                width: 18,
-                height: 2.5,
-                borderRadius: 2,
-                bgcolor:
-                  PLAN_COLOR,
+                width: 22,
+                height: 0,
+                borderTop:
+                  `2px dashed ${PLAN_COLOR}`,
               }}
             />
 
@@ -554,10 +948,17 @@ function ProductionTrendChart({
                 color:
                   "#64748b",
                 fontSize: 9,
-                fontWeight: 800,
+                fontWeight:
+                  800,
               }}
             >
-              Plan
+              {t(
+                "production.plan"
+              )}
+
+              {targetValue > 0
+                ? ` (${targetValue.toLocaleString()} t)`
+                : ""}
             </Typography>
           </Box>
 
@@ -573,9 +974,10 @@ function ProductionTrendChart({
           >
             <Box
               sx={{
-                width: 9,
-                height: 9,
-                borderRadius: 0.5,
+                width: 10,
+                height: 10,
+                borderRadius:
+                  1.5,
                 bgcolor:
                   ABOVE_PLAN_COLOR,
               }}
@@ -586,10 +988,13 @@ function ProductionTrendChart({
                 color:
                   "#64748b",
                 fontSize: 9,
-                fontWeight: 800,
+                fontWeight:
+                  800,
               }}
             >
-              Actual ≥ Plan
+              {t(
+                "production.actualAtOrAbovePlan"
+              )}
             </Typography>
           </Box>
 
@@ -605,9 +1010,10 @@ function ProductionTrendChart({
           >
             <Box
               sx={{
-                width: 9,
-                height: 9,
-                borderRadius: 0.5,
+                width: 10,
+                height: 10,
+                borderRadius:
+                  1.5,
                 bgcolor:
                   BELOW_PLAN_COLOR,
               }}
@@ -618,10 +1024,13 @@ function ProductionTrendChart({
                 color:
                   "#64748b",
                 fontSize: 9,
-                fontWeight: 800,
+                fontWeight:
+                  800,
               }}
             >
-              Actual &lt; Plan
+              {t(
+                "production.actualBelowPlan"
+              )}
             </Typography>
           </Box>
 
@@ -638,11 +1047,11 @@ function ProductionTrendChart({
               "100%",
 
             height: {
-              xs: 280,
-              sm: 290,
-              md: 285,
-              lg: 255,
-              xl: 245,
+              xs: 310,
+              sm: 320,
+              md: 315,
+              lg: 300,
+              xl: 295,
             },
           }}
         >
@@ -651,52 +1060,80 @@ function ProductionTrendChart({
             height="100%"
           >
             <ComposedChart
-              data={chartData}
+              data={
+                chartData
+              }
               margin={{
-                top: 10,
-                right: 18,
-                left: 4,
-                bottom: 2,
+                top: 16,
+                right: 30,
+                left: 0,
+                bottom: 4,
               }}
-              barCategoryGap="22%"
+              barCategoryGap="32%"
             >
 
               <CartesianGrid
-                stroke="#e2e8f0"
-                strokeDasharray="3 3"
-                vertical={false}
+                stroke={
+                  GRID_COLOR
+                }
+                strokeDasharray=
+                  "2 4"
+                vertical={
+                  false
+                }
               />
 
 
               <XAxis
-                dataKey="report_date"
+                dataKey=
+                  "report_date"
                 tickFormatter={
                   formatDate
                 }
+                interval={
+                  xAxisInterval
+                }
                 tick={{
-                  fontSize: 9,
+                  fontSize: 10,
                   fill:
-                    "#64748b",
+                    AXIS_COLOR,
+                  fontWeight:
+                    600,
                 }}
                 axisLine={{
                   stroke:
-                    "#cbd5e1",
+                    "#d3dae3",
                 }}
                 tickLine={
                   false
                 }
-                minTickGap={18}
+                minTickGap={
+                  22
+                }
+                padding={{
+                  left: 4,
+                  right: 4,
+                }}
               />
 
 
               <YAxis
+                domain={[
+                  0,
+                  axisConfig.domainMax,
+                ]}
+                ticks={
+                  axisConfig.ticks
+                }
                 tickFormatter={
                   formatTonnes
                 }
                 tick={{
-                  fontSize: 9,
+                  fontSize: 10,
                   fill:
-                    "#64748b",
+                    AXIS_COLOR,
+                  fontWeight:
+                    600,
                 }}
                 axisLine={
                   false
@@ -704,7 +1141,7 @@ function ProductionTrendChart({
                 tickLine={
                   false
                 }
-                width={42}
+                width={46}
               />
 
 
@@ -714,85 +1151,87 @@ function ProductionTrendChart({
                 }
                 cursor={{
                   fill:
-                    "rgba(148, 163, 184, 0.08)",
+                    "rgba(100, 116, 139, 0.055)",
                 }}
               />
 
 
-              {/* ============================================
-                  Actual >= Plan
-                  Green bars
-                  ============================================ */}
+              {targetValue > 0 && (
+                <ReferenceLine
+                  y={
+                    targetValue
+                  }
+                  stroke={
+                    PLAN_COLOR
+                  }
+                  strokeWidth={
+                    2
+                  }
+                  strokeDasharray=
+                    "7 6"
+                  strokeLinecap=
+                    "round"
+                  ifOverflow=
+                    "extendDomain"
+                  label={
+                    <TargetLineLabel
+                      value={
+                        targetValue
+                      }
+                    />
+                  }
+                />
+              )}
+
 
               <Bar
                 dataKey=
                   "actual_above_plan"
-                name=
-                  "Actual ≥ Plan"
+                name={
+                  t(
+                    "production.actualAtOrAbovePlan"
+                  )
+                }
                 fill={
                   ABOVE_PLAN_COLOR
                 }
-                stackId="actual"
+                stackId=
+                  "actual"
                 radius={[
-                  4,
-                  4,
-                  0,
-                  0,
+                  5,
+                  5,
+                  1,
+                  1,
                 ]}
-                maxBarSize={22}
+                maxBarSize={
+                  16
+                }
                 isAnimationActive
               />
 
-
-              {/* ============================================
-                  Actual < Plan
-                  Red bars
-                  ============================================ */}
 
               <Bar
                 dataKey=
                   "actual_below_plan"
-                name=
-                  "Actual < Plan"
+                name={
+                  t(
+                    "production.actualBelowPlan"
+                  )
+                }
                 fill={
                   BELOW_PLAN_COLOR
                 }
-                stackId="actual"
+                stackId=
+                  "actual"
                 radius={[
-                  4,
-                  4,
-                  0,
-                  0,
+                  5,
+                  5,
+                  1,
+                  1,
                 ]}
-                maxBarSize={22}
-                isAnimationActive
-              />
-
-
-              {/* ============================================
-                  Plan
-                  Blue reference line
-                  ============================================ */}
-
-              <Line
-                type="monotone"
-                dataKey=
-                  "chart_plan"
-                name="Plan"
-                stroke={
-                  PLAN_COLOR
+                maxBarSize={
+                  16
                 }
-                strokeWidth={2.25}
-                dot={false}
-                activeDot={{
-                  r: 4,
-                  fill:
-                    PLAN_COLOR,
-                  stroke:
-                    "#ffffff",
-                  strokeWidth: 2,
-                }}
-                connectNulls
                 isAnimationActive
               />
 

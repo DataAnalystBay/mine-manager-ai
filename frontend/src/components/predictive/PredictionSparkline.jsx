@@ -1,4 +1,7 @@
+import { useLanguage } from "../../context/LanguageContext";
+
 import "./PredictionSparkline.css";
+
 
 function PredictionSparkline({
   current = 0,
@@ -7,6 +10,8 @@ function PredictionSparkline({
   shift3 = 0,
   trend = "Stable",
 }) {
+  const { t } = useLanguage();
+
   const values = [
     Number(current),
     Number(nextShift),
@@ -20,8 +25,13 @@ function PredictionSparkline({
 
   if (validValues.length < 2) {
     return (
-      <div className="prediction-sparkline prediction-sparkline--empty">
-        No forecast available
+      <div
+        className="prediction-sparkline prediction-sparkline--empty"
+        role="status"
+      >
+        {t(
+          "predictionSparkline.noForecastAvailable",
+        )}
       </div>
     );
   }
@@ -75,6 +85,10 @@ function PredictionSparkline({
       <svg
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
+        role="img"
+        aria-label={t(
+          "predictionSparkline.forecastTrendAria",
+        )}
       >
         <polyline
           points={polyline}
@@ -93,7 +107,11 @@ function PredictionSparkline({
       </svg>
 
       <div className="prediction-sparkline__labels">
-        <span>Current</span>
+        <span>
+          {t(
+            "predictionSparkline.current",
+          )}
+        </span>
         <span>N+1</span>
         <span>N+2</span>
         <span>N+3</span>
@@ -101,5 +119,6 @@ function PredictionSparkline({
     </div>
   );
 }
+
 
 export default PredictionSparkline;

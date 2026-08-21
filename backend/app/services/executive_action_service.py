@@ -619,31 +619,214 @@ def get_action_analytics(
         .group_by(
             ExecutiveAction.owner
         )
-        .order_by(
-            func.count(
-                ExecutiveAction.id
-            ).desc(),
-            ExecutiveAction.owner.asc(),
-        )
-        .limit(5)
         .all()
     )
 
+    def normalize_owner_name(
+        owner_value: Optional[str],
+    ) -> str:
+        owner_text = str(
+            owner_value or ""
+        ).strip()
+
+        if not owner_text:
+            return ""
+
+        normalized = (
+            owner_text
+            .lower()
+            .replace("-", " ")
+        )
+
+        normalized = " ".join(
+            normalized.split()
+        )
+
+        owner_alias_map = {
+            "operations":
+                "Operations",
+
+            "үйл ажиллагаа":
+                "Operations",
+
+            "operations team":
+                "Operations Team",
+
+            "үйл ажиллагааны баг":
+                "Operations Team",
+
+            "operations manager":
+                "Operations Manager",
+
+            "үйл ажиллагааны менежер":
+                "Operations Manager",
+
+            "operations superintendent":
+                "Operations Superintendent",
+
+            "үйл ажиллагааны ахлах менежер":
+                "Operations Superintendent",
+
+            "mining operations":
+                "Mining Operations",
+
+            "mine operations":
+                "Mining Operations",
+
+            "уурхайн үйл ажиллагаа":
+                "Mining Operations",
+
+            "dispatch & control room":
+                "Dispatch & Control Room",
+
+            "dispatch and control room":
+                "Dispatch & Control Room",
+
+            "диспетчер ба хяналтын өрөө":
+                "Dispatch & Control Room",
+
+            "dispatch":
+                "Dispatch",
+
+            "диспетчер":
+                "Dispatch",
+
+            "mobile maintenance":
+                "Mobile Maintenance",
+
+            "явуулын засвар":
+                "Mobile Maintenance",
+
+            "maintenance":
+                "Maintenance",
+
+            "засвар үйлчилгээ":
+                "Maintenance",
+
+            "maintenance manager":
+                "Maintenance Manager",
+
+            "засварын менежер":
+                "Maintenance Manager",
+
+            "maintenance superintendent":
+                "Maintenance Superintendent",
+
+            "засварын ахлах менежер":
+                "Maintenance Superintendent",
+
+            "mine manager":
+                "Mine Manager",
+
+            "уурхайн менежер":
+                "Mine Manager",
+
+            "production superintendent":
+                "Production Superintendent",
+
+            "үйлдвэрлэлийн ахлах менежер":
+                "Production Superintendent",
+
+            "processing operations":
+                "Processing Operations",
+
+            "боловсруулах үйлдвэрлэл":
+                "Processing Operations",
+
+            "hse and operations":
+                "HSE and Operations",
+
+            "хабэа ба үйл ажиллагаа":
+                "HSE and Operations",
+
+            "mine management team":
+                "Mine Management Team",
+
+            "уурхайн удирдлагын баг":
+                "Mine Management Team",
+
+            "data and reporting team":
+                "Data and Reporting Team",
+
+            "өгөгдөл ба тайлагналын баг":
+                "Data and Reporting Team",
+
+            "maintenance and dispatch":
+                "Maintenance and Dispatch",
+
+            "засвар ба диспетчер":
+                "Maintenance and Dispatch",
+        }
+
+        return (
+            owner_alias_map.get(
+                normalized
+            )
+            or owner_text
+        )
+
+    owner_totals: dict[
+        str,
+        dict[str, int],
+    ] = {}
+
+    for (
+        owner,
+        count_value,
+        active_count,
+    ) in owner_rows:
+        canonical_owner = (
+            normalize_owner_name(
+                owner
+            )
+        )
+
+        if not canonical_owner:
+            continue
+
+        if (
+            canonical_owner
+            not in owner_totals
+        ):
+            owner_totals[
+                canonical_owner
+            ] = {
+                "count": 0,
+                "active_count": 0,
+            }
+
+        owner_totals[
+            canonical_owner
+        ]["count"] += int(
+            count_value or 0
+        )
+
+        owner_totals[
+            canonical_owner
+        ]["active_count"] += int(
+            active_count or 0
+        )
+
     top_owners = [
         {
-            "owner": owner,
-            "count": int(
-                count_value or 0
-            ),
-            "active_count": int(
-                active_count or 0
-            ),
+            "owner": owner_name,
+            "count": values[
+                "count"
+            ],
+            "active_count": values[
+                "active_count"
+            ],
         }
         for (
-            owner,
-            count_value,
-            active_count,
-        ) in owner_rows
+            owner_name,
+            values,
+        ) in sorted(
+            owner_totals.items(),
+            key=lambda item: (
+                -item[1]["count"],
+                item[0].lower(),
+            ),
+        )[:5]
     ]
 
     kpi_rows = (

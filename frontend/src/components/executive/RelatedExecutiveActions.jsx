@@ -9,15 +9,55 @@ import {
   FiLink2,
 } from "react-icons/fi";
 
+import { useLanguage } from "../../context/LanguageContext";
 import useKpiExecutiveActions from "../../hooks/useKpiExecutiveActions";
+
 import "./RelatedExecutiveActions.css";
 
+
 const STATUS_OPTIONS = [
-  { value: "open", label: "Open" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "blocked", label: "Blocked" },
+  {
+    value: "open",
+    translationKey:
+      "relatedExecutiveActions.status.open",
+  },
+  {
+    value: "in_progress",
+    translationKey:
+      "relatedExecutiveActions.status.inProgress",
+  },
+  {
+    value: "completed",
+    translationKey:
+      "relatedExecutiveActions.status.completed",
+  },
+  {
+    value: "blocked",
+    translationKey:
+      "relatedExecutiveActions.status.blocked",
+  },
 ];
+
+
+function translateTemplate(
+  t,
+  key,
+  variables = {},
+) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? ""),
+      );
+    },
+  );
+
+  return text;
+}
+
 
 function normalizeText(value) {
   return String(value || "")
@@ -27,32 +67,60 @@ function normalizeText(value) {
     .replaceAll(" ", "_");
 }
 
-function formatStatus(status) {
-  const normalized = normalizeText(status);
 
-  const labels = {
-    open: "Open",
-    in_progress: "In Progress",
-    completed: "Completed",
-    blocked: "Blocked",
+function formatStatus(status, t) {
+  const normalized =
+    normalizeText(status);
+
+  const keys = {
+    open:
+      "relatedExecutiveActions.status.open",
+    in_progress:
+      "relatedExecutiveActions.status.inProgress",
+    completed:
+      "relatedExecutiveActions.status.completed",
+    blocked:
+      "relatedExecutiveActions.status.blocked",
   };
 
-  return labels[normalized] || "Open";
+  return t(
+    keys[normalized] ||
+      "relatedExecutiveActions.status.open",
+  );
 }
 
-function formatPriority(priority) {
-  const normalized = normalizeText(priority);
 
-  if (!normalized) {
-    return "Medium";
-  }
+function formatPriority(priority, t) {
+  const normalized =
+    normalizeText(priority);
 
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  const keys = {
+    high:
+      "relatedExecutiveActions.priority.high",
+    medium:
+      "relatedExecutiveActions.priority.medium",
+    low:
+      "relatedExecutiveActions.priority.low",
+    critical:
+      "relatedExecutiveActions.priority.critical",
+  };
+
+  return t(
+    keys[normalized] ||
+      "relatedExecutiveActions.priority.medium",
+  );
 }
 
-function formatDate(dateValue) {
+
+function formatDate(
+  dateValue,
+  language,
+  t,
+) {
   if (!dateValue) {
-    return "No due date";
+    return t(
+      "relatedExecutiveActions.noDueDate",
+    );
   }
 
   const date = new Date(dateValue);
@@ -61,30 +129,52 @@ function formatDate(dateValue) {
     return String(dateValue);
   }
 
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return date.toLocaleDateString(
+    language === "MN"
+      ? "mn-MN"
+      : "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
 }
+
 
 function getActionId(action) {
-  return action?.id ?? action?.action_id ?? null;
+  return (
+    action?.id ??
+    action?.action_id ??
+    null
+  );
 }
 
-function getActionKey(action, index) {
+
+function getActionKey(
+  action,
+  index,
+) {
   return (
     action?.action_key ||
     getActionId(action) ||
-    `${action?.title || "action"}-${index}`
+    `${
+      action?.title || "action"
+    }-${index}`
   );
 }
+
 
 export default function RelatedExecutiveActions({
   kpiKey,
   onOpenActionCenter,
   className = "",
 }) {
+  const {
+    language,
+    t,
+  } = useLanguage();
+
   const {
     actions,
     summary,
@@ -93,15 +183,23 @@ export default function RelatedExecutiveActions({
     updatingStatusId,
     refresh,
     updateStatus,
-  } = useKpiExecutiveActions(kpiKey);
+  } = useKpiExecutiveActions(
+    kpiKey,
+  );
 
-  const handleStatusChange = async (action, nextStatus) => {
+  const handleStatusChange = async (
+    action,
+    nextStatus,
+  ) => {
     try {
-      await updateStatus(action, nextStatus);
+      await updateStatus(
+        action,
+        nextStatus,
+      );
     } catch (requestError) {
       console.error(
         "Unable to update executive action status:",
-        requestError
+        requestError,
       );
     }
   };
@@ -114,15 +212,21 @@ export default function RelatedExecutiveActions({
       <div className="related-actions-header">
         <div>
           <span className="related-actions-eyebrow">
-            Connected Executive Intelligence
+            {t(
+              "relatedExecutiveActions.eyebrow",
+            )}
           </span>
 
           <h3 id="related-actions-title">
-            Related Executive Actions
+            {t(
+              "relatedExecutiveActions.title",
+            )}
           </h3>
 
           <p>
-            Live management actions linked to this KPI.
+            {t(
+              "relatedExecutiveActions.subtitle",
+            )}
           </p>
         </div>
 
@@ -131,19 +235,41 @@ export default function RelatedExecutiveActions({
             type="button"
             className="related-actions-refresh-button"
             onClick={refresh}
-            disabled={loading || !kpiKey}
+            disabled={
+              loading ||
+              !kpiKey
+            }
+            aria-label={t(
+              "relatedExecutiveActions.refreshAria",
+            )}
           >
-            <FiRefreshCw className={loading ? "spinning" : ""} />
-            Refresh
+            <FiRefreshCw
+              className={
+                loading
+                  ? "spinning"
+                  : ""
+              }
+            />
+
+            {t(
+              "relatedExecutiveActions.refresh",
+            )}
           </button>
 
           {onOpenActionCenter && (
             <button
               type="button"
               className="related-actions-open-button"
-              onClick={() => onOpenActionCenter(kpiKey)}
+              onClick={() =>
+                onOpenActionCenter(
+                  kpiKey,
+                )
+              }
             >
-              Open Action Center
+              {t(
+                "relatedExecutiveActions.openActionCenter",
+              )}
+
               <FiExternalLink />
             </button>
           )}
@@ -152,42 +278,88 @@ export default function RelatedExecutiveActions({
 
       <div className="related-actions-summary">
         <div>
-          <span>Total</span>
-          <strong>{summary.total}</strong>
+          <span>
+            {t(
+              "relatedExecutiveActions.summary.total",
+            )}
+          </span>
+          <strong>
+            {summary.total}
+          </strong>
         </div>
 
         <div>
-          <span>Open</span>
-          <strong>{summary.open}</strong>
+          <span>
+            {t(
+              "relatedExecutiveActions.status.open",
+            )}
+          </span>
+          <strong>
+            {summary.open}
+          </strong>
         </div>
 
         <div>
-          <span>In Progress</span>
-          <strong>{summary.inProgress}</strong>
+          <span>
+            {t(
+              "relatedExecutiveActions.status.inProgress",
+            )}
+          </span>
+          <strong>
+            {summary.inProgress}
+          </strong>
         </div>
 
         <div>
-          <span>Completed</span>
-          <strong>{summary.completed}</strong>
+          <span>
+            {t(
+              "relatedExecutiveActions.status.completed",
+            )}
+          </span>
+          <strong>
+            {summary.completed}
+          </strong>
         </div>
 
         <div>
-          <span>Blocked</span>
-          <strong>{summary.blocked}</strong>
+          <span>
+            {t(
+              "relatedExecutiveActions.status.blocked",
+            )}
+          </span>
+          <strong>
+            {summary.blocked}
+          </strong>
         </div>
 
         <div>
-          <span>Completion</span>
-          <strong>{summary.completionRate}%</strong>
+          <span>
+            {t(
+              "relatedExecutiveActions.summary.completion",
+            )}
+          </span>
+          <strong>
+            {summary.completionRate}%
+          </strong>
         </div>
       </div>
 
       {loading && (
         <div className="related-actions-state">
           <FiRefreshCw className="spinning" />
+
           <div>
-            <strong>Loading executive actions</strong>
-            <p>Retrieving live action data for this KPI.</p>
+            <strong>
+              {t(
+                "relatedExecutiveActions.loadingTitle",
+              )}
+            </strong>
+
+            <p>
+              {t(
+                "relatedExecutiveActions.loadingMessage",
+              )}
+            </p>
           </div>
         </div>
       )}
@@ -197,131 +369,243 @@ export default function RelatedExecutiveActions({
           <FiAlertCircle />
 
           <div>
-            <strong>Unable to load executive actions</strong>
+            <strong>
+              {t(
+                "relatedExecutiveActions.errorTitle",
+              )}
+            </strong>
+
             <p>{error}</p>
           </div>
 
-          <button type="button" onClick={refresh}>
-            Retry
+          <button
+            type="button"
+            onClick={refresh}
+          >
+            {t(
+              "relatedExecutiveActions.retry",
+            )}
           </button>
         </div>
       )}
 
-      {!loading && !error && actions.length === 0 && (
-        <div className="related-actions-state empty">
-          <FiCheckCircle />
+      {!loading &&
+        !error &&
+        actions.length === 0 && (
+          <div className="related-actions-state empty">
+            <FiCheckCircle />
 
-          <div>
-            <strong>No related executive actions yet</strong>
-            <p>
-              Actions created from this KPI will appear here automatically.
-            </p>
-          </div>
+            <div>
+              <strong>
+                {t(
+                  "relatedExecutiveActions.emptyTitle",
+                )}
+              </strong>
 
-          {onOpenActionCenter && (
-            <button
-              type="button"
-              onClick={() => onOpenActionCenter(kpiKey)}
-            >
-              Open Action Center
-            </button>
-          )}
-        </div>
-      )}
+              <p>
+                {t(
+                  "relatedExecutiveActions.emptyMessage",
+                )}
+              </p>
+            </div>
 
-      {!loading && !error && actions.length > 0 && (
-        <div className="related-actions-list">
-          {actions.map((action, index) => {
-            const actionId = getActionId(action);
-            const normalizedStatus = normalizeText(action?.status) || "open";
-            const normalizedPriority =
-              normalizeText(action?.priority) || "medium";
-            const isUpdating = updatingStatusId === actionId;
-
-            return (
-              <article
-                className="related-action-card"
-                key={getActionKey(action, index)}
+            {onOpenActionCenter && (
+              <button
+                type="button"
+                onClick={() =>
+                  onOpenActionCenter(
+                    kpiKey,
+                  )
+                }
               >
-                <div className="related-action-card-top">
-                  <div className="related-action-title-group">
-                    <span
-                      className={`related-action-priority ${normalizedPriority}`}
-                    >
-                      {formatPriority(action?.priority)}
-                    </span>
+                {t(
+                  "relatedExecutiveActions.openActionCenter",
+                )}
+              </button>
+            )}
+          </div>
+        )}
 
-                    <span
-                      className={`related-action-status ${normalizedStatus}`}
-                    >
-                      {formatStatus(action?.status)}
-                    </span>
-                  </div>
+      {!loading &&
+        !error &&
+        actions.length > 0 && (
+          <div className="related-actions-list">
+            {actions.map(
+              (action, index) => {
+                const actionId =
+                  getActionId(
+                    action,
+                  );
 
-                  <select
-                    aria-label={`Update status for ${action?.title || "executive action"}`}
-                    value={normalizedStatus}
-                    disabled={isUpdating}
-                    onChange={(event) =>
-                      handleStatusChange(action, event.target.value)
-                    }
+                const normalizedStatus =
+                  normalizeText(
+                    action?.status,
+                  ) || "open";
+
+                const normalizedPriority =
+                  normalizeText(
+                    action?.priority,
+                  ) || "medium";
+
+                const isUpdating =
+                  updatingStatusId ===
+                  actionId;
+
+                const actionTitle =
+                  action?.title ||
+                  t(
+                    "relatedExecutiveActions.untitledAction",
+                  );
+
+                return (
+                  <article
+                    className="related-action-card"
+                    key={getActionKey(
+                      action,
+                      index,
+                    )}
                   >
-                    {STATUS_OPTIONS.map((option) => (
-                      <option
-                        key={option.value}
-                        value={option.value}
+                    <div className="related-action-card-top">
+                      <div className="related-action-title-group">
+                        <span
+                          className={`related-action-priority ${normalizedPriority}`}
+                        >
+                          {formatPriority(
+                            action?.priority,
+                            t,
+                          )}
+                        </span>
+
+                        <span
+                          className={`related-action-status ${normalizedStatus}`}
+                        >
+                          {formatStatus(
+                            action?.status,
+                            t,
+                          )}
+                        </span>
+                      </div>
+
+                      <select
+                        aria-label={translateTemplate(
+                          t,
+                          "relatedExecutiveActions.updateStatusAria",
+                          {
+                            title:
+                              actionTitle,
+                          },
+                        )}
+                        value={
+                          normalizedStatus
+                        }
+                        disabled={
+                          isUpdating
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          handleStatusChange(
+                            action,
+                            event.target
+                              .value,
+                          )
+                        }
                       >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                        {STATUS_OPTIONS.map(
+                          (option) => (
+                            <option
+                              key={
+                                option.value
+                              }
+                              value={
+                                option.value
+                              }
+                            >
+                              {t(
+                                option.translationKey,
+                              )}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
 
-                <h4>{action?.title || "Untitled executive action"}</h4>
+                    <h4>
+                      {actionTitle}
+                    </h4>
 
-                {action?.description && (
-                  <p className="related-action-description">
-                    {action.description}
-                  </p>
-                )}
+                    {action?.description && (
+                      <p className="related-action-description">
+                        {
+                          action.description
+                        }
+                      </p>
+                    )}
 
-                <div className="related-action-metadata">
-                  <span>
-                    <FiUser />
-                    {action?.owner || "Owner not assigned"}
-                  </span>
+                    <div className="related-action-metadata">
+                      <span>
+                        <FiUser />
+                        {action?.owner ||
+                          t(
+                            "relatedExecutiveActions.ownerNotAssigned",
+                          )}
+                      </span>
 
-                  <span>
-                    <FiCalendar />
-                    {formatDate(action?.due_date)}
-                  </span>
+                      <span>
+                        <FiCalendar />
+                        {formatDate(
+                          action?.due_date,
+                          language,
+                          t,
+                        )}
+                      </span>
 
-                  {action?.linked_cause && (
-                    <span>
-                      <FiLink2 />
-                      Root Cause {action.linked_cause}
-                    </span>
-                  )}
-                </div>
+                      {action?.linked_cause && (
+                        <span>
+                          <FiLink2 />
+                          {translateTemplate(
+                            t,
+                            "relatedExecutiveActions.rootCause",
+                            {
+                              cause:
+                                action.linked_cause,
+                            },
+                          )}
+                        </span>
+                      )}
+                    </div>
 
-                {action?.expected_benefit && (
-                  <div className="related-action-benefit">
-                    <span>Expected Benefit</span>
-                    <p>{action.expected_benefit}</p>
-                  </div>
-                )}
+                    {action?.expected_benefit && (
+                      <div className="related-action-benefit">
+                        <span>
+                          {t(
+                            "relatedExecutiveActions.expectedBenefit",
+                          )}
+                        </span>
 
-                {isUpdating && (
-                  <div className="related-action-updating">
-                    <FiRefreshCw className="spinning" />
-                    Updating status…
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      )}
+                        <p>
+                          {
+                            action.expected_benefit
+                          }
+                        </p>
+                      </div>
+                    )}
+
+                    {isUpdating && (
+                      <div className="related-action-updating">
+                        <FiRefreshCw className="spinning" />
+
+                        {t(
+                          "relatedExecutiveActions.updatingStatus",
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              },
+            )}
+          </div>
+        )}
     </section>
   );
 }

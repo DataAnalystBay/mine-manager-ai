@@ -26,7 +26,34 @@ import {
   updateExecutiveActionStatus,
 } from "../../api/executiveActionsApi";
 
+import { useLanguage } from "../../context/LanguageContext";
+
 import "./ExecutiveRecommendationCard.css";
+
+/* ======================================================
+   Translation helper
+====================================================== */
+
+
+function translateTemplate(
+  t,
+  key,
+  variables = {},
+) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? ""),
+      );
+    },
+  );
+
+  return text;
+}
+
 
 /* ======================================================
    Normalization helpers
@@ -165,7 +192,8 @@ function createActionKey({
 function normalizeRecommendation(
   recommendation,
   index,
-  title
+  title,
+  t
 ) {
   if (typeof recommendation === "string") {
     const actionKey = createActionKey({
@@ -188,8 +216,8 @@ function normalizeRecommendation(
           : index === 1
             ? "medium"
             : "low",
-      owner: "Operations",
-      timing: "Next shift",
+      owner: t("executiveRecommendationCard.defaults.operations"),
+      timing: t("executiveRecommendationCard.defaults.nextShift"),
       expectedBenefit: "",
       status: "open",
       persisted: false,
@@ -220,7 +248,7 @@ function normalizeRecommendation(
       recommendation?.description ||
       recommendation?.text ||
       recommendation?.title ||
-      "Review this operational recommendation.",
+      t("executiveRecommendationCard.defaults.reviewRecommendation"),
 
     linkedCause:
       recommendation?.linked_cause ||
@@ -238,14 +266,14 @@ function normalizeRecommendation(
       recommendation?.owner ||
       recommendation?.responsible_owner ||
       recommendation?.responsible_function ||
-      "Operations",
+      t("executiveRecommendationCard.defaults.operations"),
 
     timing:
       recommendation?.timing ||
       recommendation?.due ||
       recommendation?.due_date ||
       recommendation?.timeframe ||
-      "Next shift",
+      t("executiveRecommendationCard.defaults.nextShift"),
 
     expectedBenefit:
       recommendation?.expected_benefit ||
@@ -306,36 +334,36 @@ function mapBackendActionToUi(
    Display helpers
 ====================================================== */
 
-function formatPriorityLabel(priority) {
+function formatPriorityLabel(priority, t) {
   if (priority === "high") {
-    return "High Priority";
+    return t("executiveRecommendationCard.priority.high");
   }
 
   if (priority === "medium") {
-    return "Medium Priority";
+    return t("executiveRecommendationCard.priority.medium");
   }
 
   if (priority === "low") {
-    return "Low Priority";
+    return t("executiveRecommendationCard.priority.low");
   }
 
-  return "Priority Unavailable";
+  return t("executiveRecommendationCard.priority.unavailable");
 }
 
-function formatStatusLabel(status) {
+function formatStatusLabel(status, t) {
   if (status === "complete") {
-    return "Completed";
+    return t("executiveRecommendationCard.status.completed");
   }
 
   if (status === "in-progress") {
-    return "In Progress";
+    return t("executiveRecommendationCard.status.inProgress");
   }
 
   if (status === "blocked") {
-    return "Blocked";
+    return t("executiveRecommendationCard.status.blocked");
   }
 
-  return "Open";
+  return t("executiveRecommendationCard.status.open");
 }
 
 function getStatusIcon(status) {
@@ -360,8 +388,15 @@ function getStatusIcon(status) {
 
 export default function ExecutiveRecommendationCard({
   recommendations = [],
-  title = "AI Recommended Actions",
+  title,
 }) {
+  const { t } = useLanguage();
+
+  const displayTitle =
+    title ||
+    t(
+      "executiveRecommendationCard.defaultTitle",
+    );
   const [actionItems, setActionItems] =
     useState([]);
 
@@ -400,7 +435,8 @@ export default function ExecutiveRecommendationCard({
                 normalizeRecommendation(
                   recommendation,
                   index,
-                  title
+                  displayTitle,
+                  t
                 )
             )
           : [];
@@ -469,9 +505,9 @@ export default function ExecutiveRecommendationCard({
                   action_key:
                     localAction.actionKey,
                   kpi_key:
-                    createSlug(title) ||
+                    createSlug(displayTitle) ||
                     "executive-kpi",
-                  kpi_name: title,
+                  kpi_name: displayTitle,
                   linked_cause:
                     localAction.linkedCause,
                   title: localAction.action,
@@ -551,7 +587,7 @@ export default function ExecutiveRecommendationCard({
         ) {
           setActionError(
             error?.message ||
-              "Unable to synchronize executive actions."
+              t("executiveRecommendationCard.errors.syncFailed")
           );
         }
       } finally {
@@ -565,7 +601,7 @@ export default function ExecutiveRecommendationCard({
     };
 
     syncRecommendations();
-  }, [recommendations, title]);
+  }, [recommendations, displayTitle, t]);
 
   /* ====================================================
      Summary
@@ -656,7 +692,7 @@ export default function ExecutiveRecommendationCard({
 
     if (!selectedAction.backendId) {
       setActionError(
-        "This action has not finished synchronizing with the backend."
+        t("executiveRecommendationCard.errors.notSynchronized")
       );
       return;
     }
@@ -724,9 +760,16 @@ export default function ExecutiveRecommendationCard({
       );
 
       setActionMessage(
-        `Action status updated to ${formatStatusLabel(
-          normalizedNextStatus
-        )}.`
+        translateTemplate(
+          t,
+          "executiveRecommendationCard.messages.statusUpdated",
+          {
+            status: formatStatusLabel(
+              normalizedNextStatus,
+              t
+            ),
+          },
+        )
       );
 
       window.setTimeout(() => {
@@ -742,7 +785,7 @@ export default function ExecutiveRecommendationCard({
 
       setActionError(
         error?.message ||
-          "Unable to update the action status."
+          t("executiveRecommendationCard.errors.updateFailed")
       );
     } finally {
       setSavingActionIds(
@@ -768,7 +811,7 @@ export default function ExecutiveRecommendationCard({
   return (
     <section
       className="executive-recommendation-card"
-      aria-label={title}
+      aria-label={displayTitle}
     >
       <header className="executive-recommendation-header">
         <div className="executive-recommendation-title">
@@ -778,17 +821,18 @@ export default function ExecutiveRecommendationCard({
 
           <div>
             <small>
-              AI Decision Support
+              {t("executiveRecommendationCard.aiDecisionSupport")}
             </small>
 
-            <h3>{title}</h3>
+            <h3>{displayTitle}</h3>
           </div>
         </div>
 
         <div className="executive-recommendation-header-actions">
           {loadingActions && (
             <span className="executive-recommendation-count">
-              <FiLoader /> Syncing
+              <FiLoader />
+              {t("executiveRecommendationCard.syncing")}
             </span>
           )}
 
@@ -803,13 +847,19 @@ export default function ExecutiveRecommendationCard({
               }
             >
               {allExpanded
-                ? "Collapse All"
-                : "Expand All"}
+                ? t("executiveRecommendationCard.collapseAll")
+                : t("executiveRecommendationCard.expandAll")}
             </button>
           )}
 
           <span className="executive-recommendation-count">
-            {actionItems.length} actions
+            {translateTemplate(
+              t,
+              "executiveRecommendationCard.actionsCount",
+              {
+                count: actionItems.length,
+              },
+            )}
           </span>
         </div>
       </header>
@@ -868,16 +918,22 @@ export default function ExecutiveRecommendationCard({
         <>
           <section
             className="executive-action-summary"
-            aria-label="Action progress summary"
+            aria-label={t(
+              "executiveRecommendationCard.actionProgressSummaryAria",
+            )}
           >
             <div className="executive-action-summary-top">
               <div>
                 <small>
-                  Execution Overview
+                  {t(
+                    "executiveRecommendationCard.executionOverview",
+                  )}
                 </small>
 
                 <h4>
-                  Action Progress Summary
+                  {t(
+                    "executiveRecommendationCard.actionProgressSummary",
+                  )}
                 </h4>
               </div>
 
@@ -886,13 +942,21 @@ export default function ExecutiveRecommendationCard({
                   {actionSummary.progress}%
                 </strong>
 
-                <span>completed</span>
+                <span>
+                  {t(
+                    "executiveRecommendationCard.completedLower",
+                  )}
+                </span>
               </div>
             </div>
 
             <div className="executive-action-summary-grid">
               <article className="executive-action-summary-item total">
-                <span>Total Actions</span>
+                <span>
+                  {t(
+                    "executiveRecommendationCard.totalActions",
+                  )}
+                </span>
 
                 <strong>
                   {actionSummary.total}
@@ -900,7 +964,11 @@ export default function ExecutiveRecommendationCard({
               </article>
 
               <article className="executive-action-summary-item open">
-                <span>Open</span>
+                <span>
+                  {t(
+                    "executiveRecommendationCard.status.open",
+                  )}
+                </span>
 
                 <strong>
                   {actionSummary.open}
@@ -908,7 +976,11 @@ export default function ExecutiveRecommendationCard({
               </article>
 
               <article className="executive-action-summary-item in-progress">
-                <span>In Progress</span>
+                <span>
+                  {t(
+                    "executiveRecommendationCard.status.inProgress",
+                  )}
+                </span>
 
                 <strong>
                   {actionSummary.inProgress}
@@ -916,7 +988,11 @@ export default function ExecutiveRecommendationCard({
               </article>
 
               <article className="executive-action-summary-item complete">
-                <span>Completed</span>
+                <span>
+                  {t(
+                    "executiveRecommendationCard.status.completed",
+                  )}
+                </span>
 
                 <strong>
                   {actionSummary.complete}
@@ -924,7 +1000,11 @@ export default function ExecutiveRecommendationCard({
               </article>
 
               <article className="executive-action-summary-item blocked">
-                <span>Blocked</span>
+                <span>
+                  {t(
+                    "executiveRecommendationCard.status.blocked",
+                  )}
+                </span>
 
                 <strong>
                   {actionSummary.blocked}
@@ -935,12 +1015,20 @@ export default function ExecutiveRecommendationCard({
             <div className="executive-action-progress">
               <div className="executive-action-progress-heading">
                 <span>
-                  Overall Completion
+                  {t(
+                    "executiveRecommendationCard.overallCompletion",
+                  )}
                 </span>
 
                 <strong>
-                  {actionSummary.complete} of{" "}
-                  {actionSummary.total} actions
+                  {translateTemplate(
+                    t,
+                    "executiveRecommendationCard.completionCount",
+                    {
+                      completed: actionSummary.complete,
+                      total: actionSummary.total,
+                    },
+                  )}
                 </strong>
               </div>
 
@@ -952,7 +1040,9 @@ export default function ExecutiveRecommendationCard({
                 aria-valuenow={
                   actionSummary.progress
                 }
-                aria-label="Action completion progress"
+                aria-label={t(
+                  "executiveRecommendationCard.actionCompletionProgressAria",
+                )}
               >
                 <span
                   style={{
@@ -1028,7 +1118,8 @@ export default function ExecutiveRecommendationCard({
                             className={`executive-recommendation-priority ${priority}`}
                           >
                             {formatPriorityLabel(
-                              priority
+                              priority,
+                              t,
                             )}
                           </span>
                         </span>
@@ -1036,7 +1127,9 @@ export default function ExecutiveRecommendationCard({
                         <span className="executive-recommendation-summary-meta">
                           <span>
                             <FiLink2 />
-                            Linked to{" "}
+                            {t(
+                              "executiveRecommendationCard.linkedTo",
+                            )}{" "}
                             {
                               recommendation.linkedCause
                             }
@@ -1068,9 +1161,10 @@ export default function ExecutiveRecommendationCard({
                             )}
 
                             {isSaving
-                              ? "Saving..."
+                              ? t("executiveRecommendationCard.saving")
                               : formatStatusLabel(
-                                  status
+                                  status,
+                                  t,
                                 )}
                           </span>
                         </span>
@@ -1098,7 +1192,9 @@ export default function ExecutiveRecommendationCard({
 
                           <div>
                             <small>
-                              Linked Root Cause
+                              {t(
+                                "executiveRecommendationCard.linkedRootCause",
+                              )}
                             </small>
 
                             <strong>
@@ -1115,8 +1211,9 @@ export default function ExecutiveRecommendationCard({
 
                             <div>
                               <small>
-                                Expected
-                                Operational Benefit
+                                {t(
+                                  "executiveRecommendationCard.expectedOperationalBenefit",
+                                )}
                               </small>
 
                               <strong>
@@ -1132,11 +1229,15 @@ export default function ExecutiveRecommendationCard({
                           <div className="executive-recommendation-status-control-heading">
                             <div>
                               <small>
-                                Action Workflow
+                                {t(
+                                  "executiveRecommendationCard.actionWorkflow",
+                                )}
                               </small>
 
                               <h4>
-                                Update action status
+                                {t(
+                                  "executiveRecommendationCard.updateActionStatus",
+                                )}
                               </h4>
                             </div>
 
@@ -1152,9 +1253,10 @@ export default function ExecutiveRecommendationCard({
                               )}
 
                               {isSaving
-                                ? "Saving..."
+                                ? t("executiveRecommendationCard.saving")
                                 : formatStatusLabel(
-                                    status
+                                    status,
+                                    t,
                                   )}
                             </span>
                           </div>
@@ -1183,7 +1285,7 @@ export default function ExecutiveRecommendationCard({
                               }
                             >
                               <FiRotateCcw />
-                              Open
+                              {t("executiveRecommendationCard.status.open")}
                             </button>
 
                             <button
@@ -1211,7 +1313,9 @@ export default function ExecutiveRecommendationCard({
                               }
                             >
                               <FiPlayCircle />
-                              In Progress
+                              {t(
+                                "executiveRecommendationCard.status.inProgress",
+                              )}
                             </button>
 
                             <button
@@ -1239,7 +1343,9 @@ export default function ExecutiveRecommendationCard({
                               }
                             >
                               <FiCheckCircle />
-                              Completed
+                              {t(
+                                "executiveRecommendationCard.status.completed",
+                              )}
                             </button>
 
                             <button
@@ -1267,15 +1373,16 @@ export default function ExecutiveRecommendationCard({
                               }
                             >
                               <FiAlertCircle />
-                              Blocked
+                              {t(
+                                "executiveRecommendationCard.status.blocked",
+                              )}
                             </button>
                           </div>
 
                           <p className="executive-recommendation-status-note">
-                            Status changes are saved
-                            to PostgreSQL and remain
-                            available after refreshing
-                            the browser.
+                            {t(
+                              "executiveRecommendationCard.statusPersistenceNote",
+                            )}
                           </p>
                         </div>
 
@@ -1285,7 +1392,9 @@ export default function ExecutiveRecommendationCard({
 
                             <div>
                               <span>
-                                Responsible Function
+                                {t(
+                                  "executiveRecommendationCard.responsibleFunction",
+                                )}
                               </span>
 
                               <strong>
@@ -1301,7 +1410,9 @@ export default function ExecutiveRecommendationCard({
 
                             <div>
                               <span>
-                                Recommended Timing
+                                {t(
+                                  "executiveRecommendationCard.recommendedTiming",
+                                )}
                               </span>
 
                               <strong>
@@ -1324,9 +1435,10 @@ export default function ExecutiveRecommendationCard({
                             )}
 
                             {isSaving
-                              ? "Saving..."
+                              ? t("executiveRecommendationCard.saving")
                               : formatStatusLabel(
-                                  status
+                                  status,
+                                  t,
                                 )}
                           </span>
                         </footer>
@@ -1349,14 +1461,22 @@ export default function ExecutiveRecommendationCard({
           <div>
             <h4>
               {loadingActions
-                ? "Loading executive actions"
-                : "No immediate actions required"}
+                ? t(
+                    "executiveRecommendationCard.loadingExecutiveActions",
+                  )
+                : t(
+                    "executiveRecommendationCard.noImmediateActions",
+                  )}
             </h4>
 
             <p>
               {loadingActions
-                ? "Synchronizing AI recommendations with PostgreSQL."
-                : "Current KPI performance does not require an additional AI recommendation."}
+                ? t(
+                    "executiveRecommendationCard.synchronizingRecommendations",
+                  )
+                : t(
+                    "executiveRecommendationCard.noAdditionalRecommendation",
+                  )}
             </p>
           </div>
         </div>

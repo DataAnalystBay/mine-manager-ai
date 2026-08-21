@@ -6,6 +6,8 @@ import {
   FiClock,
 } from "react-icons/fi";
 
+import { useLanguage } from "../../context/LanguageContext";
+import { translateDynamicKpiName } from "../../i18n/dynamicTranslations";
 import PredictionRecommendation from "./PredictionRecommendation";
 import PredictionSparkline from "./PredictionSparkline";
 
@@ -25,7 +27,23 @@ function toDisplayValue(value) {
 }
 
 
-function getTrendConfig(trend) {
+function translateTemplate(t, key, variables = {}) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? ""),
+      );
+    },
+  );
+
+  return text;
+}
+
+
+function getTrendConfig(trend, t) {
   const normalizedTrend = String(
     trend || "",
   )
@@ -34,7 +52,9 @@ function getTrendConfig(trend) {
 
   if (normalizedTrend === "improving") {
     return {
-      label: "Improving",
+      label: t(
+        "predictionCard.trend.improving",
+      ),
       className: "improving",
       icon: <FiArrowUpRight />,
     };
@@ -42,7 +62,9 @@ function getTrendConfig(trend) {
 
   if (normalizedTrend === "declining") {
     return {
-      label: "Declining",
+      label: t(
+        "predictionCard.trend.declining",
+      ),
       className: "declining",
       icon: <FiArrowDownRight />,
     };
@@ -50,14 +72,18 @@ function getTrendConfig(trend) {
 
   if (normalizedTrend === "stable") {
     return {
-      label: "Stable",
+      label: t(
+        "predictionCard.trend.stable",
+      ),
       className: "stable",
       icon: <FiArrowRight />,
     };
   }
 
   return {
-    label: "Unavailable",
+    label: t(
+      "predictionCard.trend.unavailable",
+    ),
     className: "unavailable",
     icon: <FiActivity />,
   };
@@ -86,17 +112,22 @@ function getRibbonConfig({
   isExecutiveFocus,
   trend,
   varianceShift3,
+  t,
 }) {
   if (!isAvailable) {
     return {
-      label: "Unavailable",
+      label: t(
+        "predictionCard.ribbon.unavailable",
+      ),
       className: "unavailable",
     };
   }
 
   if (isExecutiveFocus) {
     return {
-      label: "Executive Focus",
+      label: t(
+        "predictionCard.ribbon.executiveFocus",
+      ),
       className: "focus",
     };
   }
@@ -109,14 +140,18 @@ function getRibbonConfig({
 
   if (normalizedTrend === "declining") {
     return {
-      label: "Critical Forecast",
+      label: t(
+        "predictionCard.ribbon.criticalForecast",
+      ),
       className: "critical",
     };
   }
 
   if (normalizedTrend === "improving") {
     return {
-      label: "Improving",
+      label: t(
+        "predictionCard.ribbon.improving",
+      ),
       className: "improving",
     };
   }
@@ -127,7 +162,9 @@ function getRibbonConfig({
     varianceShift3 < 0
   ) {
     return {
-      label: "Watch List",
+      label: t(
+        "predictionCard.ribbon.watchList",
+      ),
       className: "watch",
     };
   }
@@ -136,12 +173,14 @@ function getRibbonConfig({
 }
 
 
-function getHealthStatus(prediction) {
+function getHealthStatus(prediction, t) {
   if (
     prediction?.data_status !== "Available"
   ) {
     return {
-      label: "Unavailable",
+      label: t(
+        "predictionCard.health.unavailable",
+      ),
       className: "unavailable",
     };
   }
@@ -152,27 +191,35 @@ function getHealthStatus(prediction) {
 
   if (!Number.isFinite(forecastValue)) {
     return {
-      label: "Unavailable",
+      label: t(
+        "predictionCard.health.unavailable",
+      ),
       className: "unavailable",
     };
   }
 
   if (forecastValue >= 98) {
     return {
-      label: "Healthy",
+      label: t(
+        "predictionCard.health.healthy",
+      ),
       className: "healthy",
     };
   }
 
   if (forecastValue >= 94) {
     return {
-      label: "Watch",
+      label: t(
+        "predictionCard.health.watch",
+      ),
       className: "watch",
     };
   }
 
   return {
-    label: "Critical",
+    label: t(
+      "predictionCard.health.critical",
+    ),
     className: "critical",
   };
 }
@@ -182,18 +229,31 @@ function PredictionCard({
   prediction,
   isExecutiveFocus = false,
 }) {
+  const { t } = useLanguage();
+
   const safePrediction =
     prediction || {};
+
+  const translatedKpiName =
+    translateDynamicKpiName(
+      safePrediction.kpi_name,
+      t,
+    ) ||
+    t(
+      "predictionCard.operationalKpi",
+    );
 
   const isAvailable =
     safePrediction.data_status === "Available";
 
   const trendConfig = getTrendConfig(
     safePrediction.trend,
+    t,
   );
 
   const healthStatus = getHealthStatus(
     safePrediction,
+    t,
   );
 
   const confidence = Number(
@@ -225,6 +285,7 @@ function PredictionCard({
     isExecutiveFocus,
     trend: safePrediction.trend,
     varianceShift3,
+    t,
   });
 
   const cardClassName = [
@@ -243,8 +304,29 @@ function PredictionCard({
     .filter(Boolean)
     .join(" ");
 
+  const confidenceAriaLabel =
+    translateTemplate(
+      t,
+      "predictionCard.confidenceAria",
+      {
+        confidence,
+      },
+    );
+
+  const historyLabel = translateTemplate(
+    t,
+    "predictionCard.historyPoints",
+    {
+      count:
+        safePrediction.history_points || 0,
+    },
+  );
+
   return (
-    <article className={cardClassName}>
+    <article
+      className={cardClassName}
+      aria-label={translatedKpiName}
+    >
       {ribbonConfig ? (
         <div
           className={`prediction-card__status-ribbon prediction-card__status-ribbon--${ribbonConfig.className}`}
@@ -266,8 +348,7 @@ function PredictionCard({
           </div>
 
           <h3 className="prediction-card__title">
-            {safePrediction.kpi_name ||
-              "Operational KPI"}
+            {translatedKpiName}
           </h3>
         </div>
 
@@ -287,7 +368,9 @@ function PredictionCard({
           <section className="prediction-card__current">
             <div>
               <span className="prediction-card__label">
-                Current
+                {t(
+                  "predictionCard.current",
+                )}
               </span>
 
               <strong className="prediction-card__current-value">
@@ -301,7 +384,9 @@ function PredictionCard({
 
             <div className="prediction-card__variance">
               <span>
-                3-shift change
+                {t(
+                  "predictionCard.threeShiftChange",
+                )}
               </span>
 
               <strong>
@@ -309,7 +394,9 @@ function PredictionCard({
                 {toDisplayValue(
                   safePrediction.variance_shift_3,
                 )}{" "}
-                pp
+                {t(
+                  "predictionCard.percentagePoints",
+                )}
               </strong>
             </div>
           </section>
@@ -318,7 +405,9 @@ function PredictionCard({
             <div className="prediction-card__forecast-item">
               <span>
                 <FiClock />
-                Next shift
+                {t(
+                  "predictionCard.nextShift",
+                )}
               </span>
 
               <strong>
@@ -332,7 +421,9 @@ function PredictionCard({
             <div className="prediction-card__forecast-item">
               <span>
                 <FiClock />
-                Shift +2
+                {t(
+                  "predictionCard.shiftPlus2",
+                )}
               </span>
 
               <strong>
@@ -346,7 +437,9 @@ function PredictionCard({
             <div className="prediction-card__forecast-item">
               <span>
                 <FiClock />
-                Shift +3
+                {t(
+                  "predictionCard.shiftPlus3",
+                )}
               </span>
 
               <strong>
@@ -383,7 +476,9 @@ function PredictionCard({
           <footer className="prediction-card__footer">
             <div className="prediction-card__confidence-heading">
               <span>
-                Forecast confidence
+                {t(
+                  "predictionCard.forecastConfidence",
+                )}
               </span>
 
               <strong>
@@ -393,7 +488,7 @@ function PredictionCard({
 
             <div
               className="prediction-card__confidence-track"
-              aria-label={`Forecast confidence ${confidence}%`}
+              aria-label={confidenceAriaLabel}
             >
               <div
                 className={`prediction-card__confidence-fill prediction-card__confidence-fill--${confidenceClass}`}
@@ -404,9 +499,7 @@ function PredictionCard({
             </div>
 
             <span className="prediction-card__history">
-              Based on{" "}
-              {safePrediction.history_points || 0}{" "}
-              historical points
+              {historyLabel}
             </span>
           </footer>
         </>
@@ -416,13 +509,15 @@ function PredictionCard({
             <FiActivity />
 
             <strong>
-              Forecast unavailable
+              {t(
+                "predictionCard.forecastUnavailable",
+              )}
             </strong>
 
             <p>
-              Additional historical KPI data is
-              required before a forecast can be
-              generated.
+              {t(
+                "predictionCard.additionalHistoryRequired",
+              )}
             </p>
           </div>
 

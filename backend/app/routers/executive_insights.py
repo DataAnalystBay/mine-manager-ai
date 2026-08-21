@@ -46,6 +46,15 @@ def get_executive_insights(
             "When omitted, the service runs in live mode."
         ),
     ),
+    language: str = Query(
+        default="en",
+        min_length=2,
+        max_length=20,
+        description=(
+            "Language used for executive insight narrative. "
+            "Supported values are 'en' and 'mn'."
+        ),
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -58,6 +67,10 @@ def get_executive_insights(
         Accepts an optional scenario name so the
         executive insight service can return
         scenario-aware decision-support content.
+
+    Language:
+        en = English
+        mn = Mongolian
 
     Allowed roles:
         - Superintendent
@@ -74,10 +87,27 @@ def get_executive_insights(
         else None
     )
 
+    normalized_language = (
+        language.strip().lower()
+        if language
+        else "en"
+    )
+
+    if normalized_language in {
+        "mn",
+        "mon",
+        "mongolian",
+        "монгол",
+    }:
+        normalized_language = "mn"
+    else:
+        normalized_language = "en"
+
     return get_executive_summary_v2(
         mine_name=normalized_mine_name,
         db=db,
         scenario=normalized_scenario,
+        language=normalized_language,
     )
 
 
@@ -94,6 +124,11 @@ def executive_insights_health():
         "status": "active",
         "version": "1.0",
         "scenario_support": True,
+        "language_support": True,
+        "supported_languages": [
+            "en",
+            "mn",
+        ],
         "modes": [
             "live",
             "demo",

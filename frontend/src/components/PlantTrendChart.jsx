@@ -23,6 +23,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { useLanguage } from "../context/LanguageContext";
+
 
 const ABOVE_TARGET_COLOR = "#16a34a";
 const BELOW_TARGET_COLOR = "#dc2626";
@@ -33,8 +35,13 @@ function PlantTrendChart({
   data = [],
   recoveryTarget = 90,
 }) {
+  const { t, language } = useLanguage();
+
   const [mode, setMode] =
     useState("throughput");
+
+  const tonnesUnit =
+    language === "mn" ? "тн" : "t";
 
 
   const handleModeChange = (
@@ -235,7 +242,7 @@ function PlantTrendChart({
               fontSize: 11,
             }}
           >
-            Target
+            {t("plant.target")}
           </Typography>
 
           <Typography
@@ -248,7 +255,7 @@ function PlantTrendChart({
           >
             {isRecovery
               ? `${target.toFixed(1)}%`
-              : `${target.toLocaleString()} t`}
+              : `${target.toLocaleString()} ${tonnesUnit}`}
           </Typography>
         </Box>
 
@@ -267,7 +274,7 @@ function PlantTrendChart({
               fontSize: 11,
             }}
           >
-            Actual
+            {t("plant.actual")}
           </Typography>
 
           <Typography
@@ -282,7 +289,7 @@ function PlantTrendChart({
           >
             {isRecovery
               ? `${actual.toFixed(1)}%`
-              : `${actual.toLocaleString()} t`}
+              : `${actual.toLocaleString()} ${tonnesUnit}`}
           </Typography>
         </Box>
 
@@ -301,7 +308,7 @@ function PlantTrendChart({
               fontSize: 11,
             }}
           >
-            Variance
+            {t("plant.variance")}
           </Typography>
 
           <Typography
@@ -319,7 +326,7 @@ function PlantTrendChart({
               : ""}
             {isRecovery
               ? `${variance.toFixed(1)} pp`
-              : `${variance.toLocaleString()} t`}
+              : `${variance.toLocaleString()} ${tonnesUnit}`}
           </Typography>
         </Box>
 
@@ -345,8 +352,8 @@ function PlantTrendChart({
           }}
         >
           {atOrAbove
-            ? "AT / ABOVE TARGET"
-            : "BELOW TARGET"}
+            ? t("plant.atOrAboveTarget")
+            : t("plant.belowTarget")}
         </Box>
       </Box>
     );
@@ -355,8 +362,8 @@ function PlantTrendChart({
 
   const metricLabel =
     mode === "throughput"
-      ? "Plant Throughput"
-      : "Plant Recovery";
+      ? t("plant.throughput")
+      : t("plant.recovery");
 
 
   return (
@@ -411,7 +418,7 @@ function PlantTrendChart({
                 fontWeight: 900,
               }}
             >
-              Plant Performance Trend
+              {t("plant.plantPerformanceTrend")}
             </Typography>
 
             <Typography
@@ -422,8 +429,8 @@ function PlantTrendChart({
                 fontSize: 10,
               }}
             >
-              {metricLabel}: actual performance
-              against target, last 30 days
+              {metricLabel}:{" "}
+              {t("plant.chartActualAgainstTarget")}
             </Typography>
           </Box>
 
@@ -450,13 +457,13 @@ function PlantTrendChart({
             <ToggleButton
               value="throughput"
             >
-              Throughput
+              {t("plant.throughput")}
             </ToggleButton>
 
             <ToggleButton
               value="recovery"
             >
-              Recovery
+              {t("plant.recovery")}
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
@@ -495,7 +502,7 @@ function PlantTrendChart({
                 fontWeight: 800,
               }}
             >
-              Target / Plan
+              {t("plant.target")}
             </Typography>
           </Box>
 
@@ -523,7 +530,7 @@ function PlantTrendChart({
                 fontWeight: 800,
               }}
             >
-              Actual ≥ Target
+              {t("plant.actualAtOrAboveTarget")}
             </Typography>
           </Box>
 
@@ -551,7 +558,7 @@ function PlantTrendChart({
                 fontWeight: 800,
               }}
             >
-              Actual &lt; Target
+              {t("plant.actualBelowTarget")}
             </Typography>
           </Box>
         </Box>
@@ -638,8 +645,9 @@ function PlantTrendChart({
               <Bar
                 dataKey=
                   "actual_above_target"
-                name=
-                  "Actual ≥ Target"
+                name={
+                  t("plant.actualAtOrAboveTarget")
+                }
                 fill={
                   ABOVE_TARGET_COLOR
                 }
@@ -657,8 +665,9 @@ function PlantTrendChart({
               <Bar
                 dataKey=
                   "actual_below_target"
-                name=
-                  "Actual < Target"
+                name={
+                  t("plant.actualBelowTarget")
+                }
                 fill={
                   BELOW_TARGET_COLOR
                 }
@@ -677,7 +686,7 @@ function PlantTrendChart({
                 type="monotone"
                 dataKey=
                   "chart_target"
-                name="Target"
+                name={t("plant.target")}
                 stroke={
                   TARGET_COLOR
                 }

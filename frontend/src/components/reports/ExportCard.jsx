@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box,
   Card,
   CardContent,
@@ -8,8 +8,18 @@ import {
   Chip,
 } from "@mui/material";
 import TableViewIcon from "@mui/icons-material/TableView";
+import { useLanguage } from "../../context/LanguageContext";
 
 function ExportCard({ onClick, disabled = false }) {
+  const { t } = useLanguage();
+  const includedItems = [
+    t("reports.production"),
+    t("reports.fleet"),
+    t("reports.plant"),
+    t("reports.safety"),
+    t("reports.maintenance"),
+  ];
+
   return (
     <Card
       sx={{
@@ -25,11 +35,11 @@ function ExportCard({ onClick, disabled = false }) {
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Box>
               <Typography sx={{ fontSize: 20, fontWeight: 900 }}>
-                Excel Export
+                {t("reports.excelExport")}
               </Typography>
 
               <Typography sx={{ mt: 0.8, fontSize: 14, color: "#64748b" }}>
-                Export operational datasets for analysis, sharing, and Power BI.
+                {t("reports.excelExportSubtitle")}
               </Typography>
             </Box>
 
@@ -50,7 +60,7 @@ function ExportCard({ onClick, disabled = false }) {
           </Box>
 
           <Chip
-            label="On demand"
+            label={t("reports.onDemand")}
             size="small"
             sx={{
               width: "fit-content",
@@ -70,11 +80,11 @@ function ExportCard({ onClick, disabled = false }) {
                 mb: 1.3,
               }}
             >
-              Includes
+              {t("reports.includes")}
             </Typography>
 
             <Stack spacing={1}>
-              {["Production", "Fleet", "Plant", "Safety", "Maintenance"].map(
+              {includedItems.map(
                 (item) => (
                   <Box
                     key={item}
@@ -119,7 +129,7 @@ function ExportCard({ onClick, disabled = false }) {
               },
             }}
           >
-            Export Excel
+            {t("reports.exportExcel")}
           </Button>
         </Stack>
       </CardContent>
@@ -128,3 +138,4 @@ function ExportCard({ onClick, disabled = false }) {
 }
 
 export default ExportCard;
+

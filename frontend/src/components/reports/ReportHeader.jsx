@@ -8,8 +8,11 @@ import {
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
 import TableViewOutlinedIcon from "@mui/icons-material/TableViewOutlined";
+import { useLanguage } from "../../context/LanguageContext";
 
 function ReportHeader() {
+  const { t } = useLanguage();
+
   return (
     <Box
       sx={{
@@ -63,7 +66,7 @@ function ReportHeader() {
               lineHeight: 1.1,
             }}
           >
-            Executive Reports
+            {t("reports.title")}
           </Typography>
 
           <Typography
@@ -78,9 +81,7 @@ function ReportHeader() {
               lineHeight: 1.7,
             }}
           >
-            Generate executive-ready reports, operational reviews,
-            board presentations, and structured data exports for mine
-            leadership meetings.
+            {t("reports.headerDescription")}
           </Typography>
 
           <Stack
@@ -92,7 +93,7 @@ function ReportHeader() {
           >
             <Chip
               icon={<DescriptionOutlinedIcon />}
-              label="PDF Reports"
+              label={t("reports.pdfReports")}
               size="small"
               sx={{
                 bgcolor: "#ffffff",
@@ -107,7 +108,7 @@ function ReportHeader() {
 
             <Chip
               icon={<SlideshowOutlinedIcon />}
-              label="PowerPoint Board Pack"
+              label={t("reports.powerPointBoardPack")}
               size="small"
               sx={{
                 bgcolor: "#ffffff",
@@ -122,7 +123,7 @@ function ReportHeader() {
 
             <Chip
               icon={<TableViewOutlinedIcon />}
-              label="Excel Export"
+              label={t("reports.excelExport")}
               size="small"
               sx={{
                 bgcolor: "#ffffff",
@@ -162,7 +163,7 @@ function ReportHeader() {
               letterSpacing: "0.08em",
             }}
           >
-            Available outputs
+            {t("reports.availableOutputs")}
           </Typography>
 
           <Typography
@@ -185,7 +186,7 @@ function ReportHeader() {
               lineHeight: 1.5,
             }}
           >
-            Daily, weekly, monthly, PowerPoint, and Excel.
+            {t("reports.availableOutputsDescription")}
           </Typography>
         </Box>
       </Stack>

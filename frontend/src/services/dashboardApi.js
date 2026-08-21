@@ -89,12 +89,16 @@ export const getHealthHistory = async (mineName) => {
   return response.data;
 };
 
-export const getTrendAnalysis = async (mineName) => {
+export const getTrendAnalysis = async (
+  mineName,
+  language = "en"
+) => {
   const response = await dashboardClient.get(
     "/trend-analysis",
     {
       params: {
         mine_name: mineName,
+        language,
       },
     }
   );
@@ -113,7 +117,8 @@ export const getTrendAnalysis = async (mineName) => {
  */
 export const getSharedAnalytics = async (
   mineName = "Oyu Tolgoi Surface",
-  days = 7
+  days = 7,
+  language = "en"
 ) => {
   try {
     const response = await dashboardClient.get(
@@ -122,6 +127,7 @@ export const getSharedAnalytics = async (
         params: {
           mine_name: mineName,
           days,
+          language,
         },
       }
     );
@@ -132,6 +138,7 @@ export const getSharedAnalytics = async (
       "Failed to load shared analytics:",
       error
     );
+
     throw error;
   }
 };
@@ -159,6 +166,7 @@ export const getKpiDetail = async (
       "Failed to load KPI detail:",
       error
     );
+
     throw error;
   }
 };

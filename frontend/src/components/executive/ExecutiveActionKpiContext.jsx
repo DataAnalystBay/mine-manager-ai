@@ -1,4 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import "./ExecutiveActionKpiContext.css";
 
 import {
@@ -26,94 +31,224 @@ import {
   getExecutiveActionKpiContext,
 } from "../../api/executiveKpiContextApi";
 
-function formatKpiName(value) {
+import {
+  useLanguage,
+} from "../../context/LanguageContext";
+
+import {
+  translateDynamicExecutiveText,
+  translateDynamicKpiName,
+  translateDynamicStatus,
+} from "../../i18n/dynamicTranslations";
+
+
+function translateTemplate(
+  t,
+  key,
+  variables = {}
+) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? "")
+      );
+    }
+  );
+
+  return text;
+}
+
+
+function formatKpiName(
+  value,
+  t
+) {
   if (!value) {
-    return "Linked KPI";
+    return t(
+      "executiveActionKpiContext.linkedKpi"
+    );
   }
 
-  return String(value)
-    .replaceAll("_", " ")
-    .replaceAll("-", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+  const formatted =
+    String(value)
+      .replaceAll("_", " ")
+      .replaceAll("-", " ")
+      .replace(
+        /\b\w/g,
+        (character) =>
+          character.toUpperCase()
+      );
+
+  return translateDynamicKpiName(
+    formatted,
+    t
+  );
 }
 
-function formatStatus(value) {
+
+function formatStatus(
+  value,
+  t
+) {
   if (!value) {
-    return "Unknown";
+    return t(
+      "executiveActionKpiContext.unknown"
+    );
   }
 
-  return String(value)
-    .replaceAll("_", " ")
-    .replaceAll("-", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+  const formatted =
+    String(value)
+      .replaceAll("_", " ")
+      .replaceAll("-", " ")
+      .replace(
+        /\b\w/g,
+        (character) =>
+          character.toUpperCase()
+      );
+
+  return translateDynamicStatus(
+    formatted,
+    t
+  );
 }
 
-function toFiniteNumber(value, fallback = 0) {
-  const parsedValue = Number(value);
 
-  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+function toFiniteNumber(
+  value,
+  fallback = 0
+) {
+  const parsedValue =
+    Number(value);
+
+  return Number.isFinite(
+    parsedValue
+  )
+    ? parsedValue
+    : fallback;
 }
 
-function formatMetricValue(value, unit = "") {
-  const numericValue = toFiniteNumber(value);
-  const hasDecimals = !Number.isInteger(numericValue);
 
-  return `${numericValue.toLocaleString(undefined, {
-    minimumFractionDigits: hasDecimals ? 1 : 0,
-    maximumFractionDigits: 2,
-  })}${unit}`;
+function formatMetricValue(
+  value,
+  unit = ""
+) {
+  const numericValue =
+    toFiniteNumber(value);
+
+  const hasDecimals =
+    !Number.isInteger(
+      numericValue
+    );
+
+  return `${numericValue.toLocaleString(
+    undefined,
+    {
+      minimumFractionDigits:
+        hasDecimals ? 1 : 0,
+
+      maximumFractionDigits:
+        2,
+    }
+  )}${unit}`;
 }
 
-function getStatusConfiguration(status, variance) {
-  const normalizedStatus = String(status || "")
-    .trim()
-    .toLowerCase()
-    .replaceAll(" ", "_")
-    .replaceAll("-", "_");
+
+function getStatusConfiguration(
+  status,
+  variance,
+  t
+) {
+  const normalizedStatus =
+    String(status || "")
+      .trim()
+      .toLowerCase()
+      .replaceAll(" ", "_")
+      .replaceAll("-", "_");
 
   if (
-    normalizedStatus === "above_target" ||
-    normalizedStatus === "on_target" ||
-    normalizedStatus === "healthy" ||
-    normalizedStatus === "good"
+    normalizedStatus ===
+      "above_target" ||
+    normalizedStatus ===
+      "on_target" ||
+    normalizedStatus ===
+      "healthy" ||
+    normalizedStatus ===
+      "good"
   ) {
     return {
-      label: formatStatus(status),
+      label: formatStatus(
+        status,
+        t
+      ),
+
       color: "#16a34a",
       isPositive: true,
     };
   }
 
   if (
-    normalizedStatus === "below_target" ||
-    normalizedStatus === "critical" ||
-    normalizedStatus === "poor"
+    normalizedStatus ===
+      "below_target" ||
+    normalizedStatus ===
+      "critical" ||
+    normalizedStatus ===
+      "poor"
   ) {
     return {
-      label: formatStatus(status),
+      label: formatStatus(
+        status,
+        t
+      ),
+
       color: "#dc2626",
       isPositive: false,
     };
   }
 
   if (
-    normalizedStatus === "warning" ||
-    normalizedStatus === "at_risk" ||
-    normalizedStatus === "watch"
+    normalizedStatus ===
+      "warning" ||
+    normalizedStatus ===
+      "at_risk" ||
+    normalizedStatus ===
+      "watch"
   ) {
     return {
-      label: formatStatus(status),
+      label: formatStatus(
+        status,
+        t
+      ),
+
       color: "#d97706",
-      isPositive: variance >= 0,
+
+      isPositive:
+        variance >= 0,
     };
   }
 
   return {
-    label: variance >= 0 ? "On Target" : "Below Target",
-    color: variance >= 0 ? "#16a34a" : "#dc2626",
-    isPositive: variance >= 0,
+    label:
+      variance >= 0
+        ? t(
+            "executiveActionKpiContext.onTarget"
+          )
+        : t(
+            "executiveActionKpiContext.belowTarget"
+          ),
+
+    color:
+      variance >= 0
+        ? "#16a34a"
+        : "#dc2626",
+
+    isPositive:
+      variance >= 0,
   };
 }
+
 
 export default function ExecutiveActionKpiContext({
   actionId,
@@ -122,125 +257,269 @@ export default function ExecutiveActionKpiContext({
   onBack,
   onClear,
 }) {
-  const [responseData, setResponseData] = useState(null);
-  const [loading, setLoading] = useState(Boolean(actionId));
-  const [error, setError] = useState("");
+  const { t } = useLanguage();
 
-  const loadKpiContext = async (signal) => {
-    if (!actionId) {
-      setResponseData(null);
-      setLoading(false);
-      setError("");
-      return;
-    }
+  const [
+    responseData,
+    setResponseData,
+  ] = useState(null);
 
-    try {
-      setLoading(true);
-      setError("");
+  const [
+    loading,
+    setLoading,
+  ] = useState(
+    Boolean(actionId)
+  );
 
-      const response = await getExecutiveActionKpiContext(actionId, {
-        signal,
-      });
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-      setResponseData(response);
-    } catch (requestError) {
-      if (
-        requestError?.name === "CanceledError" ||
-        requestError?.name === "AbortError" ||
-        requestError?.originalError?.code === "ERR_CANCELED"
-      ) {
+
+  const loadKpiContext =
+    async (signal) => {
+      if (!actionId) {
+        setResponseData(null);
+        setLoading(false);
+        setError("");
         return;
       }
 
-      setError(
-        requestError?.message ||
-          "Unable to load live KPI context for this executive action."
-      );
-      setResponseData(null);
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
+      try {
+        setLoading(true);
+        setError("");
+
+        const response =
+          await getExecutiveActionKpiContext(
+            actionId,
+            {
+              signal,
+            }
+          );
+
+        setResponseData(
+          response
+        );
+      } catch (
+        requestError
+      ) {
+        if (
+          requestError?.name ===
+            "CanceledError" ||
+          requestError?.name ===
+            "AbortError" ||
+          requestError
+            ?.originalError
+            ?.code ===
+            "ERR_CANCELED"
+        ) {
+          return;
+        }
+
+        setError(
+          requestError
+            ?.message ||
+            t(
+              "executiveActionKpiContext.loadError"
+            )
+        );
+
+        setResponseData(
+          null
+        );
+      } finally {
+        if (
+          !signal?.aborted
+        ) {
+          setLoading(
+            false
+          );
+        }
       }
-    }
-  };
+    };
+
 
   useEffect(() => {
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
-    loadKpiContext(controller.signal);
+    loadKpiContext(
+      controller.signal
+    );
 
     return () => {
       controller.abort();
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actionId]);
 
-  const context = responseData?.context || null;
-  const isLinked = Boolean(responseData?.linked && context);
 
-  const normalizedContext = useMemo(() => {
-    if (!context) {
-      return null;
-    }
+  const context =
+    responseData?.context ||
+    null;
 
-    const currentValue = toFiniteNumber(context.current_value);
-    const targetValue = toFiniteNumber(context.target_value);
-    const variance = currentValue - targetValue;
-    const unit = context.unit || "";
 
-    return {
-      kpiKey: context.kpi_key || "",
-      name:
-        context.kpi_name ||
-        context.name ||
-        formatKpiName(context.kpi_key),
-      currentValue,
-      targetValue,
-      variance,
-      unit,
-      status: context.status || "",
-      rootCause:
-        context.root_cause ||
-        context.rootCause ||
-        "Root-cause analysis is not available for this KPI context yet.",
-      relatedActions:
-        context.related_actions || {
-          total: 0,
-          active: 0,
-          completed: 0,
-          actions: [],
-        },
-    };
-  }, [context]);
-
-  const statusConfiguration = useMemo(() => {
-    if (!normalizedContext) {
-      return {
-        label: "Unknown",
-        color: "#64748b",
-        isPositive: false,
-      };
-    }
-
-    return getStatusConfiguration(
-      normalizedContext.status,
-      normalizedContext.variance
+  const isLinked =
+    Boolean(
+      responseData?.linked &&
+        context
     );
-  }, [normalizedContext]);
 
-  const trendIcon = statusConfiguration.isPositive ? (
-    <TrendingUpIcon />
-  ) : (
-    <TrendingDownIcon />
-  );
 
-  const handleRefresh = () => {
-    loadKpiContext();
-  };
+  const normalizedContext =
+    useMemo(() => {
+      if (!context) {
+        return null;
+      }
+
+      const currentValue =
+        toFiniteNumber(
+          context.current_value
+        );
+
+      const targetValue =
+        toFiniteNumber(
+          context.target_value
+        );
+
+      const variance =
+        currentValue -
+        targetValue;
+
+      const unit =
+        context.unit || "";
+
+      return {
+        kpiKey:
+          context.kpi_key ||
+          "",
+
+        name:
+          context.kpi_name ||
+          context.name ||
+          formatKpiName(
+            context.kpi_key,
+            t
+          ),
+
+        currentValue,
+        targetValue,
+        variance,
+        unit,
+
+        status:
+          context.status ||
+          "",
+
+        rootCause:
+          context.root_cause ||
+          context.rootCause ||
+          t(
+            "executiveActionKpiContext.rootCauseUnavailable"
+          ),
+
+        relatedActions:
+          context.related_actions ||
+          {
+            total: 0,
+            active: 0,
+            completed: 0,
+            actions: [],
+          },
+      };
+    }, [context, t]);
+
+
+  const translatedKpiName =
+    useMemo(() => {
+      if (
+        !normalizedContext
+      ) {
+        return "";
+      }
+
+      return formatKpiName(
+        normalizedContext.name,
+        t
+      );
+    }, [
+      normalizedContext,
+      t,
+    ]);
+
+
+  const translatedRootCause =
+    useMemo(() => {
+      if (
+        !normalizedContext
+      ) {
+        return "";
+      }
+
+      const translated =
+        translateDynamicExecutiveText(
+          normalizedContext.rootCause,
+          t
+        );
+
+      return translated ||
+        normalizedContext.rootCause;
+    }, [
+      normalizedContext,
+      t,
+    ]);
+
+
+  const statusConfiguration =
+    useMemo(() => {
+      if (
+        !normalizedContext
+      ) {
+        return {
+          label: t(
+            "executiveActionKpiContext.unknown"
+          ),
+
+          color:
+            "#64748b",
+
+          isPositive:
+            false,
+        };
+      }
+
+      return getStatusConfiguration(
+        normalizedContext.status,
+        normalizedContext.variance,
+        t
+      );
+    }, [
+      normalizedContext,
+      t,
+    ]);
+
+
+  const trendIcon =
+    statusConfiguration
+      .isPositive ? (
+      <TrendingUpIcon />
+    ) : (
+      <TrendingDownIcon />
+    );
+
+
+  const handleRefresh =
+    () => {
+      loadKpiContext();
+    };
+
 
   if (!actionId) {
     return null;
   }
+
 
   if (loading) {
     return (
@@ -249,21 +528,33 @@ export default function ExecutiveActionKpiContext({
         sx={{
           mb: 3,
           borderRadius: 4,
-          border: "1px solid #e5e7eb",
-          background: "#ffffff",
-          overflow: "hidden",
+          border:
+            "1px solid #e5e7eb",
+          background:
+            "#ffffff",
+          overflow:
+            "hidden",
         }}
       >
         <Box
           sx={{
             px: 3,
             py: 2,
-            background: `${primaryColor}10`,
-            borderBottom: "1px solid #e5e7eb",
+            background:
+              `${primaryColor}10`,
+            borderBottom:
+              "1px solid #e5e7eb",
           }}
         >
-          <Skeleton width={110} height={20} />
-          <Skeleton width={220} height={34} />
+          <Skeleton
+            width={110}
+            height={20}
+          />
+
+          <Skeleton
+            width={220}
+            height={34}
+          />
         </Box>
 
         <Box sx={{ p: 3 }}>
@@ -274,27 +565,67 @@ export default function ExecutiveActionKpiContext({
             }}
             spacing={3}
           >
-            {[1, 2, 3, 4].map((item) => (
-              <Box key={item} sx={{ flex: 1 }}>
-                <Skeleton width={90} height={18} />
-                <Skeleton width={110} height={44} />
-              </Box>
-            ))}
+            {[1, 2, 3, 4].map(
+              (item) => (
+                <Box
+                  key={item}
+                  sx={{
+                    flex: 1,
+                  }}
+                >
+                  <Skeleton
+                    width={90}
+                    height={18}
+                  />
+
+                  <Skeleton
+                    width={110}
+                    height={44}
+                  />
+                </Box>
+              )
+            )}
           </Stack>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider
+            sx={{
+              my: 3,
+            }}
+          />
 
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-            <CircularProgress size={20} sx={{ color: primaryColor }} />
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems:
+                "center",
+            }}
+          >
+            <CircularProgress
+              size={20}
+              sx={{
+                color:
+                  primaryColor,
+              }}
+            />
 
-            <Typography variant="body2" sx={{ color: "#64748b" }}>
-              Loading live KPI context...
+            <Typography
+              variant="body2"
+              sx={{
+                color:
+                  "#64748b",
+              }}
+            >
+              {t(
+                "executiveActionKpiContext.loading"
+              )}
             </Typography>
           </Stack>
         </Box>
       </Box>
     );
   }
+
 
   if (error) {
     return (
@@ -304,20 +635,28 @@ export default function ExecutiveActionKpiContext({
           <Button
             color="inherit"
             size="small"
-            startIcon={<RefreshRoundedIcon />}
-            onClick={handleRefresh}
+            startIcon={
+              <RefreshRoundedIcon />
+            }
+            onClick={
+              handleRefresh
+            }
             sx={{
-              textTransform: "none",
+              textTransform:
+                "none",
               fontWeight: 700,
             }}
           >
-            Retry
+            {t(
+              "executiveActionKpiContext.retry"
+            )}
           </Button>
         }
         sx={{
           mb: 3,
           borderRadius: 3,
-          alignItems: "center",
+          alignItems:
+            "center",
         }}
       >
         {error}
@@ -325,22 +664,31 @@ export default function ExecutiveActionKpiContext({
     );
   }
 
-  if (!isLinked || !normalizedContext) {
+
+  if (
+    !isLinked ||
+    !normalizedContext
+  ) {
     return (
       <Alert
         severity="info"
-        icon={<LinkOffRoundedIcon />}
+        icon={
+          <LinkOffRoundedIcon />
+        }
         sx={{
           mb: 3,
           borderRadius: 3,
-          alignItems: "center",
+          alignItems:
+            "center",
         }}
       >
-        {responseData?.message ||
-          "No KPI is linked to this executive action."}
+        {t(
+          "executiveActionKpiContext.noKpiLinked"
+        )}
       </Alert>
     );
   }
+
 
   return (
     <Box
@@ -348,19 +696,25 @@ export default function ExecutiveActionKpiContext({
       sx={{
         mb: 3,
         borderRadius: 4,
-        border: "1px solid #e5e7eb",
-        background: "#ffffff",
-        overflow: "hidden",
+        border:
+          "1px solid #e5e7eb",
+        background:
+          "#ffffff",
+        overflow:
+          "hidden",
       }}
     >
       <Box
         sx={{
-          background: `${primaryColor}10`,
+          background:
+            `${primaryColor}10`,
           px: 3,
           py: 2,
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          justifyContent:
+            "space-between",
+          alignItems:
+            "center",
           flexWrap: "wrap",
           gap: 2,
         }}
@@ -370,34 +724,46 @@ export default function ExecutiveActionKpiContext({
             variant="overline"
             sx={{
               fontWeight: 700,
-              color: "#64748b",
+              color:
+                "#64748b",
             }}
           >
-            LIVE KPI CONTEXT
+            {t(
+              "executiveActionKpiContext.liveKpiContext"
+            )}
           </Typography>
 
           <Typography
             variant="h5"
             sx={{
               fontWeight: 800,
-              color: "#0f172a",
+              color:
+                "#0f172a",
             }}
           >
-            {normalizedContext.name}
+            {translatedKpiName}
           </Typography>
         </Box>
 
         <Chip
           icon={trendIcon}
-          label={statusConfiguration.label}
+          label={
+            statusConfiguration.label
+          }
           sx={{
-            bgcolor: `${statusConfiguration.color}15`,
-            color: statusConfiguration.color,
+            bgcolor:
+              `${statusConfiguration.color}15`,
+
+            color:
+              statusConfiguration.color,
+
             fontWeight: 700,
 
-            "& .MuiChip-icon": {
-              color: statusConfiguration.color,
-            },
+            "& .MuiChip-icon":
+              {
+                color:
+                  statusConfiguration.color,
+              },
           }}
         />
       </Box>
@@ -411,11 +777,17 @@ export default function ExecutiveActionKpiContext({
           spacing={3}
         >
           <Box sx={{ flex: 1 }}>
-            <Typography className="context-label">
-              Current Value
+            <Typography
+              className="context-label"
+            >
+              {t(
+                "executiveActionKpiContext.currentValue"
+              )}
             </Typography>
 
-            <Typography className="context-value">
+            <Typography
+              className="context-value"
+            >
               {formatMetricValue(
                 normalizedContext.currentValue,
                 normalizedContext.unit
@@ -424,11 +796,17 @@ export default function ExecutiveActionKpiContext({
           </Box>
 
           <Box sx={{ flex: 1 }}>
-            <Typography className="context-label">
-              Target
+            <Typography
+              className="context-label"
+            >
+              {t(
+                "executiveActionKpiContext.target"
+              )}
             </Typography>
 
-            <Typography className="context-value">
+            <Typography
+              className="context-value"
+            >
               {formatMetricValue(
                 normalizedContext.targetValue,
                 normalizedContext.unit
@@ -437,17 +815,26 @@ export default function ExecutiveActionKpiContext({
           </Box>
 
           <Box sx={{ flex: 1 }}>
-            <Typography className="context-label">
-              Variance
+            <Typography
+              className="context-label"
+            >
+              {t(
+                "executiveActionKpiContext.variance"
+              )}
             </Typography>
 
             <Typography
               className="context-value"
               sx={{
-                color: statusConfiguration.color,
+                color:
+                  statusConfiguration.color,
               }}
             >
-              {normalizedContext.variance > 0 ? "+" : ""}
+              {normalizedContext.variance >
+              0
+                ? "+"
+                : ""}
+
               {formatMetricValue(
                 normalizedContext.variance,
                 normalizedContext.unit
@@ -456,28 +843,44 @@ export default function ExecutiveActionKpiContext({
           </Box>
 
           <Box sx={{ flex: 1 }}>
-            <Typography className="context-label">
-              Related Actions
+            <Typography
+              className="context-label"
+            >
+              {t(
+                "executiveActionKpiContext.relatedActions"
+              )}
             </Typography>
 
-            <Typography className="context-value">
-              {normalizedContext.relatedActions.active}
+            <Typography
+              className="context-value"
+            >
+              {
+                normalizedContext
+                  .relatedActions
+                  .active
+              }
             </Typography>
           </Box>
         </Stack>
 
-        <Divider sx={{ my: 3 }} />
+        <Divider
+          sx={{
+            my: 3,
+          }}
+        />
 
         <Box
           sx={{
             display: "flex",
             gap: 2,
-            alignItems: "flex-start",
+            alignItems:
+              "flex-start",
           }}
         >
           <EngineeringIcon
             sx={{
-              color: primaryColor,
+              color:
+                primaryColor,
               mt: 0.4,
             }}
           />
@@ -489,11 +892,15 @@ export default function ExecutiveActionKpiContext({
                 mb: 0.5,
               }}
             >
-              Primary Root Cause
+              {t(
+                "executiveActionKpiContext.primaryRootCause"
+              )}
             </Typography>
 
-            <Typography color="text.secondary">
-              {normalizedContext.rootCause}
+            <Typography
+              color="text.secondary"
+            >
+              {translatedRootCause}
             </Typography>
           </Box>
         </Box>
@@ -501,10 +908,16 @@ export default function ExecutiveActionKpiContext({
         {(
           onBack ||
           onClear ||
-          normalizedContext.relatedActions.total > 0
+          normalizedContext
+            .relatedActions
+            .total > 0
         ) && (
           <>
-            <Divider sx={{ my: 3 }} />
+            <Divider
+              sx={{
+                my: 3,
+              }}
+            />
 
             <Stack
               direction={{
@@ -516,51 +929,87 @@ export default function ExecutiveActionKpiContext({
               {onBack && (
                 <Button
                   variant="contained"
-                  startIcon={<ArrowBackIcon />}
-                  onClick={onBack}
+                  startIcon={
+                    <ArrowBackIcon />
+                  }
+                  onClick={
+                    onBack
+                  }
                   sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    bgcolor: primaryColor,
+                    textTransform:
+                      "none",
+                    fontWeight:
+                      700,
+                    bgcolor:
+                      primaryColor,
 
-                    "&:hover": {
-                      bgcolor: primaryColor,
-                      opacity: 0.9,
-                    },
+                    "&:hover":
+                      {
+                        bgcolor:
+                          primaryColor,
+                        opacity:
+                          0.9,
+                      },
                   }}
                 >
-                  Back to KPI Dashboard
+                  {t(
+                    "executiveActionKpiContext.backToKpiDashboard"
+                  )}
                 </Button>
               )}
 
               {onClear && (
                 <Button
                   variant="outlined"
-                  startIcon={<ClearIcon />}
-                  onClick={onClear}
+                  startIcon={
+                    <ClearIcon />
+                  }
+                  onClick={
+                    onClear
+                  }
                   sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
+                    textTransform:
+                      "none",
+                    fontWeight:
+                      700,
                   }}
                 >
-                  Clear KPI Filter
+                  {t(
+                    "executiveActionKpiContext.clearKpiFilter"
+                  )}
                 </Button>
               )}
 
-              {normalizedContext.relatedActions.total > 0 && (
+              {normalizedContext
+                .relatedActions
+                .total > 0 && (
                 <Button
                   variant="outlined"
-                  startIcon={<AssignmentTurnedInIcon />}
+                  startIcon={
+                    <AssignmentTurnedInIcon />
+                  }
                   disabled
                   sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
+                    textTransform:
+                      "none",
+                    fontWeight:
+                      700,
+
                     ml: {
                       sm: "auto",
                     },
                   }}
                 >
-                  {normalizedContext.relatedActions.total} Related Actions
+                  {translateTemplate(
+                    t,
+                    "executiveActionKpiContext.relatedActionsCount",
+                    {
+                      count:
+                        normalizedContext
+                          .relatedActions
+                          .total,
+                    }
+                  )}
                 </Button>
               )}
             </Stack>

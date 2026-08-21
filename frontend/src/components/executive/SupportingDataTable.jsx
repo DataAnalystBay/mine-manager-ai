@@ -5,9 +5,32 @@ import {
   FiDownload,
 } from "react-icons/fi";
 
+import { useLanguage } from "../../context/LanguageContext";
+
 import "./SupportingDataTable.css";
 
-function formatValue(value) {
+
+function translateTemplate(
+  t,
+  key,
+  variables = {},
+) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? ""),
+      );
+    },
+  );
+
+  return text;
+}
+
+
+function formatValue(value, locale) {
   const numericValue = Number(value);
 
   if (!Number.isFinite(numericValue)) {
@@ -15,32 +38,70 @@ function formatValue(value) {
   }
 
   return Number.isInteger(numericValue)
-    ? numericValue.toLocaleString()
-    : numericValue.toLocaleString(undefined, {
+    ? numericValue.toLocaleString(locale)
+    : numericValue.toLocaleString(locale, {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
       });
 }
 
-function formatDate(dateValue) {
+
+function formatDate(dateValue, language) {
   if (!dateValue) {
     return "—";
   }
 
-  const date = new Date(dateValue);
+  const rawValue = String(dateValue).trim();
 
-  if (Number.isNaN(date.getTime())) {
-    return String(dateValue);
+  const isoDateMatch = rawValue.match(
+    /^(\d{4})-(\d{2})-(\d{2})/,
+  );
+
+  if (
+    language === "MN" &&
+    isoDateMatch
+  ) {
+    const year = Number(
+      isoDateMatch[1],
+    );
+    const month = Number(
+      isoDateMatch[2],
+    );
+    const day = Number(
+      isoDateMatch[3],
+    );
+
+    return (
+      `${year} оны ${month}-р сарын ${day}`
+    );
   }
 
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const date = new Date(rawValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return rawValue;
+  }
+
+  if (language === "MN") {
+    return (
+      `${date.getFullYear()} оны ` +
+      `${date.getMonth() + 1}-р сарын ` +
+      `${date.getDate()}`
+    );
+  }
+
+  return date.toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
 }
 
-function normalizeRows(rows) {
+
+function normalizeRows(rows, t) {
   if (!Array.isArray(rows)) {
     return [];
   }
@@ -51,24 +112,35 @@ function normalizeRows(rows) {
       row?.date ??
       row?.report_date ??
       `supporting-row-${index}`,
+
     date:
       row?.date ??
       row?.report_date ??
       row?.label ??
-      `Row ${index + 1}`,
+      translateTemplate(
+        t,
+        "supportingDataTable.rowFallback",
+        {
+          number: index + 1,
+        },
+      ),
+
     actual:
       row?.actual ??
       row?.value ??
       row?.current_value ??
       null,
+
     plan:
       row?.plan ??
       row?.target ??
       null,
+
     variance:
       row?.variance ??
       row?.delta ??
       null,
+
     percentOfPlan:
       row?.percentOfPlan ??
       row?.percent_of_plan ??
@@ -76,6 +148,7 @@ function normalizeRows(rows) {
       null,
   }));
 }
+
 
 function getVarianceClass(value) {
   const numericValue = Number(value);
@@ -91,19 +164,91 @@ function getVarianceClass(value) {
   return "neutral";
 }
 
+
 export default function SupportingDataTable({
   rows = [],
   unit = "",
-  title = "Supporting Data",
-  subtitle = "Evidence used in the KPI analysis",
+  title,
+  subtitle,
   loading = false,
-  emptyMessage = "Supporting data is not available for this KPI.",
+  emptyMessage,
   onExport,
 }) {
-  const normalizedRows = normalizeRows(rows);
+  const {
+    language,
+    t,
+  } = useLanguage();
+
+  const locale =
+    language === "MN"
+      ? "mn-MN"
+      : "en-US";
+
+  const displayTitle =
+    title ||
+    t(
+      "supportingDataTable.defaultTitle",
+    );
+
+  const displaySubtitle =
+    subtitle ||
+    t(
+      "supportingDataTable.defaultSubtitle",
+    );
+
+  const displayEmptyMessage =
+    emptyMessage ||
+    t(
+      "supportingDataTable.defaultEmptyMessage",
+    );
+
+  const normalizedRows =
+    normalizeRows(
+      rows,
+      t,
+    );
+
+  const renderTableHeader = () => (
+    <thead>
+      <tr>
+        <th>
+          {t(
+            "supportingDataTable.date",
+          )}
+        </th>
+
+        <th>
+          {t(
+            "supportingDataTable.actual",
+          )}
+        </th>
+
+        <th>
+          {t(
+            "supportingDataTable.plan",
+          )}
+        </th>
+
+        <th>
+          {t(
+            "supportingDataTable.variance",
+          )}
+        </th>
+
+        <th>
+          {t(
+            "supportingDataTable.percentOfPlan",
+          )}
+        </th>
+      </tr>
+    </thead>
+  );
 
   return (
-    <section className="supporting-data" aria-label={title}>
+    <section
+      className="supporting-data"
+      aria-label={displayTitle}
+    >
       <div className="supporting-data-header">
         <div className="supporting-data-heading">
           <span className="supporting-data-heading-icon">
@@ -111,27 +256,51 @@ export default function SupportingDataTable({
           </span>
 
           <div>
-            <h3>{title}</h3>
-            <p>{subtitle}</p>
+            <h3>
+              {displayTitle}
+            </h3>
+
+            <p>
+              {displaySubtitle}
+            </p>
           </div>
         </div>
 
         <div className="supporting-data-header-actions">
-          {!loading && normalizedRows.length > 0 && (
-            <span className="supporting-data-count">
-              {normalizedRows.length} row
-              {normalizedRows.length === 1 ? "" : "s"}
-            </span>
-          )}
+          {!loading &&
+            normalizedRows.length > 0 && (
+              <span className="supporting-data-count">
+                {translateTemplate(
+                  t,
+                  normalizedRows.length === 1
+                    ? "supportingDataTable.rowCountSingle"
+                    : "supportingDataTable.rowCountPlural",
+                  {
+                    count:
+                      normalizedRows.length,
+                  },
+                )}
+              </span>
+            )}
 
           {onExport && (
             <button
               type="button"
               className="supporting-data-export"
-              onClick={() => onExport(normalizedRows)}
+              onClick={() =>
+                onExport(
+                  normalizedRows,
+                )
+              }
+              aria-label={t(
+                "supportingDataTable.exportAria",
+              )}
             >
               <FiDownload />
-              Export
+
+              {t(
+                "supportingDataTable.export",
+              )}
             </button>
           )}
         </div>
@@ -139,27 +308,42 @@ export default function SupportingDataTable({
 
       {loading ? (
         <div className="supporting-data-table-wrap">
-          <table className="supporting-data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Actual</th>
-                <th>Plan</th>
-                <th>Variance</th>
-                <th>% of Plan</th>
-              </tr>
-            </thead>
+          <table
+            className="supporting-data-table"
+            aria-label={t(
+              "supportingDataTable.loadingAria",
+            )}
+          >
+            {renderTableHeader()}
 
             <tbody>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <tr key={`supporting-skeleton-${index}`}>
-                  {Array.from({ length: 5 }).map((__, cellIndex) => (
-                    <td key={`supporting-skeleton-${index}-${cellIndex}`}>
-                      <span className="supporting-data-skeleton" />
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {Array.from({
+                length: 6,
+              }).map(
+                (_, index) => (
+                  <tr
+                    key={`supporting-skeleton-${index}`}
+                  >
+                    {Array.from({
+                      length: 5,
+                    }).map(
+                      (
+                        __,
+                        cellIndex,
+                      ) => (
+                        <td
+                          key={`supporting-skeleton-${index}-${cellIndex}`}
+                        >
+                          <span
+                            className="supporting-data-skeleton"
+                            aria-hidden="true"
+                          />
+                        </td>
+                      ),
+                    )}
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         </div>
@@ -168,67 +352,99 @@ export default function SupportingDataTable({
           <FiAlertCircle />
 
           <div>
-            <strong>No supporting data available</strong>
-            <p>{emptyMessage}</p>
+            <strong>
+              {t(
+                "supportingDataTable.noData",
+              )}
+            </strong>
+
+            <p>
+              {displayEmptyMessage}
+            </p>
           </div>
         </div>
       ) : (
         <div className="supporting-data-table-wrap">
           <table className="supporting-data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Actual</th>
-                <th>Plan</th>
-                <th>Variance</th>
-                <th>% of Plan</th>
-              </tr>
-            </thead>
+            {renderTableHeader()}
 
             <tbody>
-              {normalizedRows.map((row) => {
-                const varianceClass = getVarianceClass(row.variance);
-                const varianceValue = Number(row.variance);
+              {normalizedRows.map(
+                (row) => {
+                  const varianceClass =
+                    getVarianceClass(
+                      row.variance,
+                    );
 
-                return (
-                  <tr key={row.id}>
-                    <td>
-                      <span className="supporting-data-date">
-                        {formatDate(row.date)}
-                      </span>
-                    </td>
+                  const varianceValue =
+                    Number(
+                      row.variance,
+                    );
 
-                    <td>
-                      <strong className="supporting-data-primary-value">
-                        {formatValue(row.actual)}
-                        {unit}
-                      </strong>
-                    </td>
+                  return (
+                    <tr key={row.id}>
+                      <td>
+                        <span className="supporting-data-date">
+                          {formatDate(
+                            row.date,
+                            language,
+                          )}
+                        </span>
+                      </td>
 
-                    <td>
-                      <span className="supporting-data-secondary-value">
-                        {formatValue(row.plan)}
-                        {unit}
-                      </span>
-                    </td>
+                      <td>
+                        <strong className="supporting-data-primary-value">
+                          {formatValue(
+                            row.actual,
+                            locale,
+                          )}
+                          {unit}
+                        </strong>
+                      </td>
 
-                    <td className={varianceClass}>
-                      {varianceValue > 0 ? "+" : ""}
-                      {formatValue(row.variance)}
-                    </td>
+                      <td>
+                        <span className="supporting-data-secondary-value">
+                          {formatValue(
+                            row.plan,
+                            locale,
+                          )}
+                          {unit}
+                        </span>
+                      </td>
 
-                    <td>
-                      <span
-                        className={`supporting-data-attainment ${getVarianceClass(
-                          Number(row.percentOfPlan) - 100
-                        )}`}
+                      <td
+                        className={
+                          varianceClass
+                        }
                       >
-                        {formatValue(row.percentOfPlan)}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                        {varianceValue > 0
+                          ? "+"
+                          : ""}
+                        {formatValue(
+                          row.variance,
+                          locale,
+                        )}
+                      </td>
+
+                      <td>
+                        <span
+                          className={`supporting-data-attainment ${getVarianceClass(
+                            Number(
+                              row.percentOfPlan,
+                            ) - 100,
+                          )}`}
+                        >
+                          {formatValue(
+                            row.percentOfPlan,
+                            locale,
+                          )}
+                          %
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
             </tbody>
           </table>
         </div>

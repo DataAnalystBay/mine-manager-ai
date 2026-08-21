@@ -10,8 +10,10 @@ import React, {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { loadDemoData, resetDemoData } from "../api/demoApi";
+import { getKpiDetail } from "../api/kpiDetailApi";
 import "./Dashboard.css";
 import { useConfig } from "../context/ConfigContext";
+import { useLanguage } from "../context/LanguageContext";
 import useAuth from "../hooks/useAuth";
 import {
   getExecutiveSummary,
@@ -21,7 +23,7 @@ import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import DashboardDataState from "../components/dashboard/DashboardDataState";
 import ExecutiveInsightsPanel from "../components/executive/ExecutiveInsightsPanel";
 import PredictionSummaryPanel from "../components/predictive/PredictionSummaryPanel";
-
+ 
 import {
   FiBarChart2,
   FiTruck,
@@ -33,19 +35,19 @@ import {
   FiClock,
   FiActivity,
 } from "react-icons/fi";
-
+ 
 import {
   FaMountain,
   FaIndustry,
   FaCheckCircle,
   FaExclamationTriangle,
 } from "react-icons/fa";
-
+ 
 const ExecutiveKpiDetailDialog = lazy(() =>
   import("../components/executive/ExecutiveKpiDetailDialog")
 );
-
-
+ 
+ 
 const GRID_LINES = Object.freeze([30, 60, 90]);
 const TREND_POINTS = Object.freeze([78, 74, 91, 79, 94, 82, 96]);
 const TREND_DAYS = Object.freeze(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
@@ -58,23 +60,34 @@ const RISK_ROWS = Object.freeze([
   Object.freeze({ label: "Geotechnical", values: Object.freeze([1, 2, 3, 4]) }),
   Object.freeze({ label: "External", values: Object.freeze([1, 1, 3, 4]) }),
 ]);
-
+ 
 const CHART_POINTS = TREND_POINTS
   .map((value, index) => `${index * 53 + 14},${118 - value}`)
   .join(" ");
-
+ 
 const KPI_ICONS = Object.freeze({
   ore: <FiBarChart2 />,
   waste: <FaMountain />,
   fleet: <FiTruck />,
   plant: <FaIndustry />,
+  recovery: <FiActivity />,
   safety: <FiShield />,
   actions: <FaCheckCircle />,
   briefing: <FiActivity />,
   risk: <FiShield />,
 });
-
-function applyScenarioAdjustments(baseValues, scenario) {
+ 
+function translateTemplate(t, key, variables = {}) {
+  let text = t(key);
+ 
+  Object.entries(variables).forEach(([name, value]) => {
+    text = String(text).replaceAll(`{${name}}`, String(value ?? ""));
+  });
+ 
+  return text;
+}
+ 
+function applyScenarioAdjustments(baseValues, scenario, t) {
   if (scenario === "High Performing Mine") {
     return {
       ...baseValues,
@@ -84,10 +97,8 @@ function applyScenarioAdjustments(baseValues, scenario) {
       plantPerformance: "97.2",
       safetyIncidents: 0,
       mineHealthScore: 95,
-      priorityAction:
-        "Maintain high performance while monitoring fatigue and equipment stress",
-      riskMessage:
-        "Mine is exceeding plan across key operating areas. Main risk is sustaining performance without increasing fatigue or equipment wear.",
+      priorityAction: t("dashboard.scenarioContent.highPerforming.priorityAction"),
+      riskMessage: t("dashboard.scenarioContent.highPerforming.riskMessage"),
       healthStatus: "Excellent",
       actionSeverity: "Low",
       trends: {
@@ -99,7 +110,7 @@ function applyScenarioAdjustments(baseValues, scenario) {
       },
     };
   }
-
+ 
   if (scenario === "Fleet Breakdown") {
     return {
       ...baseValues,
@@ -109,10 +120,8 @@ function applyScenarioAdjustments(baseValues, scenario) {
       plantPerformance: "97.0",
       safetyIncidents: 0,
       mineHealthScore: 78,
-      priorityAction:
-        "Launch the fleet recovery plan and prioritize repairs on the highest-downtime trucks",
-      riskMessage:
-        "Fleet availability has declined to 68.8%, fleet utilization is 71.1%, and average breakdown duration has increased to 9.0 hours per truck. Production and maintenance recovery require coordinated management action.",
+      priorityAction: t("dashboard.scenarioContent.fleetBreakdown.priorityAction"),
+      riskMessage: t("dashboard.scenarioContent.fleetBreakdown.riskMessage"),
       healthStatus: "High Priority",
       actionSeverity: "High",
       trends: {
@@ -124,15 +133,14 @@ function applyScenarioAdjustments(baseValues, scenario) {
       },
     };
   }
-
+ 
   if (scenario === "Plant Bottleneck") {
     return {
       ...baseValues,
       plantPerformance: "81.8",
       mineHealthScore: Math.max(baseValues.mineHealthScore - 10, 0),
-      priorityAction: "Review crusher and mill bottleneck constraints",
-      riskMessage:
-        "Plant throughput is below target. Processing bottleneck may impact daily production delivery.",
+      priorityAction: t("dashboard.scenarioContent.plantBottleneck.priorityAction"),
+      riskMessage: t("dashboard.scenarioContent.plantBottleneck.riskMessage"),
       healthStatus: "Watch",
       actionSeverity: "Medium",
       trends: {
@@ -144,16 +152,14 @@ function applyScenarioAdjustments(baseValues, scenario) {
       },
     };
   }
-
+ 
   if (scenario === "Safety Incident") {
     return {
       ...baseValues,
       safetyIncidents: 1,
       mineHealthScore: Math.max(baseValues.mineHealthScore - 15, 0),
-      priorityAction:
-        "Complete safety incident review and corrective action verification",
-      riskMessage:
-        "A recordable safety incident has been detected. Immediate leadership review is required.",
+      priorityAction: t("dashboard.scenarioContent.safetyIncident.priorityAction"),
+      riskMessage: t("dashboard.scenarioContent.safetyIncident.riskMessage"),
       healthStatus: "Critical Review",
       actionSeverity: "High",
       trends: {
@@ -165,7 +171,7 @@ function applyScenarioAdjustments(baseValues, scenario) {
       },
     };
   }
-
+ 
   if (scenario === "Heavy Rain / Weather Delay") {
     return {
       ...baseValues,
@@ -175,10 +181,8 @@ function applyScenarioAdjustments(baseValues, scenario) {
       plantPerformance: "91.4",
       safetyIncidents: 0,
       mineHealthScore: 82,
-      priorityAction:
-        "Adjust mine plan for weather delay and prioritize safe haul road recovery",
-      riskMessage:
-        "Heavy rain is reducing haul road conditions, lowering fleet productivity and delaying waste movement. Focus on road maintenance, water management, and safe operating controls.",
+      priorityAction: t("dashboard.scenarioContent.weatherDelay.priorityAction"),
+      riskMessage: t("dashboard.scenarioContent.weatherDelay.riskMessage"),
       healthStatus: "Weather Watch",
       actionSeverity: "Medium",
       trends: {
@@ -190,7 +194,7 @@ function applyScenarioAdjustments(baseValues, scenario) {
       },
     };
   }
-
+ 
   if (scenario === "Winter Operations") {
     return {
       ...baseValues,
@@ -200,10 +204,8 @@ function applyScenarioAdjustments(baseValues, scenario) {
       plantPerformance: "93.6",
       safetyIncidents: 0,
       mineHealthScore: 84,
-      priorityAction:
-        "Stabilize winter operating rhythm and confirm cold-weather equipment readiness",
-      riskMessage:
-        "Winter conditions are reducing equipment productivity and haulage efficiency. Main risks include cold starts, icy haul roads, reduced shift productivity, and increased maintenance demand.",
+      priorityAction: t("dashboard.scenarioContent.winterOperations.priorityAction"),
+      riskMessage: t("dashboard.scenarioContent.winterOperations.riskMessage"),
       healthStatus: "Winter Watch",
       actionSeverity: "Medium",
       trends: {
@@ -215,11 +217,11 @@ function applyScenarioAdjustments(baseValues, scenario) {
       },
     };
   }
-
+ 
   return {
     ...baseValues,
-    priorityAction: "Maintain current operating discipline",
-    riskMessage: "No major operational risks detected from current demo data.",
+    priorityAction: t("dashboard.scenarioContent.stable.priorityAction"),
+    riskMessage: t("dashboard.scenarioContent.stable.riskMessage"),
     healthStatus: "Stable",
     actionSeverity: "Low",
     trends: {
@@ -231,51 +233,100 @@ function applyScenarioAdjustments(baseValues, scenario) {
     },
   };
 }
+ 
+function generateExecutiveBriefing(
+  values,
+  scenario,
+  mineName,
+  demoLoaded,
+  uiLanguage,
+  t
+) {
+  const isSxew = values.operationProfile === "sxew_copper";
 
-function generateExecutiveBriefing(values, scenario, mineName, demoLoaded) {
+  if (!demoLoaded && isSxew) {
+    if (uiLanguage === "MN") {
+      return (
+        `${mineName} үйл ажиллагааны Mine Health Score ${values.mineHealthScore}/100 байна. ` +
+        `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл ${values.orePerformance}%, ` +
+        `үйлдвэрийн гүйцэтгэл ${values.plantPerformance}%, ` +
+        `Cu recovery ${values.recoveryPerformance}%, ` +
+        `аюулгүй ажиллагааны үнэлгээ ${values.safetyScore}% байна. ` +
+        `Удирдлагын гол анхаарах чиглэл: катодын үйлдвэрлэлийн алдагдал, ` +
+        `үйлдвэрийн тогтвортой ажиллагаа, Cu recovery болон аюулгүй ажиллагааны эрсдэлийг хамтад нь хянах.`
+      );
+    }
+
+    return (
+      `${mineName} is currently operating with a Mine Health Score of ` +
+      `${values.mineHealthScore}/100. Cathode production performance is ` +
+      `${values.orePerformance}%, process plant performance is ` +
+      `${values.plantPerformance}%, Cu recovery is ${values.recoveryPerformance}%, ` +
+      `and safety score is ${values.safetyScore}%. The key management focus should be ` +
+      `cathode production losses, process stability, Cu recovery, and safety risk controls.`
+    );
+  }
+
   if (!demoLoaded) {
-    return `${mineName} is currently operating with a Mine Health Score of ${values.mineHealthScore}. Ore performance is ${values.orePerformance}%, waste movement is ${values.wastePerformance}%, fleet utilization is ${values.fleetPerformance}%, plant performance is ${values.plantPerformance}%, and safety incidents are ${values.safetyIncidents}.`;
+    return translateTemplate(t, "dashboard.briefings.live", {
+      mineName,
+      mineHealthScore: values.mineHealthScore,
+      orePerformance: values.orePerformance,
+      wastePerformance: values.wastePerformance,
+      fleetPerformance: values.fleetPerformance,
+      plantPerformance: values.plantPerformance,
+      safetyIncidents: values.safetyIncidents,
+    });
   }
 
-  if (scenario === "High Performing Mine") {
-    return `${scenario}: ${mineName} is exceeding plan across major operating areas with a Mine Health Score of ${values.mineHealthScore}. Ore improved ${values.trends.ore}, waste improved ${values.trends.waste}, and fleet performance remains strong. Leadership should focus on sustaining discipline while monitoring fatigue, equipment stress, and overproduction risk.`;
-  }
+  const briefingKeys = {
+    "High Performing Mine": "dashboard.briefings.highPerforming",
+    "Fleet Breakdown": "dashboard.briefings.fleetBreakdown",
+    "Plant Bottleneck": "dashboard.briefings.plantBottleneck",
+    "Safety Incident": "dashboard.briefings.safetyIncident",
+    "Heavy Rain / Weather Delay": "dashboard.briefings.weatherDelay",
+    "Winter Operations": "dashboard.briefings.winterOperations",
+  };
 
-  if (scenario === "Fleet Breakdown") {
-    return `${scenario}: ${mineName} is experiencing reduced haulage capacity. Fleet utilization has fallen to ${values.fleetPerformance}%, down ${values.trends.fleet} versus yesterday. Maintenance recovery planning and equipment availability should be treated as today’s operating priority.`;
-  }
+  const key = briefingKeys[scenario] || "dashboard.briefings.stable";
 
-  if (scenario === "Plant Bottleneck") {
-    return `${scenario}: Processing performance is constraining the operation. Plant performance has fallen to ${values.plantPerformance}%, down ${values.trends.plant} versus yesterday. The immediate focus should be crusher, mill, and throughput constraint recovery.`;
-  }
-
-  if (scenario === "Safety Incident") {
-    return `${scenario}: A recordable safety incident has been detected. Leadership focus should shift immediately to incident review, corrective action verification, and visible field leadership.`;
-  }
-
-  if (scenario === "Heavy Rain / Weather Delay") {
-    return `${scenario}: Operations are under weather-related pressure. Ore delivery and waste movement are below plan, with waste movement down ${values.trends.waste} versus yesterday. Leadership should prioritize road recovery, water management, and safe operating controls.`;
-  }
-
-  if (scenario === "Winter Operations") {
-    return `${scenario}: ${mineName} is operating under cold-weather constraints. Fleet productivity is down ${values.trends.fleet}, and waste movement is below plan. Leadership should focus on cold-start readiness, haul road ice controls, shift productivity, and maintenance response capacity.`;
-  }
-
-  return `${mineName} is operating within expected demo thresholds. Continue monitoring production, fleet, plant, safety, and workforce indicators.`;
+  return translateTemplate(t, key, {
+    scenario: t(
+      {
+        "High Performing Mine": "dashboard.highPerformingMine",
+        "Fleet Breakdown": "dashboard.fleetBreakdown",
+        "Plant Bottleneck": "dashboard.plantBottleneck",
+        "Safety Incident": "dashboard.safetyIncident",
+        "Heavy Rain / Weather Delay": "dashboard.weatherDelay",
+        "Winter Operations": "dashboard.winterOperations",
+      }[scenario] || "dashboard.highPerformingMine"
+    ),
+    mineName,
+    mineHealthScore: values.mineHealthScore,
+    orePerformance: values.orePerformance,
+    wastePerformance: values.wastePerformance,
+    fleetPerformance: values.fleetPerformance,
+    plantPerformance: values.plantPerformance,
+    safetyIncidents: values.safetyIncidents,
+    oreTrend: values.trends?.ore || "0.0%",
+    wasteTrend: values.trends?.waste || "0.0%",
+    fleetTrend: values.trends?.fleet || "0.0%",
+    plantTrend: values.trends?.plant || "0.0%",
+  });
 }
 
 function createDailyValues(currentValue, changePercent, lowerBound = 0) {
   const current = Number(currentValue);
   const change = Number(String(changePercent || "0").replace("%", ""));
-
+ 
   if (!Number.isFinite(current)) {
     return [];
   }
-
+ 
   const safeChange = Number.isFinite(change) ? change : 0;
   const startValue = current / (1 + safeChange / 100 || 1);
   const today = new Date();
-
+ 
   return Array.from({ length: 7 }, (_, index) => {
     const progress = index / 6;
     const wave = Math.sin(index * 1.35) * Math.max(Math.abs(current) * 0.008, 0.15);
@@ -285,108 +336,168 @@ function createDailyValues(currentValue, changePercent, lowerBound = 0) {
     );
     const date = new Date(today);
     date.setDate(today.getDate() - (6 - index));
-
+ 
     return {
       date: date.toISOString().slice(0, 10),
       value: Number(value.toFixed(current < 10 ? 2 : 1)),
     };
   });
 }
-
-function buildKpiDetail(kpiKey, values, scenario, mineName, isDemoLoaded) {
+ 
+function buildKpiDetail(
+  kpiKey,
+  values,
+  scenario,
+  mineName,
+  isDemoLoaded,
+  t
+) {
   const definitions = {
     ore: {
-      kpi_name: "Ore Performance",
+      kpi_name: t("dashboard.kpiDefinitions.ore.name"),
       current_value: values.orePerformance,
       target: 100,
       unit: "%",
       change: values.trends?.ore,
       higher_is_better: true,
       top_drivers: [
-        "Ore delivery against the daily mine plan",
-        "Fleet availability and loading-unit productivity",
-        "Crusher feed continuity and material quality",
+        t("dashboard.kpiDefinitions.ore.driver1"),
+        t("dashboard.kpiDefinitions.ore.driver2"),
+        t("dashboard.kpiDefinitions.ore.driver3"),
       ],
       recommendations: [
-        "Protect the highest-value ore movements in the next shift plan.",
-        "Review loading and hauling constraints during the daily operating review.",
-        "Confirm crusher feed continuity and stockpile readiness.",
+        t("dashboard.kpiDefinitions.ore.recommendation1"),
+        t("dashboard.kpiDefinitions.ore.recommendation2"),
+        t("dashboard.kpiDefinitions.ore.recommendation3"),
       ],
     },
     waste: {
-      kpi_name: "Waste Movement",
+      kpi_name: t("dashboard.kpiDefinitions.waste.name"),
       current_value: values.wastePerformance,
       target: 100,
       unit: "%",
       change: values.trends?.waste,
       higher_is_better: true,
       top_drivers: [
-        "Haul road conditions and travel-cycle efficiency",
-        "Waste fleet allocation and dispatch discipline",
-        "Dump availability and dozer support",
+        t("dashboard.kpiDefinitions.waste.driver1"),
+        t("dashboard.kpiDefinitions.waste.driver2"),
+        t("dashboard.kpiDefinitions.waste.driver3"),
       ],
       recommendations: [
-        "Prioritize constrained waste routes and restore haul-road conditions.",
-        "Rebalance trucks between ore and waste based on the shift bottleneck.",
-        "Confirm dump capacity and dozer coverage before the next shift.",
+        t("dashboard.kpiDefinitions.waste.recommendation1"),
+        t("dashboard.kpiDefinitions.waste.recommendation2"),
+        t("dashboard.kpiDefinitions.waste.recommendation3"),
       ],
     },
     fleet: {
-      kpi_name: "Fleet Performance",
+      kpi_name: t("dashboard.kpiDefinitions.fleet.name"),
       current_value: values.fleetPerformance,
       target: 90,
       unit: "%",
       change: values.trends?.fleet,
       higher_is_better: true,
       top_drivers: [
-        "Mobile-equipment availability and unplanned downtime",
-        "Queue time, idle time, and dispatch effectiveness",
-        "Operator coverage and shift-change losses",
+        t("dashboard.kpiDefinitions.fleet.driver1"),
+        t("dashboard.kpiDefinitions.fleet.driver2"),
+        t("dashboard.kpiDefinitions.fleet.driver3"),
       ],
       recommendations: [
-        "Assign owners to the top equipment downtime events.",
-        "Review dispatch exceptions and excessive queue time.",
-        "Protect fleet availability through the next maintenance window.",
+        t("dashboard.kpiDefinitions.fleet.recommendation1"),
+        t("dashboard.kpiDefinitions.fleet.recommendation2"),
+        t("dashboard.kpiDefinitions.fleet.recommendation3"),
       ],
     },
     plant: {
-      kpi_name: "Plant Performance",
+      kpi_name: t("dashboard.kpiDefinitions.plant.name"),
       current_value: values.plantPerformance,
       target: 95,
       unit: "%",
       change: values.trends?.plant,
       higher_is_better: true,
       top_drivers: [
-        "Crusher and mill operating availability",
-        "Feed continuity, blend stability, and ore characteristics",
-        "Planned and unplanned processing delays",
+        t("dashboard.kpiDefinitions.plant.driver1"),
+        t("dashboard.kpiDefinitions.plant.driver2"),
+        t("dashboard.kpiDefinitions.plant.driver3"),
       ],
       recommendations: [
-        "Review the largest throughput loss with the processing superintendent.",
-        "Stabilize feed blend and stockpile replenishment.",
-        "Confirm recovery actions for the next constrained plant asset.",
+        t("dashboard.kpiDefinitions.plant.recommendation1"),
+        t("dashboard.kpiDefinitions.plant.recommendation2"),
+        t("dashboard.kpiDefinitions.plant.recommendation3"),
       ],
     },
+    recovery: {
+      kpi_name:
+        values.operationProfile === "sxew_copper"
+          ? "Cu Recovery"
+          : "Recovery",
+      current_value: values.recoveryPerformance,
+      target: 77,
+      unit: "%",
+      change: values.trends?.recovery || values.trends?.plant,
+      higher_is_better: true,
+      top_drivers:
+        values.operationProfile === "sxew_copper"
+          ? [
+              "PLS copper grade and solution chemistry",
+              "Leach performance and residence time",
+              "SX-EW operating stability",
+            ]
+          : [
+              t("dashboard.kpiDefinitions.plant.driver1"),
+              t("dashboard.kpiDefinitions.plant.driver2"),
+              t("dashboard.kpiDefinitions.plant.driver3"),
+            ],
+      recommendations:
+        values.operationProfile === "sxew_copper"
+          ? [
+              "Review PLS copper grade and leach conditions.",
+              "Check SX extraction and stripping performance.",
+              "Review EW current efficiency and process constraints.",
+            ]
+          : [
+              t("dashboard.kpiDefinitions.plant.recommendation1"),
+              t("dashboard.kpiDefinitions.plant.recommendation2"),
+              t("dashboard.kpiDefinitions.plant.recommendation3"),
+            ],
+    },
     safety: {
-      kpi_name: "Safety Incidents",
+      kpi_name: t("dashboard.kpiDefinitions.safety.name"),
       current_value: values.safetyIncidents,
       target: 0,
       unit: "",
       change: values.trends?.safety,
       higher_is_better: false,
       top_drivers: [
-        "Critical-control verification and field leadership",
-        "Changes in operating conditions and task risk",
-        "Quality and closure of corrective actions",
+        t("dashboard.kpiDefinitions.safety.driver1"),
+        t("dashboard.kpiDefinitions.safety.driver2"),
+        t("dashboard.kpiDefinitions.safety.driver3"),
       ],
       recommendations: [
-        "Verify critical controls for the next shift's highest-risk activities.",
-        "Escalate overdue safety actions to the responsible leader.",
-        "Confirm visible field leadership in active work areas.",
+        t("dashboard.kpiDefinitions.safety.recommendation1"),
+        t("dashboard.kpiDefinitions.safety.recommendation2"),
+        t("dashboard.kpiDefinitions.safety.recommendation3"),
+      ],
+    },
+    mine_health: {
+      kpi_name: t("dashboard.kpiDefinitions.mineHealth.name"),
+      current_value: values.mineHealthScore,
+      target: 85,
+      unit: "/100",
+      change: 0,
+      higher_is_better: true,
+      top_drivers: [
+        t("dashboard.kpiDefinitions.mineHealth.driver1"),
+        t("dashboard.kpiDefinitions.mineHealth.driver2"),
+        t("dashboard.kpiDefinitions.mineHealth.driver3"),
+      ],
+      recommendations: [
+        t("dashboard.kpiDefinitions.mineHealth.recommendation1"),
+        t("dashboard.kpiDefinitions.mineHealth.recommendation2"),
+        t("dashboard.kpiDefinitions.mineHealth.recommendation3"),
       ],
     },
   };
-
+ 
   const definition = definitions[kpiKey] || definitions.ore;
   const rawChange = Number(String(definition.change || "0").replace("%", ""));
   const changePercent = Number.isFinite(rawChange) ? rawChange : 0;
@@ -396,31 +507,52 @@ function buildKpiDetail(kpiKey, values, scenario, mineName, isDemoLoaded) {
       : values.actionSeverity === "Medium"
       ? "medium"
       : "low";
-
+ 
+  const scenarioLabel = t(
+    {
+      "High Performing Mine": "dashboard.highPerformingMine",
+      "Fleet Breakdown": "dashboard.fleetBreakdown",
+      "Plant Bottleneck": "dashboard.plantBottleneck",
+      "Safety Incident": "dashboard.safetyIncident",
+      "Heavy Rain / Weather Delay": "dashboard.weatherDelay",
+      "Winter Operations": "dashboard.winterOperations",
+    }[scenario] || "dashboard.highPerformingMine"
+  );
+ 
   return {
     ...definition,
-    period_label: "Last 7 Days",
+    period_label: t("dashboard.last7Days"),
     change: changePercent,
     change_percent: changePercent,
     direction: changePercent > 0 ? "up" : changePercent < 0 ? "down" : "flat",
     daily_values: createDailyValues(
       definition.current_value,
       changePercent,
-      kpiKey === "safety" ? 0 : 0
+      0
     ),
-    executive_insight: `${mineName} ${definition.kpi_name.toLowerCase()} is currently ${definition.current_value}${definition.unit} against a target of ${definition.target}${definition.unit}. Under the ${scenario} scenario, the main leadership focus is to protect operating discipline while addressing the most material constraint reflected in this KPI.`,
+    executive_insight: translateTemplate(
+      t,
+      "dashboard.kpiDetailDynamic.executiveInsight",
+      {
+        mineName,
+        kpiName: definition.kpi_name.toLowerCase(),
+        currentValue: definition.current_value,
+        unit: definition.unit,
+        target: definition.target,
+        scenario: scenarioLabel,
+      }
+    ),
     forecast:
       riskLevel === "high"
-        ? "Without immediate corrective action, this KPI may continue to weaken during the next operating period."
+        ? t("dashboard.kpiDetailDynamic.forecastHigh")
         : riskLevel === "medium"
-        ? "Performance can recover toward target if the recommended actions are completed during the next shift cycle."
-        : "Current performance is expected to remain stable if operating controls and planned actions are sustained.",
+        ? t("dashboard.kpiDetailDynamic.forecastMedium")
+        : t("dashboard.kpiDetailDynamic.forecastLow"),
     risk_level: riskLevel,
     confidence: isDemoLoaded ? 92 : 86,
   };
 }
-
-
+ 
 function normalizeKpiKey(value) {
   return String(value || "")
     .trim()
@@ -428,80 +560,188 @@ function normalizeKpiKey(value) {
     .replaceAll("-", "_")
     .replaceAll(" ", "_");
 }
-
+ 
 function isSupportedKpiKey(kpiKey) {
   return [
     "ore",
     "waste",
     "fleet",
     "plant",
+    "recovery",
     "safety",
     "mine_health",
   ].includes(normalizeKpiKey(kpiKey));
 }
-
+ 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedKpiKey = normalizeKpiKey(searchParams.get("kpi_key") || "");
   const { company, mine, loading } = useConfig();
   const { user } = useAuth();
-
+  const { language: uiLanguage, t } = useLanguage();
+ 
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
   const [demoData, setDemoData] = useState(null);
-
+ 
   const [executiveSummary, setExecutiveSummary] = useState(null);
   const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(true);
   const [executiveSummaryError, setExecutiveSummaryError] = useState("");
-
+ 
   const [toast, setToast] = useState(null);
   const [demoScenario, setDemoScenario] = useState("High Performing Mine");
   const [scenarioTransition, setScenarioTransition] = useState(false);
   const [scenarioTransitionLabel, setScenarioTransitionLabel] = useState(
-    "Updating executive dashboard"
+    t("dashboard.updatingDashboard")
   );
-
+ 
   const [sharedAnalytics, setSharedAnalytics] = useState(null);
   const [sharedAnalyticsLoading, setSharedAnalyticsLoading] = useState(true);
   const [sharedAnalyticsError, setSharedAnalyticsError] = useState("");
-
+ 
   const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
   const [kpiDetailLoading, setKpiDetailLoading] = useState(false);
   const [kpiDetailError, setKpiDetailError] = useState("");
   const [kpiDetailData, setKpiDetailData] = useState(null);
   const [selectedKpiKey, setSelectedKpiKey] = useState(null);
-
-  const kpiDetailTimerRef = useRef(null);
+ 
+  const kpiDetailRequestIdRef = useRef(0);
   const kpiDialogClosingRef = useRef(false);
-
+ 
   const companyName = company?.company_name || "Mine Manager AI";
   const mineName = mine?.mine_name || "Demo Mine";
   const timezone = company?.timezone || "Asia/Ulaanbaatar";
-  const language = company?.language || "English";
   const shiftPattern = mine?.shift_pattern || "Day / Night Shift";
-
+ 
   const executiveInsightsAllowedRoles = [
     "Superintendent",
     "Mine Manager",
     "General Manager",
     "Administrator",
   ];
-
+ 
   const canViewExecutiveInsights =
     executiveInsightsAllowedRoles.includes(user?.role);
+ 
+  const getScenarioLabel = useCallback(
+    (scenario) => {
+      const scenarioKeys = {
+        "High Performing Mine": "dashboard.highPerformingMine",
+        "Fleet Breakdown": "dashboard.fleetBreakdown",
+        "Plant Bottleneck": "dashboard.plantBottleneck",
+        "Safety Incident": "dashboard.safetyIncident",
+        "Heavy Rain / Weather Delay": "dashboard.weatherDelay",
+        "Winter Operations": "dashboard.winterOperations",
+      };
+ 
+      return t(
+        scenarioKeys[scenario] ||
+          "dashboard.highPerformingMine"
+      );
+    },
+    [t]
+  );
+ 
+  const getHealthStatusLabel = useCallback(
+    (status) => {
+      const statusKeys = {
+        Stable: "dashboard.stable",
+        Excellent: "dashboard.excellent",
+        "High Priority": "dashboard.highPriority",
+        Watch: "dashboard.watch",
+        "Critical Review": "dashboard.criticalReview",
+        "Weather Watch": "dashboard.weatherWatch",
+        "Winter Watch": "dashboard.winterWatch",
+      };
+ 
+      return statusKeys[status]
+        ? t(statusKeys[status])
+        : status;
+    },
+    [t]
+  );
+ 
+  const getRiskLabel = useCallback(
+    (value) => {
+      const keys = {
+        Low: "dashboard.riskLowLabel",
+        Medium: "dashboard.riskMediumLabel",
+        High: "dashboard.riskHighLabel",
+        Extreme: "dashboard.riskExtremeLabel",
+      };
+ 
+      return t(
+        keys[value] ||
+          "dashboard.riskLowLabel"
+      );
+    },
+    [t]
+  );
+ 
+  const getRiskRowLabel = useCallback(
+    (value) => {
+      const keys = {
+        Production: "dashboard.riskProduction",
+        Equipment: "dashboard.riskEquipment",
+        Safety: "dashboard.riskSafety",
+        Geotechnical: "dashboard.riskGeotechnical",
+        External: "dashboard.riskExternal",
+      };
+ 
+      if (value === "Process Plant") {
+        return uiLanguage === "MN" ? "Үйлдвэр" : "Process Plant";
+      }
 
+      return t(
+        keys[value] ||
+          "dashboard.riskExternal"
+      );
+    },
+    [t, uiLanguage]
+  );
+ 
+  const getPriorityLabel = useCallback(
+    (value) => {
+      const keys = {
+        High: "dashboard.high",
+        Medium: "dashboard.medium",
+        Low: "dashboard.low",
+      };
+ 
+      return keys[value] ? t(keys[value]) : value;
+    },
+    [t]
+  );
+ 
+  const getTrendDayLabel = useCallback(
+    (value) => {
+      const keys = {
+        Mon: "dashboard.dayMon",
+        Tue: "dashboard.dayTue",
+        Wed: "dashboard.dayWed",
+        Thu: "dashboard.dayThu",
+        Fri: "dashboard.dayFri",
+        Sat: "dashboard.daySat",
+        Sun: "dashboard.daySun",
+      };
+ 
+      return keys[value] ? t(keys[value]) : value;
+    },
+    [t]
+  );
+ 
   const currentDate = useMemo(
     () =>
-      new Date().toLocaleDateString("en-US", {
+      new Date().toLocaleDateString(uiLanguage === "MN" ? "mn-MN" : "en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
       }),
-    []
+    [uiLanguage]
   );
-
+ 
   const lastUpdated = useMemo(
     () =>
       new Date().toLocaleTimeString([], {
@@ -510,157 +750,157 @@ export default function Dashboard() {
       }),
     [demoData, executiveSummary, sharedAnalytics, demoScenario]
   );
-
+ 
   const showToast = useCallback((type, title, message) => {
     setToast({ type, title, message });
-
+ 
     window.setTimeout(() => {
       setToast(null);
     }, 3500);
   }, []);
-
+ 
   const loadExecutiveSummary = useCallback(async () => {
     try {
       setExecutiveSummaryLoading(true);
       setExecutiveSummaryError("");
-
+ 
       const data = await getExecutiveSummary(mineName);
       setExecutiveSummary(data);
     } catch (error) {
       console.error("Executive summary load failed:", error);
       setExecutiveSummaryError(
-        "Unable to load the latest live executive KPI summary."
+        t("dashboard.liveSummaryLoadError")
       );
     } finally {
       setExecutiveSummaryLoading(false);
     }
-  }, [mineName]);
-
+  }, [mineName, t]);
+ 
   useEffect(() => {
     loadExecutiveSummary();
   }, [loadExecutiveSummary]);
-
+ 
   const runScenarioTransition = useCallback(
     async ({
-      label = "Updating executive dashboard",
+      label = t("dashboard.updatingDashboard"),
       action,
       minimumDuration = 650,
     }) => {
       if (scenarioTransition) {
         return;
       }
-
+ 
       setScenarioTransitionLabel(label);
       setScenarioTransition(true);
-
+ 
       const startedAt = Date.now();
-
+ 
       try {
         await action();
       } finally {
         const elapsed = Date.now() - startedAt;
         const remaining = Math.max(0, minimumDuration - elapsed);
-
+ 
         if (remaining > 0) {
           await new Promise((resolve) => {
             window.setTimeout(resolve, remaining);
           });
         }
-
+ 
         setScenarioTransition(false);
       }
     },
-    [scenarioTransition]
+    [scenarioTransition, t]
   );
-
+ 
   const handleScenarioChange = useCallback(
     async (event) => {
       const selectedScenario = event.target.value;
-
+ 
       if (selectedScenario === demoScenario || scenarioTransition) {
         return;
       }
-
+ 
       await runScenarioTransition({
-        label: `Applying ${selectedScenario} scenario`,
+        label: `${t("dashboard.applyingScenario")} ${getScenarioLabel(selectedScenario)}`,
         minimumDuration: 650,
         action: async () => {
           setDemoScenario(selectedScenario);
-
+ 
           await new Promise((resolve) => {
             window.setTimeout(resolve, 180);
           });
         },
       });
     },
-    [demoScenario, runScenarioTransition, scenarioTransition]
+    [demoScenario, getScenarioLabel, runScenarioTransition, scenarioTransition, t]
   );
-
+ 
   const handleLoadDemo = useCallback(async () => {
     await runScenarioTransition({
-      label: `Loading ${demoScenario} scenario`,
+      label: `${t("dashboard.loadingScenario")} ${getScenarioLabel(demoScenario)}`,
       minimumDuration: 850,
       action: async () => {
         try {
           setDemoLoading(true);
-
+ 
           const result = await loadDemoData({
             scenario: demoScenario,
             mine_name: mineName,
           });
           console.log("Demo data loaded:", result);
-
+ 
           setDemoData(result.data);
           setDemoLoaded(true);
-
+ 
           showToast(
             "success",
-            "Executive Demo Loaded",
-            `${demoScenario} scenario loaded successfully.`
+            t("dashboard.executiveDemoLoaded"),
+            `${getScenarioLabel(demoScenario)} ${t("dashboard.scenarioLoadedSuccessfully")}`
           );
         } catch (error) {
           console.error("Demo load failed:", error);
-
+ 
           showToast(
             "error",
-            "Demo Load Failed",
-            "Please check backend connection and try again."
+            t("dashboard.demoLoadFailed"),
+            t("dashboard.checkBackendAndRetry")
           );
         } finally {
           setDemoLoading(false);
         }
       },
     });
-  }, [demoScenario, mineName, runScenarioTransition, showToast]);
-
+  }, [demoScenario, getScenarioLabel, mineName, runScenarioTransition, showToast, t]);
+ 
   const handleResetDemo = useCallback(async () => {
     await runScenarioTransition({
-      label: "Restoring live dashboard view",
+      label: t("dashboard.restoringLiveView"),
       minimumDuration: 700,
       action: async () => {
         try {
           await resetDemoData({
             mine_name: mineName,
           });
-
+ 
           setDemoData(null);
           setDemoLoaded(false);
           setDemoScenario("High Performing Mine");
-
+ 
           await loadExecutiveSummary();
-
+ 
           showToast(
             "success",
-            "Demo Reset",
-            "Dashboard has been restored to default live view."
+            t("dashboard.demoReset"),
+            t("dashboard.restoredToLiveView")
           );
         } catch (error) {
           console.error("Demo reset failed:", error);
-
+ 
           showToast(
             "error",
-            "Reset Failed",
-            "Please check backend connection and try again."
+            t("dashboard.resetFailed"),
+            t("dashboard.checkBackendAndRetry")
           );
         }
       },
@@ -670,49 +910,54 @@ export default function Dashboard() {
     mineName,
     runScenarioTransition,
     showToast,
+    t,
   ]);
-
+ 
   const loadSharedAnalytics = useCallback(async () => {
     try {
       setSharedAnalyticsLoading(true);
       setSharedAnalyticsError("");
-
-      const data = await getSharedAnalytics(mineName, 7);
+ 
+      const data = await getSharedAnalytics(
+        mineName,
+        7,
+        uiLanguage === "MN" ? "mn" : "en"
+      );
       setSharedAnalytics(data);
     } catch (error) {
       console.error("Shared analytics load failed:", error);
-      setSharedAnalyticsError("Unable to load shared analytics.");
+      setSharedAnalyticsError(t("dashboard.sharedAnalyticsLoadError"));
     } finally {
       setSharedAnalyticsLoading(false);
     }
-  }, [mineName]);
-
+  }, [mineName, t, uiLanguage]);
+ 
   useEffect(() => {
     loadSharedAnalytics();
   }, [loadSharedAnalytics]);
-
+ 
   const baseValues = useMemo(() => {
     const readNumber = (...values) => {
       for (const value of values) {
         if (value === null || value === undefined || value === "") {
           continue;
         }
-
+ 
         const numericValue = Number(value);
-
+ 
         if (Number.isFinite(numericValue)) {
           return numericValue;
         }
       }
-
+ 
       return null;
     };
-
+ 
     const formatOneDecimal = (value, fallback = "0.0") => {
       const numericValue = readNumber(value);
       return numericValue === null ? fallback : numericValue.toFixed(1);
     };
-
+ 
     /*
      * Demo Mode intentionally continues to use the scenario dataset.
      * Live Mode uses /api/dashboard/executive-summary as the source of truth.
@@ -722,21 +967,21 @@ export default function Dashboard() {
       const latestFleet = demoData?.fleet?.slice(-5) || [];
       const latestPlant = demoData?.plant?.at(-1);
       const latestSafety = demoData?.safety?.at(-1);
-
+ 
       const orePerformance = latestProduction
         ? (
             (latestProduction.ore_actual / latestProduction.ore_plan) *
             100
           ).toFixed(1)
         : "0.0";
-
+ 
       const wastePerformance = latestProduction
         ? (
             (latestProduction.waste_actual / latestProduction.waste_plan) *
             100
           ).toFixed(1)
         : "0.0";
-
+ 
       const fleetPerformance = latestFleet.length
         ? (
             latestFleet.reduce(
@@ -751,28 +996,28 @@ export default function Dashboard() {
             ) / latestFleet.length
           ).toFixed(1)
         : "0.0";
-
+ 
       const plantPerformance = latestPlant
         ? (
             (latestPlant.throughput_actual / latestPlant.throughput_plan) *
             100
           ).toFixed(1)
         : "0.0";
-
+ 
       const safetyIncidents =
         readNumber(
           latestSafety?.recordable_incidents,
           latestSafety?.incidents
         ) ?? 0;
-
+ 
       const safetyScore =
         readNumber(latestSafety?.safety_score) ??
         (safetyIncidents === 0 ? 100 : 70);
-
+ 
       const fleetAvailability = readNumber(
         latestFleet.at(-1)?.availability
       );
-
+ 
       const plantThroughputPerformance = latestPlant
         ? readNumber(latestPlant.throughput_plan) > 0
           ? Number(
@@ -784,7 +1029,7 @@ export default function Dashboard() {
             )
           : null
         : null;
-
+ 
       const mineHealthScore = Math.round(
         (Number(orePerformance) +
           Number(wastePerformance) +
@@ -793,22 +1038,31 @@ export default function Dashboard() {
           safetyScore) /
           5
       );
-
+ 
       return {
         orePerformance,
         wastePerformance,
         fleetPerformance,
         plantPerformance,
+        recoveryPerformance: Number(latestPlant?.recovery ?? 0).toFixed(2),
         safetyIncidents,
         safetyScore,
         fleetAvailability,
         plantThroughputPerformance,
         mineHealthScore,
+        operationProfile: "standard_mine",
+        applicability: {
+          production: true,
+          waste: true,
+          fleet: true,
+          plant: true,
+          safety: true,
+        },
       };
     }
-
+ 
     const summary = executiveSummary?.summary ?? executiveSummary ?? {};
-
+ 
     const orePerformance = formatOneDecimal(
       readNumber(
         summary.ore_performance,
@@ -816,7 +1070,7 @@ export default function Dashboard() {
         summary.ore
       )
     );
-
+ 
     const wastePerformance = formatOneDecimal(
       readNumber(
         summary.waste_movement,
@@ -825,7 +1079,7 @@ export default function Dashboard() {
         summary.waste
       )
     );
-
+ 
     const fleetPerformance = formatOneDecimal(
       readNumber(
         summary.fleet_performance,
@@ -833,7 +1087,7 @@ export default function Dashboard() {
         summary.fleet
       )
     );
-
+ 
     const plantPerformance = formatOneDecimal(
       readNumber(
         summary.plant_performance,
@@ -841,7 +1095,7 @@ export default function Dashboard() {
         summary.plant
       )
     );
-
+ 
     const safetyIncidents =
       readNumber(
         summary.safety_incidents,
@@ -849,13 +1103,13 @@ export default function Dashboard() {
         summary.incidents,
         summary.safety
       ) ?? 0;
-
+ 
     const safetyScore =
       readNumber(
         summary.safety_score,
         summary.safetyScore
       ) ?? 0;
-
+ 
     const mineHealthScore =
       readNumber(
         summary.mine_health_score,
@@ -863,41 +1117,74 @@ export default function Dashboard() {
         summary.mine_health,
         summary.health
       ) ?? 0;
-
+ 
     const fleetAvailability = readNumber(
       summary.fleet_availability,
       summary.availability
     );
-
+ 
     const plantThroughputPerformance = readNumber(
       summary.throughput_performance,
       summary.plant_throughput_performance,
       summary.throughput
     );
 
+    const recoveryPerformance = formatOneDecimal(
+      readNumber(
+        summary.recovery,
+        summary.cu_recovery,
+        summary.recovery_performance
+      )
+    );
+
+    const operationProfile =
+      summary.operation_profile ||
+      summary.operationProfile ||
+      "standard_mine";
+
+    const applicability = {
+      production: summary.applicability?.production !== false,
+      waste: summary.applicability?.waste !== false,
+      fleet: summary.applicability?.fleet !== false,
+      plant: summary.applicability?.plant !== false,
+      safety: summary.applicability?.safety !== false,
+    };
+ 
     return {
       orePerformance,
       wastePerformance,
       fleetPerformance,
       plantPerformance,
+      recoveryPerformance,
       safetyIncidents,
       safetyScore,
       fleetAvailability,
       plantThroughputPerformance,
       mineHealthScore,
+      operationProfile,
+      applicability,
     };
   }, [demoData, demoLoaded, executiveSummary]);
-
+ 
   const scenarioValues = useMemo(() => {
     if (demoLoaded) {
-      return applyScenarioAdjustments(baseValues, demoScenario);
+      return applyScenarioAdjustments(baseValues, demoScenario, t);
     }
-
+ 
     return {
       ...baseValues,
-      priorityAction: "Maintain current operating discipline",
+      priorityAction:
+        baseValues.operationProfile === "sxew_copper"
+          ? uiLanguage === "MN"
+            ? "Катодын үйлдвэрлэл, үйлдвэрийн гүйцэтгэл болон аюулгүй ажиллагааг хянах"
+            : "Review cathode production, process plant performance, and safety"
+          : t("dashboard.scenarioContent.stable.priorityAction"),
       riskMessage:
-        "No major operational risks detected from current KPI thresholds.",
+        baseValues.operationProfile === "sxew_copper"
+          ? uiLanguage === "MN"
+            ? "Катодын үйлдвэрлэл, Cu recovery болон аюулгүй ажиллагааны үзүүлэлтүүдэд удирдлагын анхаарал шаардлагатай."
+            : "Management attention is required on cathode production, Cu recovery, and safety indicators."
+          : t("dashboard.scenarioContent.stable.liveRiskMessage"),
       healthStatus: "Stable",
       actionSeverity: "Low",
       trends: {
@@ -905,24 +1192,27 @@ export default function Dashboard() {
         waste: "+0.3%",
         fleet: "0.0%",
         plant: "+0.2%",
+        recovery: "0.0%",
         safety: "0",
       },
     };
-  }, [baseValues, demoLoaded, demoScenario]);
-
+  }, [baseValues, demoLoaded, demoScenario, t, uiLanguage]);
+ 
   const executiveBriefing = useMemo(
     () =>
       generateExecutiveBriefing(
         scenarioValues,
         demoScenario,
         mineName,
-        demoLoaded
+        demoLoaded,
+        uiLanguage,
+        t
       ),
-    [scenarioValues, demoScenario, mineName, demoLoaded]
+    [scenarioValues, demoScenario, mineName, demoLoaded, uiLanguage, t]
   );
-
+ 
   const openKpiDetail = useCallback(
-    (kpiKey) => {
+    async (kpiKey) => {
       const normalizedKpiKey = normalizeKpiKey(kpiKey);
 
       if (!isSupportedKpiKey(normalizedKpiKey)) {
@@ -938,10 +1228,8 @@ export default function Dashboard() {
 
       kpiDialogClosingRef.current = false;
 
-      if (kpiDetailTimerRef.current) {
-        window.clearTimeout(kpiDetailTimerRef.current);
-        kpiDetailTimerRef.current = null;
-      }
+      const requestId = kpiDetailRequestIdRef.current + 1;
+      kpiDetailRequestIdRef.current = requestId;
 
       setSelectedKpiKey(normalizedKpiKey);
       setKpiDialogOpen(true);
@@ -949,24 +1237,52 @@ export default function Dashboard() {
       setKpiDetailError("");
       setKpiDetailData(null);
 
-      kpiDetailTimerRef.current = window.setTimeout(() => {
-        try {
-          const detail = buildKpiDetail(
-            normalizedKpiKey,
-            scenarioValues,
-            demoScenario,
-            mineName,
-            demoLoaded
-          );
-          setKpiDetailData(detail);
-        } catch (error) {
-          console.error("KPI detail build failed:", error);
-          setKpiDetailError("Unable to prepare the KPI analysis.");
-        } finally {
-          setKpiDetailLoading(false);
-          kpiDetailTimerRef.current = null;
+      try {
+        /*
+         * Demo mode keeps the scenario-specific local KPI analysis.
+         * Live mode reads KPI detail and operational drivers from PostgreSQL
+         * through /api/dashboard/kpi-detail.
+         */
+        const detail = demoLoaded
+          ? buildKpiDetail(
+              normalizedKpiKey,
+              scenarioValues,
+              demoScenario,
+              mineName,
+              true,
+              t
+            )
+          : await getKpiDetail({
+              mineName,
+              kpiName: normalizedKpiKey,
+              days: 7,
+            });
+
+        if (
+          kpiDialogClosingRef.current ||
+          kpiDetailRequestIdRef.current !== requestId
+        ) {
+          return;
         }
-      }, 450);
+
+        setKpiDetailData(detail);
+      } catch (error) {
+        console.error("KPI detail load failed:", error);
+
+        if (
+          !kpiDialogClosingRef.current &&
+          kpiDetailRequestIdRef.current === requestId
+        ) {
+          setKpiDetailError(t("dashboard.unableToPrepareKpi"));
+        }
+      } finally {
+        if (
+          !kpiDialogClosingRef.current &&
+          kpiDetailRequestIdRef.current === requestId
+        ) {
+          setKpiDetailLoading(false);
+        }
+      }
     },
     [
       demoLoaded,
@@ -976,6 +1292,7 @@ export default function Dashboard() {
       scenarioValues,
       searchParams,
       setSearchParams,
+      t,
     ]
   );
 
@@ -990,7 +1307,7 @@ export default function Dashboard() {
     ) {
       return;
     }
-
+ 
     openKpiDetail(requestedKpiKey);
   }, [
     loading,
@@ -999,74 +1316,143 @@ export default function Dashboard() {
     selectedKpiKey,
     openKpiDetail,
   ]);
-
+ 
   const closeKpiDetail = useCallback(() => {
     /*
      * Prevent the URL-driven effect from reopening the dialog during the
      * brief render between closing the dialog and removing `kpi_key`.
      */
     kpiDialogClosingRef.current = true;
+    kpiDetailRequestIdRef.current += 1;
 
-    if (kpiDetailTimerRef.current) {
-      window.clearTimeout(kpiDetailTimerRef.current);
-      kpiDetailTimerRef.current = null;
-    }
-
-    if (requestedKpiKey) {
+if (requestedKpiKey) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete("kpi_key");
       setSearchParams(nextParams, { replace: true });
     }
-
+ 
     setKpiDialogOpen(false);
     setKpiDetailLoading(false);
     setKpiDetailError("");
     setKpiDetailData(null);
     setSelectedKpiKey(null);
   }, [requestedKpiKey, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    return () => {
-      if (kpiDetailTimerRef.current) {
-        window.clearTimeout(kpiDetailTimerRef.current);
-        kpiDetailTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  const retryKpiDetail = useCallback(() => {
+const retryKpiDetail = useCallback(() => {
     if (selectedKpiKey) {
       openKpiDetail(selectedKpiKey);
     }
   }, [openKpiDetail, selectedKpiKey]);
-
+ 
   const openExecutiveActionCenter = useCallback(
     (kpiKey) => {
       const activeKpiKey = kpiKey || selectedKpiKey;
-
+ 
       kpiDialogClosingRef.current = true;
+    kpiDetailRequestIdRef.current += 1;
 
-      if (kpiDetailTimerRef.current) {
-        window.clearTimeout(kpiDetailTimerRef.current);
-        kpiDetailTimerRef.current = null;
-      }
-
-      setKpiDialogOpen(false);
-
+setKpiDialogOpen(false);
+ 
       if (activeKpiKey) {
         navigate(
           `/executive-actions?kpi_key=${encodeURIComponent(activeKpiKey)}`
         );
         return;
       }
-
+ 
       navigate("/executive-actions");
     },
     [navigate, selectedKpiKey]
   );
+ 
+  const isSxewOperation =
+    !demoLoaded && scenarioValues.operationProfile === "sxew_copper";
 
-  const priorityActions = useMemo(
-    () => [
+  const operationLabels = useMemo(() => {
+    if (!isSxewOperation) {
+      return {
+        production: t("dashboard.orePerformance"),
+        plant: t("dashboard.plantPerformance"),
+        recovery: "Recovery",
+        safety: t("dashboard.safetyIncidents"),
+      };
+    }
+
+    if (uiLanguage === "MN") {
+      return {
+        production: "Катодын зэсийн үйлдвэрлэл",
+        plant: "Үйлдвэрийн гүйцэтгэл",
+        recovery: "Cu Recovery",
+        safety: "Аюулгүй ажиллагааны тохиолдол",
+      };
+    }
+
+    return {
+      production: "Cathode Production",
+      plant: "Process Plant Performance",
+      recovery: "Cu Recovery",
+      safety: "Safety Incidents",
+    };
+  }, [isSxewOperation, t, uiLanguage]);
+
+  const priorityActions = useMemo(() => {
+    if (isSxewOperation) {
+      const actions = [];
+
+      if (Number(scenarioValues.orePerformance) < 95) {
+        actions.push({
+          id: "cathode-production",
+          title:
+            uiLanguage === "MN"
+              ? "Катодын зэсийн үйлдвэрлэлийн алдагдлыг шалгах"
+              : "Review cathode production losses",
+          priority: "High",
+          due: "Due Today",
+        });
+      }
+
+      if (Number(scenarioValues.plantPerformance) < 95) {
+        actions.push({
+          id: "process-plant",
+          title:
+            uiLanguage === "MN"
+              ? "Үйлдвэрийн тогтвортой ажиллагаа ба Cu recovery-г хянах"
+              : "Review process plant stability and Cu recovery",
+          priority: "Medium",
+          due: "Due Today",
+        });
+      }
+
+      if (
+        Number(scenarioValues.safetyIncidents) > 0 ||
+        Number(baseValues.safetyScore) < 95
+      ) {
+        actions.push({
+          id: "safety-controls",
+          title:
+            uiLanguage === "MN"
+              ? "Аюулгүй ажиллагааны эрсдэлийн хяналтыг баталгаажуулах"
+              : "Confirm safety risk controls",
+          priority: "Medium",
+          due: "Due Tomorrow",
+        });
+      }
+
+      return actions.length
+        ? actions.slice(0, 3)
+        : [
+            {
+              id: "stable-operations",
+              title:
+                uiLanguage === "MN"
+                  ? "Одоогийн үйл ажиллагааны сахилга батыг хадгалах"
+                  : "Maintain current operating discipline",
+              priority: "Low",
+              due: "Due Today",
+            },
+          ];
+    }
+
+    return [
       {
         id: "scenario-priority",
         title: scenarioValues.priorityAction,
@@ -1075,43 +1461,64 @@ export default function Dashboard() {
       },
       {
         id: "loading-constraints",
-        title: "Review loading constraints during the daily operating review",
+        title: t("dashboard.staticPriorityActions.reviewLoadingConstraints"),
         priority: "Medium",
         due: "Due Tomorrow",
       },
       {
         id: "maintenance-recovery",
-        title: "Confirm maintenance recovery plan for critical equipment",
+        title: t("dashboard.staticPriorityActions.confirmMaintenanceRecovery"),
         priority: "Medium",
-        due: "Due Jul 24",
+        due: t("dashboard.dueJul24"),
       },
-    ],
-    [scenarioValues.actionSeverity, scenarioValues.priorityAction]
-  );
+    ];
+  }, [
+    baseValues.safetyScore,
+    isSxewOperation,
+    scenarioValues.actionSeverity,
+    scenarioValues.orePerformance,
+    scenarioValues.plantPerformance,
+    scenarioValues.priorityAction,
+    scenarioValues.safetyIncidents,
+    t,
+    uiLanguage,
+  ]);
 
   const configurationItems = useMemo(
     () => [
-      ["Company", companyName],
-      ["Mine", mineName],
-      ["Timezone", timezone],
-      ["Language", language],
-      ["Last Updated", lastUpdated],
+      [t("dashboard.company"), companyName],
+      [t("dashboard.mine"), mineName],
+      [t("dashboard.timezone"), timezone],
+      [
+        t("dashboard.language"),
+        uiLanguage === "MN"
+          ? "Монгол"
+          : "English",
+      ],
+      [t("dashboard.lastUpdated"), lastUpdated],
     ],
-    [companyName, mineName, timezone, language, lastUpdated]
+    [
+      companyName,
+      mineName,
+      timezone,
+      uiLanguage,
+      lastUpdated,
+      t,
+    ]
   );
-
+ 
   const handleViewAllKpis = useCallback(() => {
     navigate("/production");
   }, [navigate]);
-
+ 
   const handleViewAllActions = useCallback(() => {
     navigate("/executive-actions");
   }, [navigate]);
-
+ 
   const handleViewFullBriefing = useCallback(() => {
     navigate("/reports");
   }, [navigate]);
-
+ 
   const handleOpenOre = useCallback(() => openKpiDetail("ore"), [openKpiDetail]);
   const handleOpenWaste = useCallback(
     () => openKpiDetail("waste"),
@@ -1125,6 +1532,10 @@ export default function Dashboard() {
     () => openKpiDetail("plant"),
     [openKpiDetail]
   );
+  const handleOpenRecovery = useCallback(
+    () => openKpiDetail("recovery"),
+    [openKpiDetail]
+  );
   const handleOpenSafety = useCallback(
     () => openKpiDetail("safety"),
     [openKpiDetail]
@@ -1133,11 +1544,11 @@ export default function Dashboard() {
     () => openKpiDetail("mine_health"),
     [openKpiDetail]
   );
-
+ 
   if (loading) {
     return <DashboardSkeleton />;
   }
-
+ 
   return (
     <div
       className="mma-dashboard executive-dashboard-page"
@@ -1156,28 +1567,28 @@ export default function Dashboard() {
         >
           <div className="dashboard-transition-card">
             <div className="dashboard-transition-spinner" />
-
+ 
             <div className="dashboard-transition-copy">
               <strong>{scenarioTransitionLabel}</strong>
-              <span>Updating executive KPIs and operational insights</span>
+              <span>{t("dashboard.updatingKpis")}</span>
             </div>
           </div>
         </div>
       )}
-
+ 
       {toast && (
         <div className={`demo-toast ${toast.type}`}>
           <div className="demo-toast-icon">
             {toast.type === "success" ? "✓" : "!"}
           </div>
-
+ 
           <div>
             <h4>{toast.title}</h4>
             <p>{toast.message}</p>
           </div>
         </div>
       )}
-
+ 
       <main
         className="mma-main"
         style={{
@@ -1191,68 +1602,86 @@ export default function Dashboard() {
           <div className="dashboard-state-banner">
             <DashboardDataState
               type="error"
-              title="Live executive KPI summary unavailable"
-              message="The latest uploaded KPI summary could not be retrieved from the backend."
-              actionLabel="Retry executive summary"
+              title={t("dashboard.liveSummaryUnavailable")}
+              message={t("dashboard.liveSummaryUnavailableMessage")}
+              actionLabel={t("dashboard.retryExecutiveSummary")}
               onRetry={loadExecutiveSummary}
               retrying={executiveSummaryLoading}
               compact
             />
           </div>
         )}
-
+ 
         {sharedAnalyticsError && (
           <div className="dashboard-state-banner">
             <DashboardDataState
               type="error"
-              title="Live analytics connection unavailable"
-              message="The Dashboard is displaying its current executive view, but the latest shared analytics could not be retrieved."
-              actionLabel="Retry analytics"
+              title={t("dashboard.analyticsUnavailable")}
+              message={t("dashboard.analyticsUnavailableMessage")}
+              actionLabel={t("dashboard.retryAnalytics")}
               onRetry={loadSharedAnalytics}
               retrying={sharedAnalyticsLoading}
               compact
             />
           </div>
         )}
-
+ 
         {/* Executive header */}
         <section className="executive-dashboard-header executive-dashboard-header--reference">
           <div className="executive-dashboard-heading">
             <div className="executive-dashboard-title-row">
-              <h1>Executive Command Center</h1>
-
+              <h1>{t("dashboard.title")}</h1>
+ 
               <span className="status-pill green">
-                {demoLoaded ? "Demo Loaded" : "Live"}
+                {demoLoaded ? t("dashboard.demoLoaded") : t("dashboard.live")}
               </span>
             </div>
-
+ 
             <div className="executive-dashboard-breadcrumb">
               <span>{companyName}</span>
               <span className="context-separator">›</span>
               <span>{mineName}</span>
             </div>
-
+ 
             <div className="executive-dashboard-scenario">
-              {demoLoaded ? demoScenario : "High Performing Mine"}
+              {demoLoaded
+                ? getScenarioLabel(demoScenario)
+                : isSxewOperation
+                ? uiLanguage === "MN"
+                  ? "SX-EW Зэсийн үйл ажиллагаа"
+                  : "SX-EW Copper Operation"
+                : getScenarioLabel("High Performing Mine")}
             </div>
           </div>
-
+ 
           <div className="executive-dashboard-controls executive-dashboard-controls--reference">
             <select
               className="executive-mine-select"
               value={demoScenario}
               onChange={handleScenarioChange}
               disabled={demoLoading || scenarioTransition}
-              aria-label="Select executive demo scenario"
+              aria-label={t("dashboard.selectScenario")}
             >
-              <option>High Performing Mine</option>
-              <option>Fleet Breakdown</option>
-              <option>Plant Bottleneck</option>
-              <option>Safety Incident</option>
-              <option>Heavy Rain / Weather Delay</option>
-              <option>Winter Operations</option>
+              <option value="High Performing Mine">
+                {t("dashboard.highPerformingMine")}
+              </option>
+              <option value="Fleet Breakdown">
+                {t("dashboard.fleetBreakdown")}
+              </option>
+              <option value="Plant Bottleneck">
+                {t("dashboard.plantBottleneck")}
+              </option>
+              <option value="Safety Incident">
+                {t("dashboard.safetyIncident")}
+              </option>
+              <option value="Heavy Rain / Weather Delay">
+                {t("dashboard.weatherDelay")}
+              </option>
+              <option value="Winter Operations">
+                {t("dashboard.winterOperations")}
+              </option>
             </select>
-
+ 
             <button
               type="button"
               className="executive-demo-button executive-demo-button--reference"
@@ -1262,22 +1691,22 @@ export default function Dashboard() {
               {demoLoading || scenarioTransition ? (
                 <>
                   <span className="demo-spinner"></span>
-                  Updating...
+                  {t("dashboard.updating")}
                 </>
               ) : demoLoaded ? (
                 <>
                   <span className="demo-loaded-icon">✓</span>
-                  Demo Loaded
+                  {t("dashboard.demoLoaded")}
                 </>
               ) : (
                 <>
-                  <span>Load</span>
-                  <span>Executive</span>
-                  <span>Demo</span>
+                  <span>{t("dashboard.load")}</span>
+                  <span>{t("dashboard.executive")}</span>
+                  <span>{t("dashboard.demo")}</span>
                 </>
               )}
             </button>
-
+ 
             {demoLoaded && (
               <button
                 type="button"
@@ -1285,21 +1714,21 @@ export default function Dashboard() {
                 onClick={handleResetDemo}
                 disabled={scenarioTransition}
               >
-                Reset
+                {t("dashboard.reset")}
               </button>
             )}
-
+ 
             <div className="executive-date-card executive-date-card--reference">
               <strong>{currentDate}</strong>
-              <span>Day Shift</span>
+              <span>{t("dashboard.dayShift")}</span>
             </div>
-
+ 
             <div className="executive-shift-card executive-shift-card--reference">
               <strong>{shiftPattern}</strong>
             </div>
           </div>
         </section>
-
+ 
         {/* Compact configuration strip */}
         <section className="executive-config-grid">
           {configurationItems.map(([label, value], index) => (
@@ -1339,14 +1768,18 @@ export default function Dashboard() {
             </div>
           ))}
         </section>
-
+ 
         {/* Mine health hero */}
         <section className="executive-health-grid">
           <div>
-            <div style={{ fontSize: 12, opacity: 0.78, fontWeight: 700 }}>
-              Overall Operational Health
+            <div
+              className="executive-type-eyebrow executive-type-eyebrow--inverse"
+              style={{ fontSize: 12, opacity: 0.78, fontWeight: 700 }}
+            >
+              {t("dashboard.overallOperationalHealth")}
             </div>
             <h2
+              className="executive-type-hero-title"
               style={{
                 margin: "10px 0 0",
                 fontSize: 20,
@@ -1356,7 +1789,7 @@ export default function Dashboard() {
             >
               {mineName}
             </h2>
-
+ 
             <div
               style={{
                 marginTop: 4,
@@ -1366,6 +1799,7 @@ export default function Dashboard() {
               }}
             >
               <span
+                className="executive-type-health-score"
                 style={{
                   fontSize: 58,
                   lineHeight: 1,
@@ -1375,9 +1809,14 @@ export default function Dashboard() {
               >
                 {scenarioValues.mineHealthScore}
               </span>
-              <span style={{ fontSize: 18, opacity: 0.85 }}>/100</span>
+              <span
+                className="executive-type-health-unit"
+                style={{ fontSize: 18, opacity: 0.85 }}
+              >
+                /100
+              </span>
             </div>
-
+ 
             <div
               style={{
                 display: "inline-flex",
@@ -1391,10 +1830,13 @@ export default function Dashboard() {
                 fontWeight: 900,
               }}
             >
-              ↗ {demoLoaded ? `${demoScenario} active` : "+3 vs last week"}
+              ↗{" "}
+              {demoLoaded
+                ? `${getScenarioLabel(demoScenario)} ${t("dashboard.active")}`
+                : t("dashboard.versusLastWeek")}
             </div>
           </div>
-
+ 
           <div
             style={{
               borderRadius: 18,
@@ -1409,7 +1851,7 @@ export default function Dashboard() {
           >
             <FiShield style={{ fontSize: 38, color: "#6ee7b7" }} />
             <h3 style={{ margin: "10px 0 5px", fontSize: 20 }}>
-              {scenarioValues.healthStatus}
+              {getHealthStatusLabel(scenarioValues.healthStatus)}
             </h3>
             <p
               style={{
@@ -1421,11 +1863,11 @@ export default function Dashboard() {
               }}
             >
               {scenarioValues.mineHealthScore >= 85
-                ? "Minor operational risks detected"
-                : "Operational attention required"}
+                ? t("dashboard.minorRisks")
+                : t("dashboard.attentionRequired")}
             </p>
           </div>
-
+ 
           <div style={{ minWidth: 0 }}>
             <div
               style={{
@@ -1435,13 +1877,13 @@ export default function Dashboard() {
                 fontWeight: 800,
               }}
             >
-              Mine Health Score Trend (7 Days)
+              {t("dashboard.mineHealthTrend")}
             </div>
-
+ 
             <svg
               viewBox="0 0 340 130"
               role="img"
-              aria-label="Seven day mine health score trend"
+              aria-label={t("dashboard.mineHealthTrend")}
               style={{ width: "100%", height: 122, overflow: "visible" }}
             >
               {GRID_LINES.map((y) => (
@@ -1455,7 +1897,7 @@ export default function Dashboard() {
                   strokeWidth="1"
                 />
               ))}
-
+ 
               <polyline
                 points={CHART_POINTS}
                 fill="none"
@@ -1464,7 +1906,7 @@ export default function Dashboard() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-
+ 
               {TREND_POINTS.map((value, index) => (
                 <circle
                   key={`${value}-${index}`}
@@ -1475,7 +1917,7 @@ export default function Dashboard() {
                 />
               ))}
             </svg>
-
+ 
             <div
               style={{
                 display: "flex",
@@ -1486,12 +1928,12 @@ export default function Dashboard() {
               }}
             >
               {TREND_DAYS.map((day) => (
-                <span key={day}>{day}</span>
+                <span key={day}>{getTrendDayLabel(day)}</span>
               ))}
             </div>
           </div>
         </section>
-
+ 
         {/* KPI section */}
         <section style={{ marginBottom: 16 }}>
           <div
@@ -1503,6 +1945,7 @@ export default function Dashboard() {
             }}
           >
             <h2
+              className="executive-type-section-title"
               style={{
                 margin: 0,
                 fontSize: 18,
@@ -1510,10 +1953,11 @@ export default function Dashboard() {
                 fontWeight: 900,
               }}
             >
-              Key Performance Indicators
+              {t("dashboard.keyPerformanceIndicators")}
             </h2>
-
+ 
             <button
+              className="executive-type-section-action"
               type="button"
               onClick={handleViewAllKpis}
               style={{
@@ -1525,85 +1969,133 @@ export default function Dashboard() {
                 cursor: "pointer",
               }}
             >
-              View All KPIs <FiChevronRight />
+              {t("dashboard.viewAllKpis")} <FiChevronRight />
             </button>
           </div>
-
+ 
           <div className="executive-kpi-grid">
             <ExecutiveKpiCard
-              title="Ore Performance"
+              title={operationLabels.production}
               value={scenarioValues.orePerformance}
               unit="%"
               target="100%"
               icon={KPI_ICONS.ore}
-              badge={demoLoaded ? "Demo" : "Live"}
+              badge={demoLoaded ? t("dashboard.demo") : t("dashboard.live")}
               trend={scenarioValues.trends?.ore}
               accent="#16a34a"
               soft="#dcfce7"
               onClick={handleOpenOre}
+              analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                title: operationLabels.production,
+              })}
+              targetLabel={t("dashboard.target")}
+              versusYesterdayLabel={t("dashboard.versusYesterday")}
             />
 
-            <ExecutiveKpiCard
-              title="Waste Movement"
-              value={scenarioValues.wastePerformance}
-              unit="%"
-              target="100%"
-              icon={KPI_ICONS.waste}
-              badge={demoLoaded ? "Demo" : "Live"}
-              trend={scenarioValues.trends?.waste}
-              accent="#f97316"
-              soft="#ffedd5"
-              onClick={handleOpenWaste}
-            />
+            {!isSxewOperation && (
+              <ExecutiveKpiCard
+                title={t("dashboard.wasteMovement")}
+                value={scenarioValues.wastePerformance}
+                unit="%"
+                target="100%"
+                icon={KPI_ICONS.waste}
+                badge={demoLoaded ? t("dashboard.demo") : t("dashboard.live")}
+                trend={scenarioValues.trends?.waste}
+                accent="#f97316"
+                soft="#ffedd5"
+                onClick={handleOpenWaste}
+                analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                  title: t("dashboard.wasteMovement"),
+                })}
+                targetLabel={t("dashboard.target")}
+                versusYesterdayLabel={t("dashboard.versusYesterday")}
+              />
+            )}
+
+            {!isSxewOperation && (
+              <ExecutiveKpiCard
+                title={t("dashboard.fleetPerformance")}
+                value={scenarioValues.fleetPerformance}
+                unit="%"
+                target="90%"
+                icon={KPI_ICONS.fleet}
+                badge={
+                  demoLoaded && demoScenario === "Fleet Breakdown"
+                    ? `${t("dashboard.availability")} 68.8%`
+                    : demoLoaded
+                    ? t("dashboard.demo")
+                    : baseValues.fleetAvailability !== null &&
+                      baseValues.fleetAvailability !== undefined
+                    ? `${t("dashboard.availability")} ${Number(
+                        baseValues.fleetAvailability
+                      ).toFixed(1)}%`
+                    : t("dashboard.live")
+                }
+                trend={scenarioValues.trends?.fleet}
+                accent="#2563eb"
+                soft="#dbeafe"
+                onClick={handleOpenFleet}
+                analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                  title: t("dashboard.fleetPerformance"),
+                })}
+                targetLabel={t("dashboard.target")}
+                versusYesterdayLabel={t("dashboard.versusYesterday")}
+              />
+            )}
 
             <ExecutiveKpiCard
-              title="Fleet Performance"
-              value={scenarioValues.fleetPerformance}
-              unit="%"
-              target="90%"
-              icon={KPI_ICONS.fleet}
-              badge={
-                demoLoaded && demoScenario === "Fleet Breakdown"
-                  ? "Availability 68.8%"
-                  : demoLoaded
-                  ? "Demo"
-                  : baseValues.fleetAvailability !== null &&
-                    baseValues.fleetAvailability !== undefined
-                  ? `Availability ${Number(
-                      baseValues.fleetAvailability
-                    ).toFixed(1)}%`
-                  : "Live"
-              }
-              trend={scenarioValues.trends?.fleet}
-              accent="#2563eb"
-              soft="#dbeafe"
-              onClick={handleOpenFleet}
-            />
-
-            <ExecutiveKpiCard
-              title="Plant Performance"
+              title={operationLabels.plant}
               value={scenarioValues.plantPerformance}
               unit="%"
               target="95%"
               icon={KPI_ICONS.plant}
               badge={
                 demoLoaded
-                  ? "Demo"
+                  ? t("dashboard.demo")
                   : baseValues.plantThroughputPerformance !== null &&
                     baseValues.plantThroughputPerformance !== undefined
-                  ? `Throughput ${Number(
-                      baseValues.plantThroughputPerformance
-                    ).toFixed(1)}%`
-                  : "Live"
+                  ? `${
+                      isSxewOperation
+                        ? uiLanguage === "MN"
+                          ? "Үйлдвэрлэл"
+                          : "Production"
+                        : t("dashboard.throughput")
+                    } ${Number(baseValues.plantThroughputPerformance).toFixed(1)}%`
+                  : t("dashboard.live")
               }
               trend={scenarioValues.trends?.plant}
               accent="#7c3aed"
               soft="#ede9fe"
               onClick={handleOpenPlant}
+              analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                title: operationLabels.plant,
+              })}
+              targetLabel={t("dashboard.target")}
+              versusYesterdayLabel={t("dashboard.versusYesterday")}
             />
 
+            {isSxewOperation && (
+              <ExecutiveKpiCard
+                title={operationLabels.recovery}
+                value={scenarioValues.recoveryPerformance}
+                unit="%"
+                target="77%"
+                icon={KPI_ICONS.recovery}
+                badge={uiLanguage === "MN" ? "Процесс KPI" : "Process KPI"}
+                trend={scenarioValues.trends?.recovery || "0.0%"}
+                accent="#0f766e"
+                soft="#ccfbf1"
+                onClick={handleOpenRecovery}
+                analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                  title: operationLabels.recovery,
+                })}
+                targetLabel={t("dashboard.target")}
+                versusYesterdayLabel={t("dashboard.versusYesterday")}
+              />
+            )}
+
             <ExecutiveKpiCard
-              title="Safety Incidents"
+              title={operationLabels.safety}
               value={scenarioValues.safetyIncidents}
               unit=""
               target="0"
@@ -1611,9 +2103,9 @@ export default function Dashboard() {
               badge={
                 demoLoaded
                   ? scenarioValues.safetyIncidents === 0
-                    ? "Score 100%"
-                    : "Action Required"
-                  : `Score ${Number(
+                    ? `${t("dashboard.score")} 100%`
+                    : t("dashboard.actionRequired")
+                  : `${t("dashboard.score")} ${Number(
                       baseValues.safetyScore ?? 0
                     ).toFixed(1)}%`
               }
@@ -1621,17 +2113,22 @@ export default function Dashboard() {
               accent="#ef4444"
               soft="#fee2e2"
               onClick={handleOpenSafety}
+              analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                title: operationLabels.safety,
+              })}
+              targetLabel={t("dashboard.target")}
+              versusYesterdayLabel={t("dashboard.versusYesterday")}
             />
           </div>
         </section>
-
+ 
         {/* Executive decision area */}
         <section className="executive-panels-grid">
           <ExecutivePanel
-            title="Executive Priority Actions"
+            title={t("dashboard.priorityActions")}
             icon={KPI_ICONS.actions}
-            badge="3"
-            actionLabel="View All Actions"
+            badge={String(priorityActions.length)}
+            actionLabel={t("dashboard.viewAllActions")}
             onAction={handleViewAllActions}
           >
             <div style={{ display: "grid", gap: 0 }}>
@@ -1670,10 +2167,15 @@ export default function Dashboard() {
                         color: "#64748b",
                       }}
                     >
-                      <FiClock /> {action.due}
+                      <FiClock />{" "}
+                      {action.due === "Due Today"
+                        ? t("dashboard.dueToday")
+                        : action.due === "Due Tomorrow"
+                        ? t("dashboard.dueTomorrow")
+                        : action.due}
                     </div>
                   </div>
-
+ 
                   <span
                     style={{
                       alignSelf: "start",
@@ -1687,17 +2189,17 @@ export default function Dashboard() {
                       fontWeight: 900,
                     }}
                   >
-                    {action.priority}
+                    {getPriorityLabel(action.priority)}
                   </span>
                 </div>
               ))}
             </div>
           </ExecutivePanel>
-
+ 
           <ExecutivePanel
-            title="AI Daily Briefing"
+            title={t("dashboard.aiDailyBriefing")}
             icon={KPI_ICONS.briefing}
-            actionLabel="View Full Briefing"
+            actionLabel={t("dashboard.viewFullBriefing")}
             onAction={handleViewFullBriefing}
           >
             <p
@@ -1710,7 +2212,7 @@ export default function Dashboard() {
             >
               {executiveBriefing}
             </p>
-
+ 
             <div
               style={{
                 marginTop: 16,
@@ -1729,7 +2231,7 @@ export default function Dashboard() {
                   letterSpacing: "0.05em",
                 }}
               >
-                Leadership Focus
+                {t("dashboard.leadershipFocus")}
               </div>
               <div
                 style={{
@@ -1744,13 +2246,29 @@ export default function Dashboard() {
               </div>
             </div>
           </ExecutivePanel>
-
+ 
           <ExecutivePanel
-            title="Risk Heat Map"
+            title={t("dashboard.riskHeatMap")}
             icon={KPI_ICONS.safety}
-            actionLabel="Review Risks"
+            actionLabel={t("dashboard.reviewRisks")}
             onAction={handleOpenMineHealth}
           >
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "10px 12px",
+                borderRadius: 12,
+                background: "#f8fafc",
+                border: "1px solid #edf1f6",
+                color: "#475569",
+                fontSize: 10,
+                lineHeight: 1.55,
+                fontWeight: 700,
+              }}
+            >
+              {scenarioValues.riskMessage}
+            </div>
+ 
             <div
               style={{
                 display: "flex",
@@ -1763,7 +2281,7 @@ export default function Dashboard() {
                 fontWeight: 800,
               }}
             >
-              <span>LOW</span>
+              <span>{t("dashboard.riskLow")}</span>
               {RISK_LEVELS.map((level) => (
                 <span
                   key={level}
@@ -1782,9 +2300,9 @@ export default function Dashboard() {
                   }}
                 />
               ))}
-              <span>HIGH</span>
+              <span>{t("dashboard.riskHigh")}</span>
             </div>
-
+ 
             <div
               style={{
                 display: "grid",
@@ -1804,11 +2322,19 @@ export default function Dashboard() {
                     fontWeight: 800,
                   }}
                 >
-                  {label}
+                  {getRiskLabel(label)}
                 </span>
               ))}
-
-              {RISK_ROWS.flatMap((row) => [
+ 
+              {(isSxewOperation
+                ? [
+                    { label: "Production", values: [2, 0, 0, 0] },
+                    { label: "Process Plant", values: [0, 2, 0, 0] },
+                    { label: "Safety", values: [0, 2, 0, 0] },
+                    { label: "External", values: [1, 1, 3, 4] },
+                  ]
+                : RISK_ROWS
+              ).flatMap((row) => [
                 <span
                   key={`${row.label}-label`}
                   style={{
@@ -1817,7 +2343,7 @@ export default function Dashboard() {
                     fontWeight: 800,
                   }}
                 >
-                  {row.label}
+                  {getRiskRowLabel(row.label)}
                 </span>,
                 ...row.values.map((level, index) => (
                   <span
@@ -1843,7 +2369,7 @@ export default function Dashboard() {
             </div>
           </ExecutivePanel>
         </section>
-
+ 
         {canViewExecutiveInsights && (
           <section style={{ marginTop: 24 }}>
             <ExecutiveInsightsPanel
@@ -1856,11 +2382,11 @@ export default function Dashboard() {
             />
           </section>
         )}
-
+ 
         <section style={{ marginTop: 24 }}>
           <PredictionSummaryPanel mineName={mineName} />
         </section>
-
+ 
         <div
           style={{
             display: "flex",
@@ -1873,10 +2399,9 @@ export default function Dashboard() {
           }}
         >
           <FaCheckCircle style={{ color: "#22c55e" }} />
-          Click any KPI card to drill down into detailed analysis, insights, and
-          related executive actions.
+          {t("dashboard.kpiHint")}
         </div>
-
+ 
         {kpiDialogOpen && (
           <Suspense
             fallback={
@@ -1884,14 +2409,14 @@ export default function Dashboard() {
                 className="dashboard-transition-overlay"
                 role="status"
                 aria-live="polite"
-                aria-label="Loading KPI analysis"
+                aria-label={t("dashboard.loadingKpi")}
               >
                 <div className="dashboard-transition-card">
                   <div className="dashboard-transition-spinner" />
-
+ 
                   <div className="dashboard-transition-copy">
-                    <strong>Loading KPI analysis</strong>
-                    <span>Preparing executive trends and insights</span>
+                    <strong>{t("dashboard.loadingKpi")}</strong>
+                    <span>{t("dashboard.preparingKpi")}</span>
                   </div>
                 </div>
               </div>
@@ -1913,7 +2438,7 @@ export default function Dashboard() {
     </div>
   );
 }
-
+ 
 const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
   title,
   value,
@@ -1925,11 +2450,14 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
   accent,
   soft,
   onClick,
+  analysisAriaLabel,
+  targetLabel,
+  versusYesterdayLabel,
 }) {
   const trendValue = trend || "0.0%";
   const isDown = String(trendValue).startsWith("-");
   const isUp = String(trendValue).startsWith("+");
-
+ 
   const handleKeyDown = useCallback(
     (event) => {
       if ((event.key === "Enter" || event.key === " ") && onClick) {
@@ -1939,7 +2467,7 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
     },
     [onClick]
   );
-
+ 
   return (
     <div
       role="button"
@@ -1956,7 +2484,7 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
         cursor: "pointer",
         transition: "transform 0.18s ease, box-shadow 0.18s ease",
       }}
-      aria-label={`Open ${title} analysis`}
+      aria-label={analysisAriaLabel || title}
     >
       <div
         style={{
@@ -1979,11 +2507,12 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
         >
           {icon}
         </div>
-
+ 
         <FiMoreVertical style={{ color: "#64748b" }} />
       </div>
-
+ 
       <div
+        className="executive-type-kpi-title"
         style={{
           marginTop: 12,
           minHeight: 34,
@@ -1996,8 +2525,9 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
       >
         {title}
       </div>
-
+ 
       <div
+        className="executive-type-kpi-badge"
         style={{
           width: "fit-content",
           maxWidth: "100%",
@@ -2015,8 +2545,9 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
       >
         {badge}
       </div>
-
+ 
       <div
+        className="executive-type-kpi-value"
         style={{
           marginTop: 10,
           textAlign: "center",
@@ -2028,10 +2559,16 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
         }}
       >
         {value}
-        <span style={{ marginLeft: 2, fontSize: 13 }}>{unit}</span>
+        <span
+          className="executive-type-kpi-unit"
+          style={{ marginLeft: 2, fontSize: 13 }}
+        >
+          {unit}
+        </span>
       </div>
-
+ 
       <div
+        className="executive-type-kpi-trend"
         style={{
           marginTop: 9,
           textAlign: "center",
@@ -2041,10 +2578,11 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
           fontWeight: 900,
         }}
       >
-        {isDown ? "▼" : isUp ? "▲" : "→"} {trendValue} vs yesterday
+        {isDown ? "▼" : isUp ? "▲" : "→"} {trendValue} {versusYesterdayLabel}
       </div>
-
+ 
       <div
+        className="executive-type-kpi-target"
         style={{
           marginTop: 6,
           textAlign: "center",
@@ -2052,9 +2590,9 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
           fontSize: 10,
         }}
       >
-        Target: {target}
+        {targetLabel}: {target}
       </div>
-
+ 
       <div
         style={{
           marginTop: 12,
@@ -2076,7 +2614,7 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
     </div>
   );
 });
-
+ 
 const ExecutivePanel = memo(function ExecutivePanel({
   title,
   icon,
@@ -2112,6 +2650,7 @@ const ExecutivePanel = memo(function ExecutivePanel({
           {icon}
         </span>
         <h3
+          className="executive-type-panel-title"
           style={{
             margin: 0,
             fontSize: 13,
@@ -2121,7 +2660,7 @@ const ExecutivePanel = memo(function ExecutivePanel({
         >
           {title}
         </h3>
-
+ 
         {badge && (
           <span
             style={{
@@ -2142,10 +2681,11 @@ const ExecutivePanel = memo(function ExecutivePanel({
           </span>
         )}
       </div>
-
+ 
       <div style={{ flex: 1, padding: "12px 14px" }}>{children}</div>
-
+ 
       <button
+        className="executive-type-panel-action"
         type="button"
         onClick={onAction}
         style={{

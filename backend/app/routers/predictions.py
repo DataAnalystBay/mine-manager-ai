@@ -1,10 +1,13 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.database import SessionLocal
+from app.models.company import CompanySettings
+from app.models.mine import MineSettings
+from app.services.kpi_calculation_service import calculate_health_score
 from app.services.predictive.prediction_engine import calculate_prediction
 from app.services.trend_engine_service import get_health_history_service
 
@@ -36,6 +39,194 @@ def get_db():
 
 
 # ============================================================
+# TENANT / OPERATION PROFILE
+# ============================================================
+
+def resolve_prediction_tenant(
+    db: Session,
+    mine_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Resolve the tenant and mine used by Predictive Intelligence.
+
+    Rules:
+    1. If mine_name is supplied, use that mine.
+    2. If mine_name is omitted, use the latest configured mine.
+       This matches the current active Achit-Ikht demo behaviour.
+    """
+
+    requested_mine_name = (
+        mine_name.strip()
+        if isinstance(mine_name, str) and mine_name.strip()
+        else None
+    )
+
+    mine = None
+
+    if requested_mine_name:
+        mine = (
+            db.query(MineSettings)
+            .filter(MineSettings.mine_name == requested_mine_name)
+            .first()
+        )
+
+    if mine is None and requested_mine_name is None:
+        mine = (
+            db.query(MineSettings)
+            .order_by(MineSettings.id.desc())
+            .first()
+        )
+
+    if mine is None:
+        return {
+            "company_id": None,
+            "mine_id": None,
+            "company_name": None,
+            "mine_name": requested_mine_name,
+            "mine_type": None,
+            "operation_profile": "generic",
+            "requested_mine_name": requested_mine_name,
+        }
+
+    company = (
+        db.query(CompanySettings)
+        .filter(CompanySettings.id == mine.company_id)
+        .first()
+    )
+
+    operation_profile = resolve_operation_profile(
+        mine_type=mine.mine_type,
+        mine_name=mine.mine_name,
+    )
+
+    return {
+        "company_id": company.id if company else mine.company_id,
+        "mine_id": mine.id,
+        "company_name": company.company_name if company else None,
+        "mine_name": mine.mine_name,
+        "mine_type": mine.mine_type,
+        "operation_profile": operation_profile,
+        "requested_mine_name": requested_mine_name,
+    }
+
+
+def resolve_operation_profile(
+    mine_type: Optional[str],
+    mine_name: Optional[str],
+) -> str:
+    """
+    Determine the operational profile.
+
+    V1.0 profiles currently supported:
+    - sxew_copper
+    - open_pit
+    - generic
+    """
+
+    mine_type_value = (mine_type or "").strip().lower()
+    mine_name_value = (mine_name or "").strip().lower()
+
+    sxew_terms = [
+        "sx-ew",
+        "sxew",
+        "processing plant",
+        "cathode",
+    ]
+
+    if any(term in mine_type_value for term in sxew_terms):
+        return "sxew_copper"
+
+    if "achit" in mine_name_value:
+        return "sxew_copper"
+
+    open_pit_terms = [
+        "open pit",
+        "open-pit",
+        "surface",
+    ]
+
+    if any(term in mine_type_value for term in open_pit_terms):
+        return "open_pit"
+
+    if "surface" in mine_name_value:
+        return "open_pit"
+
+    return "generic"
+
+
+def get_profile_configuration(
+    operation_profile: str,
+) -> Dict[str, Any]:
+    """
+    Return operation-specific KPI applicability and display labels.
+    """
+
+    if operation_profile == "sxew_copper":
+        return {
+            "profile_name": "SX-EW Copper Operation",
+            "applicability": {
+                "mine_health": True,
+                "production": True,
+                "waste": False,
+                "fleet": False,
+                "plant": True,
+                "recovery": True,
+                "safety": True,
+            },
+            "labels": {
+                "mine_health": "Mine Health",
+                "production": "Cathode Production",
+                "plant": "Process Plant Performance",
+                "recovery": "Cu Recovery",
+                "safety": "Safety Performance",
+            },
+        }
+
+    if operation_profile == "open_pit":
+        return {
+            "profile_name": "Open Pit Mining Operation",
+            "applicability": {
+                "mine_health": True,
+                "production": True,
+                "waste": True,
+                "fleet": True,
+                "plant": True,
+                "recovery": False,
+                "safety": True,
+            },
+            "labels": {
+                "mine_health": "Mine Health",
+                "production": "Ore Production",
+                "waste": "Waste Movement",
+                "fleet": "Fleet Performance",
+                "plant": "Plant Performance",
+                "safety": "Safety Performance",
+            },
+        }
+
+    return {
+        "profile_name": "Mining Operation",
+        "applicability": {
+            "mine_health": True,
+            "production": True,
+            "waste": True,
+            "fleet": True,
+            "plant": True,
+            "recovery": False,
+            "safety": True,
+        },
+        "labels": {
+            "mine_health": "Mine Health",
+            "production": "Production",
+            "waste": "Waste Movement",
+            "fleet": "Fleet Performance",
+            "plant": "Plant Performance",
+            "safety": "Safety Performance",
+        },
+    }
+
+
+# ============================================================
 # HISTORY NORMALIZATION
 # ============================================================
 
@@ -44,35 +235,6 @@ def normalize_history_response(
 ) -> List[Dict[str, Any]]:
     """
     Convert the existing health-history response into a list of records.
-
-    Supported response structures:
-
-    1. Direct list:
-       [
-           {"health": 85},
-           {"health": 87},
-       ]
-
-    2. Dictionary containing one of these list keys:
-       {
-           "history": [...]
-       }
-
-       {
-           "data": [...]
-       }
-
-       {
-           "records": [...]
-       }
-
-       {
-           "results": [...]
-       }
-
-       {
-           "health_history": [...]
-       }
     """
 
     if isinstance(history_response, list):
@@ -104,9 +266,6 @@ def extract_numeric_history(
 ) -> List[float]:
     """
     Extract numeric KPI values from historical records.
-
-    The first available matching field is used for each record.
-    Invalid and non-numeric values are ignored.
     """
 
     values: List[float] = []
@@ -131,6 +290,128 @@ def extract_numeric_history(
     return values
 
 
+def extract_numeric_value(
+    record: Dict[str, Any],
+    possible_keys: List[str],
+) -> Optional[float]:
+    """
+    Extract the first valid numeric value from one historical record.
+    """
+
+    if not isinstance(record, dict):
+        return None
+
+    for key in possible_keys:
+        value = record.get(key)
+
+        if value is None:
+            continue
+
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+
+    return None
+
+
+def build_profile_aware_health_history(
+    records: List[Dict[str, Any]],
+    operation_profile: str,
+) -> List[float]:
+    """
+    Recalculate Mine Health history using the same operation-profile-aware
+    KPI weighting used by the Executive Dashboard.
+
+    This prevents non-applicable KPIs such as Waste Movement and Fleet
+    Performance from reducing the Mine Health Score for SX-EW operations.
+    """
+
+    health_history: List[float] = []
+
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+
+        production = extract_numeric_value(
+            record,
+            [
+                "ore",
+                "ore_score",
+                "ore_performance",
+                "production_score",
+                "production",
+                "production_performance",
+                "cathode_production",
+                "cathode_production_performance",
+            ],
+        )
+
+        waste = extract_numeric_value(
+            record,
+            [
+                "waste",
+                "waste_score",
+                "waste_performance",
+            ],
+        )
+
+        fleet = extract_numeric_value(
+            record,
+            [
+                "fleet",
+                "fleet_score",
+                "fleet_performance",
+            ],
+        )
+
+        plant = extract_numeric_value(
+            record,
+            [
+                "plant",
+                "plant_score",
+                "plant_performance",
+                "process_plant",
+                "process_plant_performance",
+            ],
+        )
+
+        safety_score = extract_numeric_value(
+            record,
+            [
+                "safety_score",
+                "safety",
+            ],
+        )
+
+        if production is None:
+            continue
+
+        if plant is None:
+            continue
+
+        if safety_score is None:
+            continue
+
+        calculated_health = calculate_health_score(
+            production,
+            waste or 0,
+            fleet or 0,
+            plant,
+            safety_score,
+            operation_profile,
+        )
+
+        health_history.append(
+            round(
+                float(calculated_health),
+                1,
+            )
+        )
+
+    return health_history
+
+
 # ============================================================
 # KPI PREDICTION BUILDER
 # ============================================================
@@ -141,9 +422,6 @@ def build_kpi_prediction(
 ) -> Dict[str, Any]:
     """
     Build a consistent three-shift prediction response for one KPI.
-
-    Empty or all-zero histories are returned as unavailable by the
-    prediction engine.
     """
 
     prediction = calculate_prediction(history)
@@ -257,16 +535,6 @@ def format_kpi_list(
 ) -> str:
     """
     Format KPI names into readable executive text.
-
-    Examples:
-        ["Ore Production"]
-        -> "Ore Production"
-
-        ["Ore Production", "Fleet Performance"]
-        -> "Ore Production and Fleet Performance"
-
-        ["Ore Production", "Fleet Performance", "Plant Performance"]
-        -> "Ore Production, Fleet Performance, and Plant Performance"
     """
 
     if not kpi_names:
@@ -289,9 +557,6 @@ def build_executive_outlook(
 ) -> Dict[str, str]:
     """
     Build the overall outlook and executive message.
-
-    Declining KPIs receive priority because they may require management
-    action before the next shift.
     """
 
     available_predictions = get_available_predictions(
@@ -385,7 +650,7 @@ def build_data_quality_summary(
     predictions: Dict[str, Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
-    Summarize which KPI forecasts are available and unavailable.
+    Summarize only applicable KPI forecasts.
     """
 
     available_kpis = [
@@ -413,6 +678,7 @@ def build_data_quality_summary(
         "unavailable_kpis": unavailable_kpis,
         "available_count": len(available_kpis),
         "unavailable_count": len(unavailable_kpis),
+        "applicable_count": len(predictions),
     }
 
 
@@ -422,24 +688,60 @@ def build_data_quality_summary(
 
 @router.get("/summary")
 def get_prediction_summary(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
-    Return Predictive Intelligence for Mine Health and component KPIs.
+    Return tenant-aware and operation-profile-aware Predictive Intelligence.
 
     Forecast horizons:
     - Next shift
     - Shift +2
     - Shift +3
 
-    The Version 1.0 engine uses explainable statistical forecasting.
-    Empty or all-zero histories are treated as unavailable rather than
-    as genuine 0% operational performance.
+    Non-applicable KPIs are excluded from the prediction universe.
     """
 
-    history_response = get_health_history_service(
+    tenant = resolve_prediction_tenant(
+        db=db,
         mine_name=mine_name,
+    )
+
+    resolved_mine_name = tenant["mine_name"]
+
+    if not resolved_mine_name:
+        return {
+            **tenant,
+            "forecast_horizon": {
+                "next_shift": 1,
+                "shift_2": 2,
+                "shift_3": 3,
+            },
+            "overall_outlook": "Insufficient Data",
+            "overall_confidence": 0,
+            "executive_message": (
+                "No configured mine is available for Predictive Intelligence."
+            ),
+            "data_quality": {
+                "data_quality_status": "Unavailable",
+                "available_kpis": [],
+                "unavailable_kpis": [],
+                "available_count": 0,
+                "unavailable_count": 0,
+                "applicable_count": 0,
+            },
+            "available_prediction_count": 0,
+            "applicable_prediction_count": 0,
+            "predictions": {},
+            "status": "No configured mine",
+        }
+
+    profile = get_profile_configuration(
+        tenant["operation_profile"],
+    )
+
+    history_response = get_health_history_service(
+        mine_name=resolved_mine_name,
         db=db,
     )
 
@@ -451,23 +753,22 @@ def get_prediction_summary(
     # Extract KPI histories
     # --------------------------------------------------------
 
-    health_history = extract_numeric_history(
-        records,
-        [
-            "health",
-            "health_score",
-            "mine_health",
-            "mine_health_score",
-        ],
+    health_history = build_profile_aware_health_history(
+        records=records,
+        operation_profile=tenant["operation_profile"],
     )
 
-    ore_history = extract_numeric_history(
+    production_history = extract_numeric_history(
         records,
         [
             "ore",
             "ore_score",
             "ore_performance",
             "production_score",
+            "production",
+            "production_performance",
+            "cathode_production",
+            "cathode_production_performance",
         ],
     )
 
@@ -495,6 +796,18 @@ def get_prediction_summary(
             "plant",
             "plant_score",
             "plant_performance",
+            "process_plant",
+            "process_plant_performance",
+        ],
+    )
+
+    recovery_history = extract_numeric_history(
+        records,
+        [
+            "recovery",
+            "cu_recovery",
+            "cu_recovery_pct",
+            "recovery_pct",
         ],
     )
 
@@ -507,35 +820,59 @@ def get_prediction_summary(
     )
 
     # --------------------------------------------------------
-    # Build KPI predictions
+    # Build only applicable KPI predictions
     # --------------------------------------------------------
 
-    predictions = {
-        "mine_health": build_kpi_prediction(
+    applicability = profile["applicability"]
+    labels = profile["labels"]
+
+    predictions: Dict[str, Dict[str, Any]] = {}
+
+    if applicability.get("mine_health"):
+        predictions["mine_health"] = build_kpi_prediction(
             health_history,
-            "Mine Health",
-        ),
-        "ore_production": build_kpi_prediction(
-            ore_history,
-            "Ore Production",
-        ),
-        "waste_movement": build_kpi_prediction(
+            labels["mine_health"],
+        )
+
+    if applicability.get("production"):
+        predictions["production"] = build_kpi_prediction(
+            production_history,
+            labels["production"],
+        )
+
+    if applicability.get("waste"):
+        predictions["waste_movement"] = build_kpi_prediction(
             waste_history,
-            "Waste Movement",
-        ),
-        "fleet_performance": build_kpi_prediction(
+            labels["waste"],
+        )
+
+    if applicability.get("fleet"):
+        predictions["fleet_performance"] = build_kpi_prediction(
             fleet_history,
-            "Fleet Performance",
-        ),
-        "plant_performance": build_kpi_prediction(
+            labels["fleet"],
+        )
+
+    if applicability.get("plant"):
+        predictions["plant_performance"] = build_kpi_prediction(
             plant_history,
-            "Plant Performance",
-        ),
-        "safety_performance": build_kpi_prediction(
+            labels["plant"],
+        )
+
+    if applicability.get("recovery"):
+        predictions["cu_recovery"] = build_kpi_prediction(
+            recovery_history,
+            labels["recovery"],
+        )
+
+    if applicability.get("safety"):
+        predictions["safety_performance"] = build_kpi_prediction(
             safety_history,
-            "Safety Performance",
-        ),
-    }
+            labels["safety"],
+        )
+
+    # --------------------------------------------------------
+    # Executive-level calculations
+    # --------------------------------------------------------
 
     overall_confidence = calculate_overall_confidence(
         predictions,
@@ -550,7 +887,14 @@ def get_prediction_summary(
     )
 
     return {
-        "mine_name": mine_name,
+        "company_id": tenant["company_id"],
+        "mine_id": tenant["mine_id"],
+        "company_name": tenant["company_name"],
+        "mine_name": tenant["mine_name"],
+        "mine_type": tenant["mine_type"],
+        "operation_profile": tenant["operation_profile"],
+        "operation_profile_name": profile["profile_name"],
+        "applicability": applicability,
         "forecast_horizon": {
             "next_shift": 1,
             "shift_2": 2,
@@ -561,6 +905,7 @@ def get_prediction_summary(
         "executive_message": outlook["executive_message"],
         "data_quality": data_quality,
         "available_prediction_count": data_quality["available_count"],
+        "applicable_prediction_count": data_quality["applicable_count"],
         "predictions": predictions,
         "status": (
             "Predictive intelligence generated"

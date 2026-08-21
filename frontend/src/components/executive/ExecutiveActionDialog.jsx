@@ -26,6 +26,37 @@ import SaveIcon from "@mui/icons-material/Save";
 
 import ExecutiveActionKpiContext from "./ExecutiveActionKpiContext";
 
+import { useLanguage } from "../../context/LanguageContext";
+
+import {
+  translateDynamicExecutiveActionCategory,
+  translateDynamicExecutiveActionOwner,
+  translateDynamicExecutiveActionSource,
+  translateDynamicExecutiveActionTitle,
+  translateDynamicExecutiveText,
+} from "../../i18n/dynamicTranslations";
+
+
+function translateTemplate(
+  t,
+  key,
+  variables = {}
+) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? "")
+      );
+    }
+  );
+
+  return text;
+}
+
+
 function normalizeDateValue(value) {
   if (!value) {
     return "";
@@ -39,6 +70,55 @@ function normalizeDateValue(value) {
 
   return dateValue.slice(0, 10);
 }
+
+
+function normalizeValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_");
+}
+
+
+function normalizePriorityValue(value) {
+  const normalized =
+    normalizeValue(value);
+
+  const priorityMap = {
+    critical: "Critical",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+  };
+
+  return (
+    priorityMap[normalized] ||
+    "Medium"
+  );
+}
+
+
+function normalizeStatusValue(value) {
+  const normalized =
+    normalizeValue(value);
+
+  const statusMap = {
+    open: "Open",
+    to_do: "To Do",
+    todo: "To Do",
+    in_progress: "In Progress",
+    blocked: "Blocked",
+    completed: "Completed",
+    complete: "Completed",
+  };
+
+  return (
+    statusMap[normalized] ||
+    "Open"
+  );
+}
+
 
 function getInitialForm(action) {
   return {
@@ -62,10 +142,16 @@ function getInitialForm(action) {
       "",
 
     priority:
-      action?.priority || "Medium",
+      normalizePriorityValue(
+        action?.priority ||
+          "Medium"
+      ),
 
     status:
-      action?.status || "Open",
+      normalizeStatusValue(
+        action?.status ||
+          "Open"
+      ),
 
     due_date: normalizeDateValue(
       action?.due_date ||
@@ -85,6 +171,116 @@ function getInitialForm(action) {
   };
 }
 
+
+function getPriorityLabel(
+  value,
+  t
+) {
+  const normalized =
+    normalizeValue(value);
+
+  const priorityMap = {
+    critical:
+      "executiveActionDialog.priority.critical",
+
+    high:
+      "executiveActionDialog.priority.high",
+
+    medium:
+      "executiveActionDialog.priority.medium",
+
+    low:
+      "executiveActionDialog.priority.low",
+  };
+
+  const key =
+    priorityMap[normalized];
+
+  return key
+    ? t(key)
+    : value;
+}
+
+
+function getStatusLabel(
+  value,
+  t
+) {
+  const normalized =
+    normalizeValue(value);
+
+  const statusMap = {
+    open:
+      "executiveActionDialog.status.open",
+
+    to_do:
+      "executiveActionDialog.status.toDo",
+
+    todo:
+      "executiveActionDialog.status.toDo",
+
+    in_progress:
+      "executiveActionDialog.status.inProgress",
+
+    blocked:
+      "executiveActionDialog.status.blocked",
+
+    completed:
+      "executiveActionDialog.status.completed",
+  };
+
+  const key =
+    statusMap[normalized];
+
+  return key
+    ? t(key)
+    : value;
+}
+
+
+function getCategoryLabel(
+  value,
+  t
+) {
+  const normalized =
+    normalizeValue(value);
+
+  const fixedCategoryMap = {
+    geotechnical:
+      "executiveActionDialog.category.geotechnical",
+
+    environment:
+      "executiveActionDialog.category.environment",
+
+    other:
+      "executiveActionDialog.category.other",
+  };
+
+  const fixedKey =
+    fixedCategoryMap[normalized];
+
+  if (fixedKey) {
+    return t(fixedKey);
+  }
+
+  return translateDynamicExecutiveActionCategory(
+    value,
+    t
+  );
+}
+
+
+function getSourceLabel(
+  value,
+  t
+) {
+  return translateDynamicExecutiveActionSource(
+    value,
+    t
+  );
+}
+
+
 function ExecutiveActionDialog({
   open,
   action,
@@ -93,6 +289,11 @@ function ExecutiveActionDialog({
   saving = false,
   primaryColor = "#16a34a",
 }) {
+  const { t } = useLanguage();
+
+  const isMongolian =
+    t("common.language") === "Хэл";
+
   const isEditMode = Boolean(
     action?.id ?? action?.action_id
   );
@@ -104,109 +305,341 @@ function ExecutiveActionDialog({
     getInitialForm(action)
   );
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] =
+    useState({});
+
+  const [
+    localizedFieldEdits,
+    setLocalizedFieldEdits,
+  ] = useState({
+    action_title: false,
+    description: false,
+    owner_name: false,
+  });
+
+
+  const translatedActionTitle =
+    useMemo(
+      () =>
+        translateDynamicExecutiveActionTitle(
+          form.action_title,
+          t
+        ),
+      [
+        form.action_title,
+        t,
+      ]
+    );
+
+
+  const translatedDescription =
+    useMemo(() => {
+      if (!form.description) {
+        return "";
+      }
+
+      const translatedAsActionTitle =
+        translateDynamicExecutiveActionTitle(
+          form.description,
+          t
+        );
+
+      if (
+        translatedAsActionTitle &&
+        translatedAsActionTitle !==
+          form.description
+      ) {
+        return translatedAsActionTitle;
+      }
+
+      return translateDynamicExecutiveText(
+        form.description,
+        t
+      );
+    }, [
+      form.description,
+      t,
+    ]);
+
+
+  const translatedOwner =
+    useMemo(
+      () =>
+        translateDynamicExecutiveActionOwner(
+          form.owner_name,
+          t
+        ),
+      [
+        form.owner_name,
+        t,
+      ]
+    );
+
+
+  const actionTitleDisplayValue =
+    isMongolian &&
+    !localizedFieldEdits.action_title &&
+    translatedActionTitle &&
+    translatedActionTitle !==
+      form.action_title
+      ? translatedActionTitle
+      : form.action_title;
+
+
+  const descriptionDisplayValue =
+    isMongolian &&
+    !localizedFieldEdits.description &&
+    translatedDescription &&
+    translatedDescription !==
+      form.description
+      ? translatedDescription
+      : form.description;
+
+
+  const ownerDisplayValue =
+    isMongolian &&
+    !localizedFieldEdits.owner_name &&
+    translatedOwner &&
+    translatedOwner !==
+      form.owner_name
+      ? translatedOwner
+      : form.owner_name;
+
+
+  const descriptionHelperText =
+    isMongolian &&
+    !localizedFieldEdits.description &&
+    translatedDescription &&
+    translatedDescription !==
+      form.description
+      ? `${form.description} • ${descriptionDisplayValue.length}/2000 тэмдэгт`
+      : translateTemplate(
+          t,
+          "executiveActionDialog.characterCount",
+          {
+            count:
+              descriptionDisplayValue.length,
+            max: 2000,
+          }
+        );
+
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    setForm(getInitialForm(action));
+    setForm(
+      getInitialForm(action)
+    );
+
     setErrors({});
+
+    setLocalizedFieldEdits({
+      action_title: false,
+      description: false,
+      owner_name: false,
+    });
   }, [open, action]);
 
-  const hasChanges = useMemo(() => {
-    const original = getInitialForm(action);
 
-    return (
-      form.action_title.trim() !==
-        String(original.action_title || "").trim() ||
-      form.description.trim() !==
-        String(original.description || "").trim() ||
-      form.owner_name.trim() !==
-        String(original.owner_name || "").trim() ||
-      form.priority !== original.priority ||
-      form.status !== original.status ||
-      normalizeDateValue(form.due_date) !==
-        normalizeDateValue(original.due_date) ||
-      form.category !== original.category ||
-      form.source !== original.source
-    );
-  }, [form, action]);
+  const hasChanges =
+    useMemo(() => {
+      const original =
+        getInitialForm(action);
 
-  const handleFieldChange = (event) => {
-    const { name, value } = event.target;
+      return (
+        form.action_title.trim() !==
+          String(
+            original.action_title || ""
+          ).trim() ||
 
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-    }));
+        form.description.trim() !==
+          String(
+            original.description || ""
+          ).trim() ||
 
-    if (errors[name]) {
-      setErrors((currentErrors) => ({
-        ...currentErrors,
-        [name]: "",
-      }));
-    }
-  };
+        form.owner_name.trim() !==
+          String(
+            original.owner_name || ""
+          ).trim() ||
+
+        form.priority !==
+          original.priority ||
+
+        form.status !==
+          original.status ||
+
+        normalizeDateValue(
+          form.due_date
+        ) !==
+          normalizeDateValue(
+            original.due_date
+          ) ||
+
+        form.category !==
+          original.category ||
+
+        form.source !==
+          original.source
+      );
+    }, [form, action]);
+
+
+  const handleFieldChange =
+    (event) => {
+      const {
+        name,
+        value,
+      } = event.target;
+
+      setForm(
+        (currentForm) => ({
+          ...currentForm,
+          [name]: value,
+        })
+      );
+
+      if (errors[name]) {
+        setErrors(
+          (currentErrors) => ({
+            ...currentErrors,
+            [name]: "",
+          })
+        );
+      }
+    };
+
+
+  const handleLocalizedFieldChange =
+    (fieldName) => (event) => {
+      const { value } = event.target;
+
+      setLocalizedFieldEdits(
+        (current) => ({
+          ...current,
+          [fieldName]: true,
+        })
+      );
+
+      setForm(
+        (currentForm) => ({
+          ...currentForm,
+          [fieldName]: value,
+        })
+      );
+
+      if (errors[fieldName]) {
+        setErrors(
+          (currentErrors) => ({
+            ...currentErrors,
+            [fieldName]: "",
+          })
+        );
+      }
+    };
+
 
   const validateForm = () => {
     const nextErrors = {};
 
-    if (!form.action_title.trim()) {
+    if (
+      !actionTitleDisplayValue.trim()
+    ) {
       nextErrors.action_title =
-        "Action title is required.";
+        t(
+          "executiveActionDialog.validation.actionTitleRequired"
+        );
     }
 
-    if (!form.owner_name.trim()) {
+    if (
+      !ownerDisplayValue.trim()
+    ) {
       nextErrors.owner_name =
-        "Action owner is required.";
+        t(
+          "executiveActionDialog.validation.ownerRequired"
+        );
     }
 
     if (!form.priority) {
       nextErrors.priority =
-        "Priority is required.";
+        t(
+          "executiveActionDialog.validation.priorityRequired"
+        );
     }
 
     if (!form.status) {
       nextErrors.status =
-        "Status is required.";
+        t(
+          "executiveActionDialog.validation.statusRequired"
+        );
     }
 
     if (!form.due_date) {
       nextErrors.due_date =
-        "Due date is required.";
+        t(
+          "executiveActionDialog.validation.dueDateRequired"
+        );
     }
 
     setErrors(nextErrors);
 
-    return Object.keys(nextErrors).length === 0;
+    return (
+      Object.keys(
+        nextErrors
+      ).length === 0
+    );
   };
 
-  const handleSubmit = async () => {
-    if (saving) {
-      return;
-    }
 
-    if (!validateForm()) {
-      return;
-    }
+  const handleSubmit =
+    async () => {
+      if (saving) {
+        return;
+      }
 
-    const payload = {
-      action_title: form.action_title.trim(),
-      description: form.description.trim(),
-      owner_name: form.owner_name.trim(),
-      priority: form.priority,
-      status: form.status,
-      due_date: form.due_date,
-      category: form.category,
-      source: isEditMode
-        ? form.source || "Manual"
-        : "Manual",
+      if (!validateForm()) {
+        return;
+      }
+
+      const payload = {
+        action_title:
+          localizedFieldEdits.action_title
+            ? actionTitleDisplayValue.trim()
+            : form.action_title.trim(),
+
+        description:
+          localizedFieldEdits.description
+            ? descriptionDisplayValue.trim()
+            : form.description.trim(),
+
+        owner_name:
+          localizedFieldEdits.owner_name
+            ? ownerDisplayValue.trim()
+            : form.owner_name.trim(),
+
+        priority:
+          form.priority,
+
+        status:
+          form.status,
+
+        due_date:
+          form.due_date,
+
+        category:
+          form.category,
+
+        source:
+          isEditMode
+            ? form.source ||
+              "Manual"
+            : "Manual",
+      };
+
+      await onSave(payload);
     };
 
-    await onSave(payload);
-  };
 
   const handleDialogClose = (
     event,
@@ -217,8 +650,10 @@ function ExecutiveActionDialog({
     }
 
     if (
-      reason === "backdropClick" ||
-      reason === "escapeKeyDown"
+      reason ===
+        "backdropClick" ||
+      reason ===
+        "escapeKeyDown"
     ) {
       onClose();
       return;
@@ -227,13 +662,26 @@ function ExecutiveActionDialog({
     onClose();
   };
 
-  const dialogTitle = isEditMode
-    ? "Edit Executive Action"
-    : "Create Executive Action";
 
-  const dialogSubtitle = isEditMode
-    ? "Update ownership, priority, due date, and execution status."
-    : "Create a new operational action for management follow-up.";
+  const dialogTitle =
+    isEditMode
+      ? t(
+          "executiveActionDialog.editTitle"
+        )
+      : t(
+          "executiveActionDialog.createTitle"
+        );
+
+
+  const dialogSubtitle =
+    isEditMode
+      ? t(
+          "executiveActionDialog.editSubtitle"
+        )
+      : t(
+          "executiveActionDialog.createSubtitle"
+        );
+
 
   return (
     <Dialog
@@ -258,6 +706,7 @@ function ExecutiveActionDialog({
             xs: 2.5,
             sm: 3.5,
           },
+
           pt: 3,
           pb: 2.5,
         }}
@@ -265,15 +714,18 @@ function ExecutiveActionDialog({
         <Box
           sx={{
             display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
+            alignItems:
+              "flex-start",
+            justifyContent:
+              "space-between",
             gap: 2,
           }}
         >
           <Box
             sx={{
               display: "flex",
-              alignItems: "flex-start",
+              alignItems:
+                "flex-start",
               gap: 1.75,
             }}
           >
@@ -282,11 +734,15 @@ function ExecutiveActionDialog({
                 width: 46,
                 height: 46,
                 flexShrink: 0,
-                borderRadius: "14px",
+                borderRadius:
+                  "14px",
                 display: "grid",
-                placeItems: "center",
-                bgcolor: `${primaryColor}14`,
-                color: primaryColor,
+                placeItems:
+                  "center",
+                bgcolor:
+                  `${primaryColor}14`,
+                color:
+                  primaryColor,
               }}
             >
               {isEditMode ? (
@@ -303,9 +759,11 @@ function ExecutiveActionDialog({
                     xs: 20,
                     sm: 23,
                   },
+
                   lineHeight: 1.2,
                   fontWeight: 800,
-                  color: "#0f172a",
+                  color:
+                    "#0f172a",
                 }}
               >
                 {dialogTitle}
@@ -316,7 +774,8 @@ function ExecutiveActionDialog({
                   mt: 0.75,
                   fontSize: 14,
                   lineHeight: 1.6,
-                  color: "#64748b",
+                  color:
+                    "#64748b",
                 }}
               >
                 {dialogSubtitle}
@@ -328,17 +787,23 @@ function ExecutiveActionDialog({
             type="button"
             onClick={onClose}
             disabled={saving}
-            aria-label="Close dialog"
+            aria-label={t(
+              "executiveActionDialog.closeDialog"
+            )}
             sx={{
               minWidth: 42,
               width: 42,
               height: 42,
-              borderRadius: "12px",
-              color: "#64748b",
+              borderRadius:
+                "12px",
+              color:
+                "#64748b",
 
               "&:hover": {
-                bgcolor: "#f1f5f9",
-                color: "#0f172a",
+                bgcolor:
+                  "#f1f5f9",
+                color:
+                  "#0f172a",
               },
             }}
           >
@@ -355,6 +820,7 @@ function ExecutiveActionDialog({
             xs: 2.5,
             sm: 3.5,
           },
+
           py: 3,
         }}
       >
@@ -365,12 +831,17 @@ function ExecutiveActionDialog({
                 mb: 1.5,
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#475569",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
+                color:
+                  "#475569",
+                textTransform:
+                  "uppercase",
+                letterSpacing:
+                  "0.06em",
               }}
             >
-              Action details
+              {t(
+                "executiveActionDialog.actionDetails"
+              )}
             </Typography>
 
             <Stack spacing={2.25}>
@@ -379,20 +850,42 @@ function ExecutiveActionDialog({
                 required
                 autoFocus
                 name="action_title"
-                label="Action title"
-                placeholder="Example: Investigate shovel breakdown"
-                value={form.action_title}
-                onChange={handleFieldChange}
+                label={t(
+                  "executiveActionDialog.actionTitle"
+                )}
+                placeholder={t(
+                  "executiveActionDialog.actionTitlePlaceholder"
+                )}
+                value={
+                  actionTitleDisplayValue
+                }
+                onChange={
+                  handleLocalizedFieldChange(
+                    "action_title"
+                  )
+                }
                 disabled={saving}
                 error={Boolean(
                   errors.action_title
                 )}
                 helperText={
                   errors.action_title ||
-                  "Use a clear, outcome-focused action title."
+                  (
+                    isMongolian &&
+                    !localizedFieldEdits.action_title &&
+                    translatedActionTitle &&
+                    translatedActionTitle !==
+                      form.action_title
+                      ? form.action_title
+                      : t(
+                          "executiveActionDialog.actionTitleHelper"
+                        )
+                  )
                 }
-                inputProps={{
-                  maxLength: 200,
+                slotProps={{
+                  htmlInput: {
+                    maxLength: 200,
+                  },
                 }}
               />
 
@@ -402,15 +895,29 @@ function ExecutiveActionDialog({
                 minRows={4}
                 maxRows={8}
                 name="description"
-                label="Description"
-                placeholder="Describe the issue, expected outcome, and important context."
-                value={form.description}
-                onChange={handleFieldChange}
+                label={t(
+                  "executiveActionDialog.description"
+                )}
+                placeholder={t(
+                  "executiveActionDialog.descriptionPlaceholder"
+                )}
+                value={
+                  descriptionDisplayValue
+                }
+                onChange={
+                  handleLocalizedFieldChange(
+                    "description"
+                  )
+                }
                 disabled={saving}
-                inputProps={{
-                  maxLength: 2000,
+                slotProps={{
+                  htmlInput: {
+                    maxLength: 2000,
+                  },
                 }}
-                helperText={`${form.description.length}/2000 characters`}
+                helperText={
+                  descriptionHelperText
+                }
               />
             </Stack>
           </Box>
@@ -423,21 +930,28 @@ function ExecutiveActionDialog({
                 mb: 1.5,
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#475569",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
+                color:
+                  "#475569",
+                textTransform:
+                  "uppercase",
+                letterSpacing:
+                  "0.06em",
               }}
             >
-              Ownership and execution
+              {t(
+                "executiveActionDialog.ownershipAndExecution"
+              )}
             </Typography>
 
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, minmax(0, 1fr))",
-                },
+                gridTemplateColumns:
+                  {
+                    xs: "1fr",
+                    sm:
+                      "repeat(2, minmax(0, 1fr))",
+                  },
                 gap: 2.25,
               }}
             >
@@ -445,17 +959,37 @@ function ExecutiveActionDialog({
                 fullWidth
                 required
                 name="owner_name"
-                label="Action owner"
-                placeholder="Example: Maintenance Superintendent"
-                value={form.owner_name}
-                onChange={handleFieldChange}
+                label={t(
+                  "executiveActionDialog.actionOwner"
+                )}
+                placeholder={t(
+                  "executiveActionDialog.actionOwnerPlaceholder"
+                )}
+                value={
+                  ownerDisplayValue
+                }
+                onChange={
+                  handleLocalizedFieldChange(
+                    "owner_name"
+                  )
+                }
                 disabled={saving}
                 error={Boolean(
                   errors.owner_name
                 )}
                 helperText={
                   errors.owner_name ||
-                  "Person or role accountable for the action."
+                  (
+                    isMongolian &&
+                    !localizedFieldEdits.owner_name &&
+                    translatedOwner &&
+                    translatedOwner !==
+                      form.owner_name
+                      ? form.owner_name
+                      : t(
+                          "executiveActionDialog.actionOwnerHelper"
+                        )
+                  )
                 }
               />
 
@@ -464,14 +998,24 @@ function ExecutiveActionDialog({
                 required
                 type="date"
                 name="due_date"
-                label="Due date"
-                value={form.due_date}
-                onChange={handleFieldChange}
+                label={t(
+                  "executiveActionDialog.dueDate"
+                )}
+                value={
+                  form.due_date
+                }
+                onChange={
+                  handleFieldChange
+                }
                 disabled={saving}
-                error={Boolean(errors.due_date)}
+                error={Boolean(
+                  errors.due_date
+                )}
                 helperText={
                   errors.due_date ||
-                  "Target completion date."
+                  t(
+                    "executiveActionDialog.dueDateHelper"
+                  )
                 }
                 slotProps={{
                   inputLabel: {
@@ -483,84 +1027,119 @@ function ExecutiveActionDialog({
               <FormControl
                 fullWidth
                 required
-                error={Boolean(errors.priority)}
+                error={Boolean(
+                  errors.priority
+                )}
                 disabled={saving}
               >
-                <InputLabel id="priority-label">
-                  Priority
+                <InputLabel
+                  id="priority-label"
+                >
+                  {t(
+                    "executiveActionDialog.priorityLabel"
+                  )}
                 </InputLabel>
 
                 <Select
                   labelId="priority-label"
                   name="priority"
-                  value={form.priority}
-                  label="Priority"
-                  onChange={handleFieldChange}
+                  value={
+                    form.priority
+                  }
+                  label={t(
+                    "executiveActionDialog.priorityLabel"
+                  )}
+                  onChange={
+                    handleFieldChange
+                  }
                 >
-                  <MenuItem value="Critical">
-                    Critical
-                  </MenuItem>
-
-                  <MenuItem value="High">
-                    High
-                  </MenuItem>
-
-                  <MenuItem value="Medium">
-                    Medium
-                  </MenuItem>
-
-                  <MenuItem value="Low">
-                    Low
-                  </MenuItem>
+                  {[
+                    "Critical",
+                    "High",
+                    "Medium",
+                    "Low",
+                  ].map(
+                    (priority) => (
+                      <MenuItem
+                        key={
+                          priority
+                        }
+                        value={
+                          priority
+                        }
+                      >
+                        {getPriorityLabel(
+                          priority,
+                          t
+                        )}
+                      </MenuItem>
+                    )
+                  )}
                 </Select>
 
                 <FormHelperText>
                   {errors.priority ||
-                    "Operational importance of this action."}
+                    t(
+                      "executiveActionDialog.priorityHelper"
+                    )}
                 </FormHelperText>
               </FormControl>
 
               <FormControl
                 fullWidth
                 required
-                error={Boolean(errors.status)}
+                error={Boolean(
+                  errors.status
+                )}
                 disabled={saving}
               >
-                <InputLabel id="status-label">
-                  Status
+                <InputLabel
+                  id="status-label"
+                >
+                  {t(
+                    "executiveActionDialog.statusLabel"
+                  )}
                 </InputLabel>
 
                 <Select
                   labelId="status-label"
                   name="status"
-                  value={form.status}
-                  label="Status"
-                  onChange={handleFieldChange}
+                  value={
+                    form.status
+                  }
+                  label={t(
+                    "executiveActionDialog.statusLabel"
+                  )}
+                  onChange={
+                    handleFieldChange
+                  }
                 >
-                  <MenuItem value="Open">
-                    Open
-                  </MenuItem>
-
-                  <MenuItem value="To Do">
-                    To Do
-                  </MenuItem>
-
-                  <MenuItem value="In Progress">
-                    In Progress
-                  </MenuItem>
-
-                  <MenuItem value="Blocked">
-                    Blocked
-                  </MenuItem>
-
-                  <MenuItem value="Completed">
-                    Completed
-                  </MenuItem>
+                  {[
+                    "Open",
+                    "To Do",
+                    "In Progress",
+                    "Blocked",
+                    "Completed",
+                  ].map(
+                    (status) => (
+                      <MenuItem
+                        key={status}
+                        value={status}
+                      >
+                        {getStatusLabel(
+                          status,
+                          t
+                        )}
+                      </MenuItem>
+                    )
+                  )}
                 </Select>
 
                 <FormHelperText>
                   {errors.status ||
-                    "Current execution status."}
+                    t(
+                      "executiveActionDialog.statusHelper"
+                    )}
                 </FormHelperText>
               </FormControl>
 
@@ -568,137 +1147,186 @@ function ExecutiveActionDialog({
                 fullWidth
                 disabled={saving}
               >
-                <InputLabel id="category-label">
-                  Category
+                <InputLabel
+                  id="category-label"
+                >
+                  {t(
+                    "executiveActionDialog.categoryLabel"
+                  )}
                 </InputLabel>
 
                 <Select
                   labelId="category-label"
                   name="category"
-                  value={form.category}
-                  label="Category"
-                  onChange={handleFieldChange}
+                  value={
+                    form.category
+                  }
+                  label={t(
+                    "executiveActionDialog.categoryLabel"
+                  )}
+                  onChange={
+                    handleFieldChange
+                  }
                 >
-                  <MenuItem value="Operations">
-                    Operations
-                  </MenuItem>
-
-                  <MenuItem value="Production">
-                    Production
-                  </MenuItem>
-
-                  <MenuItem value="Maintenance">
-                    Maintenance
-                  </MenuItem>
-
-                  <MenuItem value="Safety">
-                    Safety
-                  </MenuItem>
-
-                  <MenuItem value="Geotechnical">
-                    Geotechnical
-                  </MenuItem>
-
-                  <MenuItem value="Plant">
-                    Plant
-                  </MenuItem>
-
-                  <MenuItem value="Environment">
-                    Environment
-                  </MenuItem>
-
-                  <MenuItem value="Workforce">
-                    Workforce
-                  </MenuItem>
-
-                  <MenuItem value="Other">
-                    Other
-                  </MenuItem>
+                  {[
+                    "Operations",
+                    "Production",
+                    "Maintenance",
+                    "Safety",
+                    "Geotechnical",
+                    "Plant",
+                    "Environment",
+                    "Workforce",
+                    "Other",
+                  ].map(
+                    (category) => (
+                      <MenuItem
+                        key={
+                          category
+                        }
+                        value={
+                          category
+                        }
+                      >
+                        {getCategoryLabel(
+                          category,
+                          t
+                        )}
+                      </MenuItem>
+                    )
+                  )}
                 </Select>
 
                 <FormHelperText>
-                  Used for filtering and reporting.
+                  {t(
+                    "executiveActionDialog.categoryHelper"
+                  )}
                 </FormHelperText>
               </FormControl>
 
               <FormControl
                 fullWidth
                 disabled={
-                  saving || !isEditMode
+                  saving ||
+                  !isEditMode
                 }
               >
-                <InputLabel id="source-label">
-                  Source
+                <InputLabel
+                  id="source-label"
+                >
+                  {t(
+                    "executiveActionDialog.sourceLabel"
+                  )}
                 </InputLabel>
 
                 <Select
                   labelId="source-label"
                   name="source"
-                  value={form.source}
-                  label="Source"
-                  onChange={handleFieldChange}
+                  value={
+                    form.source
+                  }
+                  label={t(
+                    "executiveActionDialog.sourceLabel"
+                  )}
+                  onChange={
+                    handleFieldChange
+                  }
                 >
-                  <MenuItem value="Manual">
-                    Manual
-                  </MenuItem>
-
-                  <MenuItem value="AI">
-                    AI
-                  </MenuItem>
+                  {[
+                    "Manual",
+                    "AI",
+                  ].map(
+                    (source) => (
+                      <MenuItem
+                        key={source}
+                        value={source}
+                      >
+                        {getSourceLabel(
+                          source,
+                          t
+                        )}
+                      </MenuItem>
+                    )
+                  )}
                 </Select>
 
                 <FormHelperText>
                   {isEditMode
-                    ? "How this action was originally created."
-                    : "New manager-created actions are saved as Manual."}
+                    ? t(
+                        "executiveActionDialog.sourceEditHelper"
+                      )
+                    : t(
+                        "executiveActionDialog.sourceCreateHelper"
+                      )}
                 </FormHelperText>
               </FormControl>
             </Box>
           </Box>
 
-          {isEditMode && actionId && (
-            <>
-              <Divider sx={{ my: 1 }} />
-
-              <Box>
-                <Typography
+          {isEditMode &&
+            actionId && (
+              <>
+                <Divider
                   sx={{
-                    mb: 1.5,
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: "#475569",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
+                    my: 1,
                   }}
-                >
-                  Live KPI Context
-                </Typography>
-
-                <ExecutiveActionKpiContext
-                  actionId={actionId}
-                  primaryColor={primaryColor}
                 />
-              </Box>
-            </>
-          )}
+
+                <Box>
+                  <Typography
+                    sx={{
+                      mb: 1.5,
+                      fontSize: 13,
+                      fontWeight:
+                        800,
+                      color:
+                        "#475569",
+                      textTransform:
+                        "uppercase",
+                      letterSpacing:
+                        "0.06em",
+                    }}
+                  >
+                    {t(
+                      "executiveActionDialog.liveKpiContext"
+                    )}
+                  </Typography>
+
+                  <ExecutiveActionKpiContext
+                    actionId={
+                      actionId
+                    }
+                    primaryColor={
+                      primaryColor
+                    }
+                  />
+                </Box>
+              </>
+            )}
 
           {!isEditMode && (
             <Box
               sx={{
                 p: 2,
-                borderRadius: "14px",
-                bgcolor: `${primaryColor}0A`,
-                border: `1px solid ${primaryColor}25`,
+                borderRadius:
+                  "14px",
+                bgcolor:
+                  `${primaryColor}0A`,
+                border:
+                  `1px solid ${primaryColor}25`,
               }}
             >
               <Typography
                 sx={{
                   fontSize: 14,
                   fontWeight: 700,
-                  color: "#334155",
+                  color:
+                    "#334155",
                 }}
               >
-                Manual executive action
+                {t(
+                  "executiveActionDialog.manualActionTitle"
+                )}
               </Typography>
 
               <Typography
@@ -706,12 +1334,13 @@ function ExecutiveActionDialog({
                   mt: 0.5,
                   fontSize: 13,
                   lineHeight: 1.6,
-                  color: "#64748b",
+                  color:
+                    "#64748b",
                 }}
               >
-                This action will be recorded as manually
-                created by a manager and will appear in the
-                Executive Action Center after saving.
+                {t(
+                  "executiveActionDialog.manualActionDescription"
+                )}
               </Typography>
             </Box>
           )}
@@ -726,10 +1355,13 @@ function ExecutiveActionDialog({
             xs: 2.5,
             sm: 3.5,
           },
+
           py: 2.5,
           gap: 1.25,
+
           flexDirection: {
-            xs: "column-reverse",
+            xs:
+              "column-reverse",
             sm: "row",
           },
         }}
@@ -742,34 +1374,52 @@ function ExecutiveActionDialog({
           fullWidth
           sx={{
             minHeight: 44,
+
             minWidth: {
               sm: 110,
             },
+
             width: {
               sm: "auto",
             },
-            borderRadius: "12px",
-            borderColor: "#cbd5e1",
-            color: "#475569",
+
+            borderRadius:
+              "12px",
+
+            borderColor:
+              "#cbd5e1",
+
+            color:
+              "#475569",
+
             fontWeight: 800,
-            textTransform: "none",
+            textTransform:
+              "none",
 
             "&:hover": {
-              borderColor: "#94a3b8",
-              bgcolor: "#f8fafc",
+              borderColor:
+                "#94a3b8",
+
+              bgcolor:
+                "#f8fafc",
             },
           }}
         >
-          Cancel
+          {t(
+            "executiveActionDialog.cancel"
+          )}
         </Button>
 
         <Button
           type="button"
           variant="contained"
-          onClick={handleSubmit}
+          onClick={
+            handleSubmit
+          }
           disabled={
             saving ||
-            (isEditMode && !hasChanges)
+            (isEditMode &&
+              !hasChanges)
           }
           startIcon={
             saving ? (
@@ -784,42 +1434,72 @@ function ExecutiveActionDialog({
           fullWidth
           sx={{
             minHeight: 44,
+
             minWidth: {
               sm: 190,
             },
+
             width: {
               sm: "auto",
             },
-            borderRadius: "12px",
-            bgcolor: primaryColor,
-            color: "#ffffff",
+
+            borderRadius:
+              "12px",
+
+            bgcolor:
+              primaryColor,
+
+            color:
+              "#ffffff",
+
             fontWeight: 800,
-            textTransform: "none",
-            boxShadow: `0 8px 18px ${primaryColor}30`,
+            textTransform:
+              "none",
+
+            boxShadow:
+              `0 8px 18px ${primaryColor}30`,
 
             "&:hover": {
-              bgcolor: primaryColor,
-              filter: "brightness(0.92)",
-              boxShadow: `0 10px 22px ${primaryColor}40`,
+              bgcolor:
+                primaryColor,
+
+              filter:
+                "brightness(0.92)",
+
+              boxShadow:
+                `0 10px 22px ${primaryColor}40`,
             },
 
-            "&.Mui-disabled": {
-              bgcolor: "#cbd5e1",
-              color: "#ffffff",
-            },
+            "&.Mui-disabled":
+              {
+                bgcolor:
+                  "#cbd5e1",
+
+                color:
+                  "#ffffff",
+              },
           }}
         >
           {saving
             ? isEditMode
-              ? "Updating..."
-              : "Creating..."
+              ? t(
+                  "executiveActionDialog.updating"
+                )
+              : t(
+                  "executiveActionDialog.creating"
+                )
             : isEditMode
-              ? "Save Changes"
-              : "Create Action"}
+              ? t(
+                  "executiveActionDialog.saveChanges"
+                )
+              : t(
+                  "executiveActionDialog.createAction"
+                )}
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
+
 
 export default ExecutiveActionDialog;

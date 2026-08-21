@@ -1749,3 +1749,488 @@
   
 }
 
+/* ==========================================================================
+   Sprint 10.22 — Pilot UI Polish
+   Executive Dashboard Header — premium hierarchy pass
+   ========================================================================== */
+
+.executive-dashboard-header--reference {
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 14px;
+  padding: 8px 2px 4px;
+}
+
+.executive-dashboard-heading {
+  padding-top: 0;
+}
+
+.executive-dashboard-title-row {
+  gap: 10px;
+}
+
+.executive-dashboard-title-row h1 {
+  font-size: clamp(30px, 2vw, 36px);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.executive-dashboard-title-row .status-pill {
+  min-height: 22px;
+  padding: 4px 8px;
+  border: 1px solid #bbf7d0;
+  background: #ecfdf5;
+  color: #15803d;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  box-shadow: none;
+}
+
+.executive-dashboard-breadcrumb {
+  gap: 7px;
+  margin-top: 9px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.executive-dashboard-breadcrumb .context-separator {
+  color: #cbd5e1;
+  font-weight: 900;
+}
+
+.executive-dashboard-scenario {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 7px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.executive-dashboard-controls--reference {
+  grid-template-columns: 180px 88px 98px 78px;
+  gap: 9px;
+  align-items: stretch;
+}
+
+.executive-mine-select,
+.executive-demo-button--reference,
+.executive-reset-button--reference,
+.executive-date-card--reference,
+.executive-shift-card--reference {
+  height: 54px;
+  min-height: 54px;
+  border-radius: 12px;
+}
+
+.executive-mine-select {
+  width: 180px;
+  min-width: 180px;
+  border-color: #dbe3ee;
+  color: #1e293b;
+  font-size: 10px;
+  font-weight: 850;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.045);
+}
+
+.executive-demo-button--reference,
+.executive-date-card--reference {
+  border-color: #dbe3ee;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.045);
+}
+
+.executive-demo-button--reference {
+  min-width: 88px;
+  font-size: 9px;
+  letter-spacing: 0.01em;
+}
+
+.executive-date-card--reference {
+  min-width: 98px;
+}
+
+.executive-date-card--reference strong {
+  font-size: 9px;
+}
+
+.executive-date-card--reference span {
+  margin-top: 3px;
+  font-size: 8px;
+}
+
+.executive-shift-card--reference {
+  min-width: 78px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  background: linear-gradient(135deg, #2f6df6 0%, #1d4ed8 100%);
+  box-shadow: 0 9px 22px rgba(37, 99, 235, 0.20);
+}
+
+.executive-shift-card--reference strong {
+  font-size: 10px;
+  line-height: 1.08;
+}
+
+.executive-config-grid {
+  margin-bottom: 14px;
+  border-color: #e4eaf2;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.045);
+}
+
+@media (max-width: 1500px), (max-height: 900px) {
+  .executive-dashboard-header--reference {
+    gap: 12px;
+    margin-bottom: 11px;
+    padding-top: 3px;
+  }
+
+  .executive-dashboard-title-row h1 {
+    font-size: clamp(27px, 2.1vw, 32px);
+  }
+
+  .executive-dashboard-controls--reference {
+    grid-template-columns: 170px 84px 94px 74px;
+    gap: 8px;
+  }
+
+  .executive-mine-select,
+  .executive-demo-button--reference,
+  .executive-reset-button--reference,
+  .executive-date-card--reference,
+  .executive-shift-card--reference {
+    height: 50px;
+    min-height: 50px;
+  }
+
+  .executive-mine-select {
+    width: 170px;
+    min-width: 170px;
+  }
+}
+
+@media (max-width: 900px) {
+  .executive-dashboard-title-row h1 {
+    font-size: 28px;
+  }
+
+  .executive-dashboard-controls--reference {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .executive-mine-select {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* ==========================================================================
+   Sprint 10.22 — Executive Dashboard Typography & Text Style Polish
+   Purpose: establish a clear executive reading hierarchy without changing
+   dashboard layout, data, interactions, or component behavior.
+   ========================================================================== */
+
+/* 1. Shared dashboard typography foundation */
+.executive-dashboard-page {
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.executive-dashboard-page button,
+.executive-dashboard-page select,
+.executive-dashboard-page input {
+  font-family: inherit;
+}
+
+/* 2. Small contextual / eyebrow text */
+.executive-type-eyebrow {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.015em;
+}
+
+.executive-type-eyebrow--inverse {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+/* 3. Mine Health hero title */
+.executive-type-hero-title {
+  margin: 7px 0 0;
+  color: #ffffff;
+  font-size: clamp(19px, 1.25vw, 22px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+/* 4. Mine Health primary score */
+.executive-type-health-score {
+  margin-top: 5px;
+  color: #ffffff;
+  font-size: clamp(48px, 4vw, 60px);
+  font-weight: 900;
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+}
+
+.executive-type-health-score small,
+.executive-type-health-score span {
+  margin-left: 4px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.015em;
+}
+
+/* 5. Major dashboard section headings */
+.executive-type-section-title {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* 6. KPI card labels */
+.executive-type-kpi-title {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+/* 7. KPI primary values */
+.executive-type-kpi-value {
+  color: #0f172a;
+  font-size: clamp(27px, 2vw, 32px);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.executive-type-kpi-value small,
+.executive-type-kpi-value span {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* 8. Priority Actions / AI Briefing / Risk Heat Map panel headings */
+.executive-type-panel-title {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: -0.012em;
+}
+
+/* 9. Improve hierarchy of the existing executive header */
+.executive-dashboard-title-row h1 {
+  color: #0b1220;
+  font-weight: 900;
+  letter-spacing: -0.047em;
+}
+
+.executive-dashboard-breadcrumb {
+  color: #64748b;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.executive-dashboard-scenario {
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+/* 10. Configuration strip — labels should recede, values should read quickly */
+.executive-config-grid {
+  font-variant-numeric: tabular-nums;
+}
+
+.executive-config-grid > div > :first-child {
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: 0.075em;
+}
+
+.executive-config-grid > div > :last-child {
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+/* 11. Hero supporting copy */
+.executive-health-grid {
+  font-variant-numeric: tabular-nums;
+}
+
+.executive-health-grid p {
+  line-height: 1.45;
+}
+
+.executive-health-grid strong {
+  letter-spacing: -0.01em;
+}
+
+/* 12. KPI supporting information */
+.executive-kpi-grid {
+  font-variant-numeric: tabular-nums;
+}
+
+.executive-kpi-grid .kpi-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.executive-kpi-grid .kpi-trend {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+.executive-kpi-grid .muted {
+  color: #64748b !important;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+/* 13. Executive information panels */
+.executive-panels-grid {
+  font-variant-numeric: tabular-nums;
+}
+
+.executive-panels-grid p {
+  color: #475569;
+  line-height: 1.55;
+}
+
+.executive-panels-grid a,
+.executive-panels-grid button {
+  font-weight: 800;
+}
+
+/* 14. Executive action / navigation text */
+.executive-dashboard-page a {
+  text-underline-offset: 2px;
+}
+
+.executive-dashboard-page .section-title a,
+.executive-dashboard-page .card-heading a {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: -0.005em;
+}
+
+/* 15. Compact laptop typography */
+@media (max-width: 1500px), (max-height: 900px) {
+  .executive-type-eyebrow {
+    font-size: 10px;
+  }
+
+  .executive-type-hero-title {
+    font-size: 18px;
+  }
+
+  .executive-type-health-score {
+    font-size: 50px;
+  }
+
+  .executive-type-health-score small,
+  .executive-type-health-score span {
+    font-size: 14px;
+  }
+
+  .executive-type-section-title {
+    font-size: 16px;
+  }
+
+  .executive-type-kpi-title {
+    font-size: 11px;
+  }
+
+  .executive-type-kpi-value {
+    font-size: 28px;
+  }
+
+  .executive-type-panel-title {
+    font-size: 12px;
+  }
+}
+
+/* 16. Tablet */
+@media (max-width: 900px) {
+  .executive-type-hero-title {
+    font-size: 19px;
+  }
+
+  .executive-type-health-score {
+    font-size: 48px;
+  }
+
+  .executive-type-section-title {
+    font-size: 16px;
+  }
+
+  .executive-type-kpi-value {
+    font-size: 29px;
+  }
+
+  .executive-type-panel-title {
+    font-size: 13px;
+  }
+}
+
+/* 17. Mobile */
+@media (max-width: 720px) {
+  .executive-type-eyebrow {
+    font-size: 10px;
+  }
+
+  .executive-type-hero-title {
+    font-size: 18px;
+  }
+
+  .executive-type-health-score {
+    font-size: 46px;
+  }
+
+  .executive-type-section-title {
+    font-size: 15px;
+  }
+
+  .executive-type-kpi-title {
+    font-size: 12px;
+  }
+
+  .executive-type-kpi-value {
+    font-size: 30px;
+  }
+
+  .executive-type-panel-title {
+    font-size: 13px;
+  }
+}
+

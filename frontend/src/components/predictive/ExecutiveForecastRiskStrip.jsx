@@ -5,6 +5,9 @@ import {
   FiShield,
 } from "react-icons/fi";
 
+import { useLanguage } from "../../context/LanguageContext";
+import { translateDynamicKpiName } from "../../i18n/dynamicTranslations";
+
 import "./ExecutiveForecastRiskStrip.css";
 
 
@@ -45,6 +48,8 @@ function ExecutiveForecastRiskStrip({
   predictions = [],
   overallConfidence = 0,
 }) {
+  const { t } = useLanguage();
+
   const availablePredictions =
     normalizePredictions(predictions);
 
@@ -110,6 +115,9 @@ function ExecutiveForecastRiskStrip({
           ? "executive-risk-strip--attention"
           : "executive-risk-strip--healthy"
       }`}
+      aria-label={t(
+        "executiveForecastRiskStrip.ariaLabel",
+      )}
     >
       <div className="executive-risk-strip__heading">
         <div className="executive-risk-strip__heading-icon">
@@ -122,13 +130,19 @@ function ExecutiveForecastRiskStrip({
 
         <div>
           <p className="executive-risk-strip__eyebrow">
-            Executive Forecast Summary
+            {t(
+              "executiveForecastRiskStrip.eyebrow",
+            )}
           </p>
 
           <h3 className="executive-risk-strip__title">
             {hasRisk
-              ? "Operational attention required"
-              : "Forecast position is stable"}
+              ? t(
+                  "executiveForecastRiskStrip.attentionRequired",
+                )
+              : t(
+                  "executiveForecastRiskStrip.stablePosition",
+                )}
           </h3>
         </div>
       </div>
@@ -143,7 +157,9 @@ function ExecutiveForecastRiskStrip({
             </strong>
 
             <span>
-              KPIs at risk
+              {t(
+                "executiveForecastRiskStrip.kpisAtRisk",
+              )}
             </span>
           </div>
         </div>
@@ -157,7 +173,9 @@ function ExecutiveForecastRiskStrip({
             </strong>
 
             <span>
-              On watch
+              {t(
+                "executiveForecastRiskStrip.onWatch",
+              )}
             </span>
           </div>
         </div>
@@ -171,7 +189,9 @@ function ExecutiveForecastRiskStrip({
             </strong>
 
             <span>
-              Improving
+              {t(
+                "executiveForecastRiskStrip.improving",
+              )}
             </span>
           </div>
         </div>
@@ -179,7 +199,9 @@ function ExecutiveForecastRiskStrip({
 
       <div className="executive-risk-strip__focus">
         <span className="executive-risk-strip__focus-label">
-          Primary risks
+          {t(
+            "executiveForecastRiskStrip.primaryRisks",
+          )}
         </span>
 
         {primaryRisks.length ? (
@@ -192,15 +214,19 @@ function ExecutiveForecastRiskStrip({
                   }
                   className="executive-risk-strip__risk-chip"
                 >
-                  {
-                    prediction.kpi_name
-                  }
+                  {translateDynamicKpiName(
+                    prediction.kpi_name,
+                    t,
+                  )}
 
                   <strong>
                     {getVarianceValue(
                       prediction,
                     ).toFixed(1)}
-                    {" pp"}
+                    {" "}
+                    {t(
+                      "executiveForecastRiskStrip.percentagePoints",
+                    )}
                   </strong>
                 </span>
               ),
@@ -208,8 +234,9 @@ function ExecutiveForecastRiskStrip({
           </div>
         ) : (
           <span className="executive-risk-strip__no-risk">
-            No negative three-shift forecast
-            identified.
+            {t(
+              "executiveForecastRiskStrip.noNegativeForecast",
+            )}
           </span>
         )}
       </div>
@@ -217,7 +244,9 @@ function ExecutiveForecastRiskStrip({
       <div className="executive-risk-strip__confidence">
         <div className="executive-risk-strip__confidence-heading">
           <span>
-            Overall confidence
+            {t(
+              "executiveForecastRiskStrip.overallConfidence",
+            )}
           </span>
 
           <strong>
@@ -225,7 +254,18 @@ function ExecutiveForecastRiskStrip({
           </strong>
         </div>
 
-        <div className="executive-risk-strip__confidence-track">
+        <div
+          className="executive-risk-strip__confidence-track"
+          role="progressbar"
+          aria-label={t(
+            "executiveForecastRiskStrip.confidenceAria",
+          )}
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={Math.round(
+            safeConfidence,
+          )}
+        >
           <div
             className="executive-risk-strip__confidence-fill"
             style={{

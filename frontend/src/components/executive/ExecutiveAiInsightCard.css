@@ -1,7 +1,7 @@
 /* =====================================================
    Mine Manager AI
    Executive AI Insight Card
-   Sprint 10.18.7.2
+   Sprint 10.22 — Executive UI Polish
    ===================================================== */
 
 .executive-ai-insight-card {
@@ -11,8 +11,8 @@
   border: 1px solid #dfe7f1;
   border-radius: 18px;
   box-shadow:
-    0 10px 26px rgba(15, 23, 42, 0.05),
-    0 2px 6px rgba(15, 23, 42, 0.025);
+    0 10px 28px rgba(15, 23, 42, 0.045),
+    0 2px 6px rgba(15, 23, 42, 0.02);
 }
 
 .executive-ai-insight-card::before {
@@ -41,17 +41,22 @@
   background: #dc2626;
 }
 
+
+/* =====================================================
+   Header
+   ===================================================== */
+
 .executive-ai-card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
-  padding: 20px 20px 16px 24px;
+  padding: 18px 20px 14px 24px;
   background:
     linear-gradient(
       135deg,
       #ffffff 0%,
-      #f8fafc 100%
+      #fbfdff 100%
     );
   border-bottom: 1px solid #edf1f6;
 }
@@ -59,25 +64,25 @@
 .executive-ai-card-title-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 13px;
   min-width: 0;
 }
 
 .executive-ai-card-kpi-icon {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   color: #2563eb;
   background: #eff6ff;
   border: 1px solid #dbeafe;
-  border-radius: 14px;
+  border-radius: 13px;
 }
 
 .executive-ai-card-kpi-icon svg {
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
 }
 
 .executive-ai-card-heading-copy {
@@ -87,27 +92,35 @@
 .executive-ai-card-eyebrow {
   display: block;
   margin-bottom: 3px;
-  color: #64748b;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.09em;
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .executive-ai-card-heading-copy h3 {
   margin: 0;
   color: #0f172a;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 900;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.executive-ai-card-kpi-name {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .executive-ai-card-priority {
-  margin: 5px 0 0;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 700;
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 750;
   line-height: 1.4;
 }
 
@@ -116,17 +129,17 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  padding: 7px 11px;
+  padding: 6px 10px;
   border: 1px solid;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   white-space: nowrap;
 }
 
 .executive-ai-card-severity svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .executive-ai-card-severity.low {
@@ -159,12 +172,17 @@
   border-color: #cbd5e1;
 }
 
+
+/* =====================================================
+   Executive Summary + Primary Metrics
+   ===================================================== */
+
 .executive-ai-card-summary-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
+  gap: 20px;
   align-items: center;
-  padding: 18px 20px 18px 24px;
+  padding: 18px 20px 16px 24px;
 }
 
 .executive-ai-card-summary {
@@ -173,31 +191,33 @@
 
 .executive-ai-card-section-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   color: #64748b;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
+.executive-ai-card-summary-text,
 .executive-ai-card-summary p {
   margin: 0;
-  color: #1e293b;
+  color: #0f172a;
   font-size: 14px;
   font-weight: 650;
-  line-height: 1.7;
+  line-height: 1.62;
 }
 
 .executive-ai-card-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(88px, 1fr));
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
   gap: 10px;
 }
 
+.executive-ai-card-metric,
 .executive-ai-card-metrics > div {
-  min-width: 88px;
-  padding: 11px 12px;
+  min-width: 92px;
+  padding: 11px 13px;
   text-align: center;
   background: #f8fafc;
   border: 1px solid #e7edf5;
@@ -208,8 +228,8 @@
   display: block;
   color: #64748b;
   font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.07em;
+  font-weight: 850;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
 }
 
@@ -217,8 +237,11 @@
   display: block;
   margin-top: 4px;
   color: #0f172a;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
 }
 
 .executive-ai-card-metrics strong.positive {
@@ -229,40 +252,94 @@
   color: #dc2626;
 }
 
+
+/* =====================================================
+   Primary Management Action
+   ===================================================== */
+
+.executive-ai-card-recommendation {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 20px 16px 24px;
+  padding: 15px 16px;
+  background:
+    linear-gradient(
+      135deg,
+      #ecfdf5 0%,
+      #f7fef9 100%
+    );
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+}
+
+.executive-ai-card-recommendation--primary {
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.02);
+}
+
+.executive-ai-card-recommendation-copy {
+  min-width: 0;
+}
+
+.executive-ai-card-recommendation .executive-ai-card-section-label {
+  color: #15803d;
+}
+
+.executive-ai-card-recommendation p {
+  margin: 0;
+  color: #14532d;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+
+/* =====================================================
+   Supporting Analysis
+   ===================================================== */
+
 .executive-ai-card-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 0 20px 18px 24px;
+  gap: 12px;
+  padding: 0 20px 16px 24px;
+}
+
+.executive-ai-card-analysis-grid {
+  align-items: stretch;
 }
 
 .executive-ai-card-detail {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 11px;
   min-width: 0;
-  padding: 15px;
-  background: #f8fafc;
-  border: 1px solid #e7edf5;
-  border-radius: 13px;
+  padding: 13px 14px;
+  background: #fbfcfe;
+  border: 1px solid #edf1f6;
+  border-radius: 12px;
 }
 
 .executive-ai-card-detail.full {
   grid-column: 1 / -1;
 }
 
+.executive-ai-card-detail-copy {
+  min-width: 0;
+}
+
 .executive-ai-card-detail-icon {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 9px;
 }
 
 .executive-ai-card-detail-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .executive-ai-card-detail-icon.trend {
@@ -285,8 +362,7 @@
   background: #dcfce7;
 }
 
-.executive-ai-card-detail p,
-.executive-ai-card-recommendation p {
+.executive-ai-card-detail p {
   margin: 0;
   color: #475569;
   font-size: 12px;
@@ -294,34 +370,17 @@
   line-height: 1.6;
 }
 
-.executive-ai-card-recommendation {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin: 0 20px 18px 24px;
-  padding: 16px;
-  background:
-    linear-gradient(
-      135deg,
-      #ecfdf5,
-      #f0fdf4
-    );
-  border: 1px solid #bbf7d0;
-  border-radius: 14px;
-}
 
-.executive-ai-card-recommendation p {
-  color: #14532d;
-  font-size: 13px;
-  font-weight: 750;
-}
+/* =====================================================
+   Footer / Evidence
+   ===================================================== */
 
 .executive-ai-card-footer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px;
+  grid-template-columns: minmax(0, 1fr) 200px;
   align-items: center;
-  gap: 20px;
-  padding: 14px 20px 16px 24px;
+  gap: 18px;
+  padding: 12px 20px 14px 24px;
   background: #f8fafc;
   border-top: 1px solid #e7edf5;
 }
@@ -332,14 +391,14 @@
   gap: 8px;
   min-width: 0;
   color: #64748b;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 650;
   line-height: 1.45;
 }
 
 .executive-ai-card-source svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
   color: #22c55e;
 }
@@ -357,23 +416,23 @@
 
 .executive-ai-card-confidence-heading span {
   color: #64748b;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .executive-ai-card-confidence-heading strong {
   color: #0f172a;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
 }
 
 .executive-ai-card-confidence-track {
   width: 100%;
-  height: 6px;
+  height: 5px;
   overflow: hidden;
-  margin-top: 7px;
+  margin-top: 6px;
   background: #dbe3ec;
   border-radius: 999px;
 }
@@ -390,6 +449,34 @@
   border-radius: inherit;
   transition: width 300ms ease;
 }
+
+
+/* =====================================================
+   Mongolian readability
+   ===================================================== */
+
+html[lang="mn"] .executive-ai-insight-card,
+html[lang="MN"] .executive-ai-insight-card,
+body[data-language="MN"] .executive-ai-insight-card,
+.executive-ai-insight-card[data-language="MN"] {
+  font-family: Arial, sans-serif;
+}
+
+html[lang="mn"] .executive-ai-card-heading-copy h3,
+html[lang="mn"] .executive-ai-card-summary-text,
+html[lang="mn"] .executive-ai-card-recommendation p,
+html[lang="mn"] .executive-ai-card-detail p,
+html[lang="MN"] .executive-ai-card-heading-copy h3,
+html[lang="MN"] .executive-ai-card-summary-text,
+html[lang="MN"] .executive-ai-card-recommendation p,
+html[lang="MN"] .executive-ai-card-detail p {
+  letter-spacing: normal;
+}
+
+
+/* =====================================================
+   Responsive
+   ===================================================== */
 
 @media (max-width: 900px) {
   .executive-ai-card-summary-row {
@@ -413,6 +500,10 @@
   .executive-ai-card-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .executive-ai-card-severity {
+    align-self: flex-start;
   }
 
   .executive-ai-card-detail-grid {

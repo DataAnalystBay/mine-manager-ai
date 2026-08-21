@@ -1,3 +1,5 @@
+import { useLanguage } from "../../context/LanguageContext";
+
 import "./PredictionRecommendation.css";
 
 import {
@@ -25,6 +27,7 @@ function getNumericValue(value) {
 
 function getRecommendationContent(
   prediction,
+  t,
 ) {
   const kpiName =
     normalizeText(
@@ -59,15 +62,15 @@ function getRecommendationContent(
     "Available"
   ) {
     return {
-      status: "Data Required",
+      status: t("predictionRecommendation.status.dataRequired"),
       statusClass: "unavailable",
       icon: <FiTarget />,
       action:
-        "Load additional historical KPI data before taking forecast-based action.",
+        t("predictionRecommendation.dataRequired.action"),
       benefit:
-        "Improve forecast reliability and enable operational recommendations.",
+        t("predictionRecommendation.dataRequired.benefit"),
       owner:
-        "Data and Reporting Team",
+        t("predictionRecommendation.owner.dataReporting"),
     };
   }
 
@@ -76,42 +79,42 @@ function getRecommendationContent(
   ) {
     if (isDeclining) {
       return {
-        status: "Priority Action",
+        status: t("predictionRecommendation.status.priorityAction"),
         statusClass: "critical",
         icon: <FiTrendingDown />,
         action:
-          "Review shovel availability, ore exposure, mining sequence, and crusher feed constraints before the next shift.",
+          t("predictionRecommendation.ore.declining.action"),
         benefit:
-          "Reduce the forecast production decline and protect ore delivery against plan.",
+          t("predictionRecommendation.ore.declining.benefit"),
         owner:
-          "Mining Operations",
+          t("predictionRecommendation.owner.miningOperations"),
       };
     }
 
     if (isImproving) {
       return {
-        status: "Maintain Momentum",
+        status: t("predictionRecommendation.status.maintainMomentum"),
         statusClass: "healthy",
         icon: <FiCheckCircle />,
         action:
-          "Maintain the current ore mining sequence and monitor shovel and crusher performance.",
+          t("predictionRecommendation.ore.improving.action"),
         benefit:
-          "Sustain production performance while protecting the current operating rhythm.",
+          t("predictionRecommendation.ore.improving.benefit"),
         owner:
-          "Mining Operations",
+          t("predictionRecommendation.owner.miningOperations"),
       };
     }
 
     return {
-      status: "Monitor",
+      status: t("predictionRecommendation.status.monitor"),
       statusClass: "watch",
       icon: <FiTarget />,
       action:
-        "Confirm ore exposure, shovel allocation, and crusher feed readiness for the next three shifts.",
+        t("predictionRecommendation.ore.stable.action"),
       benefit:
-        "Prevent stable performance from moving into a declining production trend.",
+        t("predictionRecommendation.ore.stable.benefit"),
       owner:
-        "Mining Operations",
+        t("predictionRecommendation.owner.miningOperations"),
     };
   }
 
@@ -120,28 +123,28 @@ function getRecommendationContent(
   ) {
     if (isDeclining) {
       return {
-        status: "Priority Action",
+        status: t("predictionRecommendation.status.priorityAction"),
         statusClass: "critical",
         icon: <FiTrendingDown />,
         action:
-          "Review truck allocation, haul-road delays, dump access, and waste movement priorities.",
+          t("predictionRecommendation.waste.declining.action"),
         benefit:
-          "Protect waste stripping progress and reduce schedule disruption.",
+          t("predictionRecommendation.waste.declining.benefit"),
         owner:
-          "Mining Operations",
+          t("predictionRecommendation.owner.miningOperations"),
       };
     }
 
     return {
-      status: "Monitor",
+      status: t("predictionRecommendation.status.monitor"),
       statusClass: "watch",
       icon: <FiTarget />,
       action:
-        "Maintain current truck allocation and continue monitoring haul-road and dump constraints.",
+        t("predictionRecommendation.waste.stable.action"),
       benefit:
-        "Keep waste movement aligned with the short-term mining plan.",
+        t("predictionRecommendation.waste.stable.benefit"),
       owner:
-        "Mining Operations",
+        t("predictionRecommendation.owner.miningOperations"),
     };
   }
 
@@ -150,42 +153,42 @@ function getRecommendationContent(
   ) {
     if (isDeclining) {
       return {
-        status: "Priority Action",
+        status: t("predictionRecommendation.status.priorityAction"),
         statusClass: "critical",
         icon: <FiTrendingDown />,
         action:
-          "Prioritize critical truck maintenance, review dispatch delays, and investigate utilization losses before the next shift.",
+          t("predictionRecommendation.fleet.declining.action"),
         benefit:
-          "Recover fleet capacity and reduce the predicted deterioration in availability and utilization.",
+          t("predictionRecommendation.fleet.declining.benefit"),
         owner:
-          "Maintenance and Dispatch",
+          t("predictionRecommendation.owner.maintenanceDispatch"),
       };
     }
 
     if (isImproving) {
       return {
-        status: "Maintain Momentum",
+        status: t("predictionRecommendation.status.maintainMomentum"),
         statusClass: "healthy",
         icon: <FiCheckCircle />,
         action:
-          "Maintain current dispatch and maintenance controls while monitoring equipment reliability.",
+          t("predictionRecommendation.fleet.improving.action"),
         benefit:
-          "Sustain fleet performance and protect production capacity.",
+          t("predictionRecommendation.fleet.improving.benefit"),
         owner:
-          "Maintenance and Dispatch",
+          t("predictionRecommendation.owner.maintenanceDispatch"),
       };
     }
 
     return {
-      status: "Monitor",
+      status: t("predictionRecommendation.status.monitor"),
       statusClass: "watch",
       icon: <FiTarget />,
       action:
-        "Review truck availability, utilization, idle time, and upcoming maintenance exposure.",
+        t("predictionRecommendation.fleet.stable.action"),
       benefit:
-        "Prevent stable fleet performance from moving into decline.",
+        t("predictionRecommendation.fleet.stable.benefit"),
       owner:
-        "Maintenance and Dispatch",
+        t("predictionRecommendation.owner.maintenanceDispatch"),
     };
   }
 
@@ -194,28 +197,28 @@ function getRecommendationContent(
   ) {
     if (isDeclining) {
       return {
-        status: "Priority Action",
+        status: t("predictionRecommendation.status.priorityAction"),
         statusClass: "critical",
         icon: <FiTrendingDown />,
         action:
-          "Review throughput bottlenecks, recovery losses, feed variability, and planned plant downtime.",
+          t("predictionRecommendation.plant.declining.action"),
         benefit:
-          "Reduce the forecast performance loss and protect processing output.",
+          t("predictionRecommendation.plant.declining.benefit"),
         owner:
-          "Processing Operations",
+          t("predictionRecommendation.owner.processingOperations"),
       };
     }
 
     return {
-      status: "Monitor",
+      status: t("predictionRecommendation.status.monitor"),
       statusClass: "watch",
       icon: <FiTarget />,
       action:
-        "Maintain current operating settings and monitor throughput, recovery, and feed stability.",
+        t("predictionRecommendation.plant.stable.action"),
       benefit:
-        "Sustain plant performance through the forecast period.",
+        t("predictionRecommendation.plant.stable.benefit"),
       owner:
-        "Processing Operations",
+        t("predictionRecommendation.owner.processingOperations"),
     };
   }
 
@@ -224,28 +227,28 @@ function getRecommendationContent(
   ) {
     if (isDeclining) {
       return {
-        status: "Priority Action",
+        status: t("predictionRecommendation.status.priorityAction"),
         statusClass: "critical",
         icon: <FiTrendingDown />,
         action:
-          "Review incidents, near misses, critical-risk controls, and supervisor field verification before the next shift.",
+          t("predictionRecommendation.safety.declining.action"),
         benefit:
-          "Strengthen preventive controls and reduce exposure to high-consequence risk.",
+          t("predictionRecommendation.safety.declining.benefit"),
         owner:
-          "HSE and Operations",
+          t("predictionRecommendation.owner.hseOperations"),
       };
     }
 
     return {
-      status: "Maintain Controls",
+      status: t("predictionRecommendation.status.maintainControls"),
       statusClass: "healthy",
       icon: <FiCheckCircle />,
       action:
-        "Maintain current critical-risk controls and continue monitoring leading safety indicators.",
+        t("predictionRecommendation.safety.stable.action"),
       benefit:
-        "Preserve strong safety performance through the forecast period.",
+        t("predictionRecommendation.safety.stable.benefit"),
       owner:
-        "HSE and Operations",
+        t("predictionRecommendation.owner.hseOperations"),
     };
   }
 
@@ -254,64 +257,64 @@ function getRecommendationContent(
   ) {
     if (isDeclining) {
       return {
-        status: "Executive Review",
+        status: t("predictionRecommendation.status.executiveReview"),
         statusClass: "critical",
         icon: <FiTrendingDown />,
         action:
-          "Review the declining KPI drivers and assign owners to the highest-risk operational constraints.",
+          t("predictionRecommendation.health.declining.action"),
         benefit:
-          "Stabilize overall Mine Health before the decline affects multiple operating areas.",
+          t("predictionRecommendation.health.declining.benefit"),
         owner:
-          "Mine Management Team",
+          t("predictionRecommendation.owner.mineManagement"),
       };
     }
 
     if (isImproving) {
       return {
-        status: "Maintain Momentum",
+        status: t("predictionRecommendation.status.maintainMomentum"),
         statusClass: "healthy",
         icon: <FiCheckCircle />,
         action:
-          "Maintain the current operating rhythm and continue monitoring the leading KPI drivers.",
+          t("predictionRecommendation.health.improving.action"),
         benefit:
-          "Sustain the improving Mine Health position.",
+          t("predictionRecommendation.health.improving.benefit"),
         owner:
-          "Mine Management Team",
+          t("predictionRecommendation.owner.mineManagement"),
       };
     }
 
     return {
-      status: "Monitor",
+      status: t("predictionRecommendation.status.monitor"),
       statusClass: "watch",
       icon: <FiTarget />,
       action:
-        "Review the leading KPI drivers and maintain focus on production, fleet, plant, and safety controls.",
+        t("predictionRecommendation.health.stable.action"),
       benefit:
-        "Prevent a stable Mine Health forecast from moving into decline.",
+        t("predictionRecommendation.health.stable.benefit"),
       owner:
-        "Mine Management Team",
+        t("predictionRecommendation.owner.mineManagement"),
     };
   }
 
   if (isDeclining) {
     return {
-      status: "Priority Action",
+      status: t("predictionRecommendation.status.priorityAction"),
       statusClass: "critical",
       icon: <FiTrendingDown />,
       action:
-        "Review the operational drivers behind the forecast decline and assign a corrective action owner.",
+        t("predictionRecommendation.generic.declining.action"),
       benefit:
-        "Reduce the predicted KPI deterioration over the next three shifts.",
+        t("predictionRecommendation.generic.declining.benefit"),
       owner:
-        "Operational Owner",
+        t("predictionRecommendation.owner.operationalOwner"),
     };
   }
 
   return {
     status:
       confidence >= 85
-        ? "Monitor"
-        : "Validate Forecast",
+        ? t("predictionRecommendation.status.monitor")
+        : t("predictionRecommendation.status.validateForecast"),
     statusClass:
       confidence >= 85
         ? "watch"
@@ -319,14 +322,14 @@ function getRecommendationContent(
     icon: <FiTarget />,
     action:
       confidence >= 85
-        ? "Maintain current controls and monitor the KPI during the next three shifts."
-        : "Validate the underlying data and review the forecast before taking action.",
+        ? t("predictionRecommendation.generic.monitor.action")
+        : t("predictionRecommendation.generic.validate.action"),
     benefit:
       confidence >= 85
-        ? "Protect current performance and identify early deterioration."
-        : "Improve decision quality by confirming the forecast inputs.",
+        ? t("predictionRecommendation.generic.monitor.benefit")
+        : t("predictionRecommendation.generic.validate.benefit"),
     owner:
-      "Operational Owner",
+      t("predictionRecommendation.owner.operationalOwner"),
   };
 }
 
@@ -334,9 +337,12 @@ function getRecommendationContent(
 function PredictionRecommendation({
   prediction,
 }) {
+  const { t } = useLanguage();
+
   const recommendation =
     getRecommendationContent(
       prediction || {},
+      t,
     );
 
   return (
@@ -350,7 +356,7 @@ function PredictionRecommendation({
 
         <div>
           <span className="prediction-recommendation__eyebrow">
-            AI Recommended Action
+            {t("predictionRecommendation.title")}
           </span>
 
           <strong
@@ -368,7 +374,7 @@ function PredictionRecommendation({
       <div className="prediction-recommendation__details">
         <div>
           <span>
-            Expected benefit
+            {t("predictionRecommendation.expectedBenefit")}
           </span>
 
           <strong>
@@ -378,7 +384,7 @@ function PredictionRecommendation({
 
         <div>
           <span>
-            Suggested owner
+            {t("predictionRecommendation.suggestedOwner")}
           </span>
 
           <strong>

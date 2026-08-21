@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -31,6 +33,10 @@ router = APIRouter(
 )
 
 
+ACTIVE_COMPANY_ID = int(os.getenv("ACTIVE_COMPANY_ID", "1"))
+ACTIVE_MINE_ID = int(os.getenv("ACTIVE_MINE_ID", "1"))
+
+
 # ============================================================
 # DATABASE DEPENDENCY
 # ============================================================
@@ -49,6 +55,66 @@ def get_db():
 
 
 # ============================================================
+# ACTIVE TENANT RESOLUTION
+# ============================================================
+
+def resolve_active_tenant(
+    db: Session,
+    requested_mine_name: str | None = None,
+):
+    """
+    Resolve the active tenant from backend environment settings.
+
+    ACTIVE_COMPANY_ID and ACTIVE_MINE_ID are authoritative for the
+    current V1.0 deployment/demo profile. A caller-supplied mine name
+    is never used as the security boundary.
+
+    This prevents a request from selecting another customer's data by
+    changing only the mine_name query parameter.
+    """
+
+    tenant = db.execute(
+        text(
+            """
+            SELECT
+                m.id AS mine_id,
+                m.company_id AS company_id,
+                m.mine_name AS mine_name,
+                c.company_name AS company_name
+            FROM public.mine_settings AS m
+            JOIN public.company_settings AS c
+                ON c.id = m.company_id
+            WHERE m.id = :mine_id
+              AND m.company_id = :company_id
+            """
+        ),
+        {
+            "company_id": ACTIVE_COMPANY_ID,
+            "mine_id": ACTIVE_MINE_ID,
+        },
+    ).mappings().first()
+
+    if tenant is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Active tenant company={ACTIVE_COMPANY_ID}, "
+                f"mine={ACTIVE_MINE_ID} was not found."
+            ),
+        )
+
+    # requested_mine_name is accepted for frontend compatibility only.
+    # The active IDs remain authoritative.
+    return {
+        "company_id": int(tenant["company_id"]),
+        "mine_id": int(tenant["mine_id"]),
+        "company_name": tenant["company_name"],
+        "mine_name": tenant["mine_name"],
+        "requested_mine_name": requested_mine_name,
+    }
+
+
+# ============================================================
 # EMPTY RESPONSE
 # ============================================================
 
@@ -61,6 +127,14 @@ def empty_summary(mine_name: str):
     return {
         "mine_name": mine_name,
         "report_date": None,
+        "operation_profile": None,
+        "applicability": {
+            "production": True,
+            "waste": True,
+            "fleet": True,
+            "plant": True,
+            "safety": True,
+        },
         "health": 0,
         "ore": 0,
         "waste": 0,
@@ -84,27 +158,49 @@ def empty_summary(mine_name: str):
 
 @router.get("/executive-summary")
 def get_executive_summary(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
-    Return the latest operational KPI summary for the selected mine.
+    Return the latest operational KPI summary for the active tenant.
 
-    This endpoint keeps the existing response structure used by the
-    current dashboard frontend.
+    company_id + mine_id are the authoritative tenant boundary.
+    mine_name is retained only for frontend compatibility/display.
     """
+
+    tenant = resolve_active_tenant(
+        db=db,
+        requested_mine_name=mine_name,
+    )
+
+    company_id = tenant["company_id"]
+    mine_id = tenant["mine_id"]
+    mine_name = tenant["mine_name"]
+
+    is_sxew_operation = (
+        mine_name == "Achit-Ikht Copper Cathode Operation"
+    )
+
+    waste_applicable = not is_sxew_operation
+    fleet_applicable = not is_sxew_operation
+
+    tenant_params = {
+        "company_id": company_id,
+        "mine_id": mine_id,
+    }
 
     production = db.execute(
         text(
             """
             SELECT *
-            FROM production_daily
-            WHERE mine_name = :mine_name
+            FROM public.production_daily
+            WHERE company_id = :company_id
+              AND mine_id = :mine_id
             ORDER BY report_date DESC
             LIMIT 1
             """
         ),
-        {"mine_name": mine_name},
+        tenant_params,
     ).mappings().first()
 
     if production is None:
@@ -128,13 +224,14 @@ def get_executive_summary(
         text(
             """
             SELECT *
-            FROM fleet_daily
-            WHERE mine_name = :mine_name
+            FROM public.fleet_daily
+            WHERE company_id = :company_id
+              AND mine_id = :mine_id
             ORDER BY report_date DESC
             LIMIT 1
             """
         ),
-        {"mine_name": mine_name},
+        tenant_params,
     ).mappings().first()
 
     if fleet_result:
@@ -146,6 +243,8 @@ def get_executive_summary(
             utilization,
         )
     else:
+        # Keep the existing V1.0 numeric response contract.
+        # A later UI improvement can display this as N/A/No Data.
         availability = 0
         utilization = 0
         fleet = 0
@@ -158,13 +257,14 @@ def get_executive_summary(
         text(
             """
             SELECT *
-            FROM plant_daily
-            WHERE mine_name = :mine_name
+            FROM public.plant_daily
+            WHERE company_id = :company_id
+              AND mine_id = :mine_id
             ORDER BY report_date DESC
             LIMIT 1
             """
         ),
-        {"mine_name": mine_name},
+        tenant_params,
     ).mappings().first()
 
     if plant_result:
@@ -186,13 +286,14 @@ def get_executive_summary(
         text(
             """
             SELECT *
-            FROM safety_daily
-            WHERE mine_name = :mine_name
+            FROM public.safety_daily
+            WHERE company_id = :company_id
+              AND mine_id = :mine_id
             ORDER BY report_date DESC
             LIMIT 1
             """
         ),
-        {"mine_name": mine_name},
+        tenant_params,
     ).mappings().first()
 
     if safety_result:
@@ -210,17 +311,35 @@ def get_executive_summary(
     # Mine Health
     # --------------------------------------------------------
 
+    operation_profile = (
+        "sxew_copper"
+        if is_sxew_operation
+        else "standard_mine"
+    )
+
     health = calculate_health_score(
         ore=ore,
         waste=waste,
         fleet=fleet,
         plant=plant,
         safety_score=safety_score,
+        operation_profile=operation_profile,
     )
 
     return {
+        "company_id": company_id,
+        "mine_id": mine_id,
+        "company_name": tenant["company_name"],
         "mine_name": mine_name,
         "report_date": str(production["report_date"]),
+        "operation_profile": operation_profile,
+        "applicability": {
+            "production": True,
+            "waste": waste_applicable,
+            "fleet": fleet_applicable,
+            "plant": True,
+            "safety": True,
+        },
         "health": health,
         "ore": ore,
         "waste": waste,
@@ -244,7 +363,7 @@ def get_executive_summary(
 
 @router.get("/ai-briefing")
 def get_ai_briefing(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
@@ -256,6 +375,8 @@ def get_ai_briefing(
         db=db,
     )
 
+
+    mine_name = summary.get("mine_name") or mine_name
     if summary.get("status") != "Connected to PostgreSQL":
         return {
             "mine_name": mine_name,
@@ -269,28 +390,63 @@ def get_ai_briefing(
     risks = []
     actions = []
 
+    is_sxew = (
+        summary.get("operation_profile")
+        == "sxew_copper"
+    )
+
+    production_label = (
+        "Cathode production"
+        if is_sxew
+        else "Ore production"
+    )
+
+    production_action = (
+        "Review cathode production losses, plant availability, "
+        "copper recovery, EW performance, and process constraints."
+        if is_sxew
+        else
+        "Review mining sequence, shovel availability, and "
+        "short-interval control performance."
+    )
+
+    health_action = (
+        "Run a cross-functional review on cathode production, "
+        "process plant, and safety performance."
+        if is_sxew
+        else
+        "Run a cross-functional review on production, fleet, "
+        "plant, and safety performance."
+    )
+
     if summary["health"] < 85:
         risks.append("Overall mine health is below target.")
         actions.append(
-            "Run a cross-functional review on production, fleet, "
-            "plant, and safety performance."
+            health_action
         )
 
     if summary["ore"] < 95:
-        risks.append("Ore production is below plan.")
+        risks.append(
+            f"{production_label} is below plan."
+        )
         actions.append(
-            "Review mining sequence, shovel availability, and "
-            "short-interval control performance."
+            production_action
         )
 
-    if summary["waste"] < 95:
+    if (
+        summary["applicability"]["waste"]
+        and summary["waste"] < 95
+    ):
         risks.append("Waste movement is below plan.")
         actions.append(
             "Check truck allocation, haul road delays, and waste "
             "dump constraints."
         )
 
-    if summary["fleet"] < 90:
+    if (
+        summary["applicability"]["fleet"]
+        and summary["fleet"] < 90
+    ):
         risks.append("Fleet performance is below target.")
         actions.append(
             "Review truck availability, utilization, maintenance "
@@ -324,16 +480,27 @@ def get_ai_briefing(
             "monitoring leading indicators."
         )
 
-    briefing = (
-        f"{mine_name} is currently operating with a Mine Health Score "
-        f"of {summary['health']}%. "
-        f"Ore performance is {summary['ore']}%, "
-        f"waste movement is {summary['waste']}%, "
-        f"fleet performance is {summary['fleet']}%, "
-        f"plant performance is {summary['plant']}%, "
-        f"and safety score is {summary['safety_score']}%. "
-        f"The key management focus should be: {actions[0]}"
-    )
+    if is_sxew:
+        briefing = (
+            f"{mine_name} is currently operating with a Mine Health Score "
+            f"of {summary['health']}%. "
+            f"Cathode production performance is {summary['ore']}%, "
+            f"process plant performance is {summary['plant']}%, "
+            f"Cu recovery is {summary['recovery']}%, "
+            f"and safety score is {summary['safety_score']}%. "
+            f"The key management focus should be: {actions[0]}"
+        )
+    else:
+        briefing = (
+            f"{mine_name} is currently operating with a Mine Health Score "
+            f"of {summary['health']}%. "
+            f"Ore performance is {summary['ore']}%, "
+            f"waste movement is {summary['waste']}%, "
+            f"fleet performance is {summary['fleet']}%, "
+            f"plant performance is {summary['plant']}%, "
+            f"and safety score is {summary['safety_score']}%. "
+            f"The key management focus should be: {actions[0]}"
+        )
 
     return {
         "mine_name": mine_name,
@@ -351,7 +518,7 @@ def get_ai_briefing(
 
 @router.get("/priority-actions")
 def get_priority_actions(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
@@ -363,6 +530,8 @@ def get_priority_actions(
         db=db,
     )
 
+
+    mine_name = summary.get("mine_name") or mine_name
     if summary.get("status") != "Connected to PostgreSQL":
         return {
             "mine_name": mine_name,
@@ -374,25 +543,51 @@ def get_priority_actions(
 
     actions = []
 
+    is_sxew = (
+        summary.get("operation_profile")
+        == "sxew_copper"
+    )
+
     if summary["ore"] < 95:
         actions.append(
             {
                 "category": "Production",
                 "priority": 1,
                 "severity": "High",
-                "title": "Ore Production Below Target",
+                "title": (
+                    "Cathode Production Below Target"
+                    if is_sxew
+                    else "Ore Production Below Target"
+                ),
                 "description": (
-                    f"Ore performance is {summary['ore']}%, "
-                    "below the 95% threshold."
+                    (
+                        f"Cathode production performance is "
+                        f"{summary['ore']}%, below the 95% threshold."
+                    )
+                    if is_sxew
+                    else (
+                        f"Ore performance is {summary['ore']}%, "
+                        "below the 95% threshold."
+                    )
                 ),
                 "recommended_action": (
-                    "Review mining sequence, shovel allocation, and "
-                    "short-interval control performance."
+                    (
+                        "Review cathode production losses, plant availability, "
+                        "Cu recovery, EW performance, and process constraints."
+                    )
+                    if is_sxew
+                    else (
+                        "Review mining sequence, shovel allocation, and "
+                        "short-interval control performance."
+                    )
                 ),
             }
         )
 
-    if summary["waste"] < 95:
+    if (
+        summary["applicability"]["waste"]
+        and summary["waste"] < 95
+    ):
         actions.append(
             {
                 "category": "Production",
@@ -410,7 +605,10 @@ def get_priority_actions(
             }
         )
 
-    if summary["fleet"] < 90:
+    if (
+        summary["applicability"]["fleet"]
+        and summary["fleet"] < 90
+    ):
         actions.append(
             {
                 "category": "Fleet",
@@ -520,7 +718,7 @@ def get_priority_actions(
 
 @router.get("/risk-register")
 def get_risk_register(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
@@ -532,6 +730,8 @@ def get_risk_register(
         db=db,
     )
 
+
+    mine_name = summary.get("mine_name") or mine_name
     if summary.get("status") != "Connected to PostgreSQL":
         return {
             "mine_name": mine_name,
@@ -543,6 +743,11 @@ def get_risk_register(
         }
 
     risks = []
+
+    is_sxew = (
+        summary.get("operation_profile")
+        == "sxew_copper"
+    )
 
     def add_risk(
         category,
@@ -573,16 +778,34 @@ def get_risk_register(
             severity="High",
             likelihood="High",
             impact="High",
-            owner="Mine Operations",
-            title="Ore production below target",
+            owner=(
+                "Process Operations"
+                if is_sxew
+                else "Mine Operations"
+            ),
+            title=(
+                "Cathode production below target"
+                if is_sxew
+                else "Ore production below target"
+            ),
             mitigation=(
-                "Review mining sequence, shovel allocation, and "
-                "short-interval control performance."
+                (
+                    "Review cathode production losses, plant availability, "
+                    "Cu recovery, EW performance, and process constraints."
+                )
+                if is_sxew
+                else (
+                    "Review mining sequence, shovel allocation, and "
+                    "short-interval control performance."
+                )
             ),
             score=16,
         )
 
-    if summary["waste"] < 95:
+    if (
+        summary["applicability"]["waste"]
+        and summary["waste"] < 95
+    ):
         add_risk(
             category="Production",
             severity="Medium",
@@ -597,7 +820,10 @@ def get_risk_register(
             score=12,
         )
 
-    if summary["fleet"] < 90:
+    if (
+        summary["applicability"]["fleet"]
+        and summary["fleet"] < 90
+    ):
         add_risk(
             category="Fleet",
             severity="High",
@@ -691,15 +917,20 @@ def get_risk_register(
 
 @router.get("/health-history")
 def get_health_history(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
     Return historical Mine Health and component KPI values.
     """
 
+    tenant = resolve_active_tenant(
+        db=db,
+        requested_mine_name=mine_name,
+    )
+
     return get_health_history_service(
-        mine_name=mine_name,
+        mine_name=tenant["mine_name"],
         db=db,
     )
 
@@ -710,16 +941,24 @@ def get_health_history(
 
 @router.get("/trend-analysis")
 def get_trend_analysis(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
+    language: str = Query(default="en"),
     db: Session = Depends(get_db),
 ):
     """
-    Return Mine Health direction, drivers, and recommendations.
+    Return Mine Health direction, drivers, and recommendations
+    in the requested language.
     """
 
-    return get_trend_analysis_service(
-        mine_name=mine_name,
+    tenant = resolve_active_tenant(
         db=db,
+        requested_mine_name=mine_name,
+    )
+
+    return get_trend_analysis_service(
+        mine_name=tenant["mine_name"],
+        db=db,
+        language=language,
     )
 
 
@@ -729,13 +968,14 @@ def get_trend_analysis(
 
 @router.get("/shared-analytics")
 def shared_analytics(
-    mine_name: str = Query(default="Oyu Tolgoi Surface"),
+    mine_name: str | None = Query(default=None),
     days: int = Query(
         default=7,
         ge=1,
         le=365,
         description="Number of recent reporting days to return.",
     ),
+    language: str = Query(default="en"),
     db: Session = Depends(get_db),
 ):
     """
@@ -745,12 +985,22 @@ def shared_analytics(
     - Executive PDF Reports
     - Executive Briefing
     - Future Board Packs
+
+    The optional language parameter is propagated to the shared analytics
+    service so dynamic trend insights and recommendations can be returned
+    in the selected UI language.
     """
+
+    tenant = resolve_active_tenant(
+        db=db,
+        requested_mine_name=mine_name,
+    )
 
     return get_shared_analytics(
         db=db,
-        mine_name=mine_name,
+        mine_name=tenant["mine_name"],
         days=days,
+        language=language,
     )
 
 @router.get(
@@ -758,13 +1008,20 @@ def shared_analytics(
     response_model=KpiDetailResponse,
 )
 def read_kpi_detail(
-    mine_name: str = Query(...),
+    mine_name: str | None = Query(default=None),
     kpi_name: str = Query(...),
     days: int = Query(7, ge=2, le=30),
+    db: Session = Depends(get_db),
 ):
     try:
+        tenant = resolve_active_tenant(
+            db=db,
+            requested_mine_name=mine_name,
+        )
+
         return get_kpi_detail(
-            mine_name=mine_name,
+            db=db,
+            mine_name=tenant["mine_name"],
             kpi_name=kpi_name,
             days=days,
         )

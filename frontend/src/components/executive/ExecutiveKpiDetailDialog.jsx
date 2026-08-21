@@ -11,6 +11,8 @@ import {
 
 import { exportExecutiveKpiPdf } from "../../api/executivePdfApi";
 import { useConfig } from "../../context/ConfigContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { translateDynamicKpiName } from "../../i18n/dynamicTranslations";
 
 import ExecutiveAiInsightCard from "./ExecutiveAiInsightCard";
 import ExecutiveKpiSkeleton from "./ExecutiveKpiSkeleton";
@@ -69,21 +71,51 @@ function formatValue(value) {
       });
 }
 
-function formatDate(dateValue) {
+function formatDate(dateValue, language) {
   if (!dateValue) {
     return "—";
   }
 
-  const date = new Date(dateValue);
+  const rawValue = String(dateValue).trim();
 
-  if (Number.isNaN(date.getTime())) {
-    return String(dateValue);
+  const isoDateMatch = rawValue.match(
+    /^(\d{4})-(\d{2})-(\d{2})/
+  );
+
+  if (
+    language === "MN" &&
+    isoDateMatch
+  ) {
+    const month = Number(
+      isoDateMatch[2]
+    );
+
+    const day = Number(
+      isoDateMatch[3]
+    );
+
+    return `${month}-р сарын ${day}`;
   }
 
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  const date = new Date(rawValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return rawValue;
+  }
+
+  if (language === "MN") {
+    return `${
+      date.getMonth() + 1
+    }-р сарын ${date.getDate()}`;
+  }
+
+  return date.toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+    }
+  );
 }
 
 function normalizeConfidence(confidence) {
@@ -102,17 +134,29 @@ function normalizeConfidence(confidence) {
   return Math.min(Math.max(percentage, 0), 100);
 }
 
-function getKpiStatus(data) {
+function translateTemplate(t, key, variables = {}) {
+  let value = t(key);
+
+  Object.entries(variables).forEach(([name, replacement]) => {
+    value = String(value).replaceAll(
+      `{${name}}`,
+      String(replacement ?? "")
+    );
+  });
+
+  return value;
+}
+
+function getKpiStatus(data, t) {
   const currentValue = Number(data?.current_value);
   const target = Number(data?.target);
 
   if (!Number.isFinite(currentValue) || !Number.isFinite(target)) {
     return {
       level: "neutral",
-      label: "Status unavailable",
-      headline: "Performance status cannot be calculated",
-      description:
-        "Current performance or target information is unavailable.",
+      label: t("executiveKpiDetail.status.unavailable"),
+      headline: t("executiveKpiDetail.status.unavailableHeadline"),
+      description: t("executiveKpiDetail.status.unavailableDescription"),
     };
   }
 
@@ -129,33 +173,40 @@ function getKpiStatus(data) {
   if (performanceGap >= nearTargetThreshold) {
     return {
       level: "positive",
-      label: "Above target",
-      headline: "Current performance is above target",
-      description: `Performance is ${Math.abs(performanceGap).toFixed(
-        1
-      )}% better than the configured target.`,
+      label: t("executiveKpiDetail.status.aboveTarget"),
+      headline: t("executiveKpiDetail.status.aboveTargetHeadline"),
+      description: translateTemplate(
+        t,
+        "executiveKpiDetail.status.aboveTargetDescription",
+        { gap: Math.abs(performanceGap).toFixed(1) }
+      ),
     };
   }
 
   if (performanceGap <= -nearTargetThreshold) {
     return {
       level: "negative",
-      label: "Below target",
-      headline: "Current performance is below target",
-      description: `Performance is ${Math.abs(performanceGap).toFixed(
-        1
-      )}% behind the configured target.`,
+      label: t("executiveKpiDetail.status.belowTarget"),
+      headline: t("executiveKpiDetail.status.belowTargetHeadline"),
+      description: translateTemplate(
+        t,
+        "executiveKpiDetail.status.belowTargetDescription",
+        { gap: Math.abs(performanceGap).toFixed(1) }
+      ),
     };
   }
 
   return {
     level: "warning",
-    label: "Near target",
-    headline: "Current performance is close to target",
-    description: `Performance is within ${nearTargetThreshold}% of the configured target.`,
+    label: t("executiveKpiDetail.status.nearTarget"),
+    headline: t("executiveKpiDetail.status.nearTargetHeadline"),
+    description: translateTemplate(
+      t,
+      "executiveKpiDetail.status.nearTargetDescription",
+      { threshold: nearTargetThreshold }
+    ),
   };
 }
-
 function getChangeClass(direction, change) {
   if (direction === "down") {
     return "negative";
@@ -190,7 +241,7 @@ function renderStatusIcon(level) {
   return <FiTarget />;
 }
 
-function getDriverItems(data) {
+function getDriverItems(data, t) {
   const candidates =
     data?.operational_drivers ??
     data?.drivers ??
@@ -204,12 +255,18 @@ function getDriverItems(data) {
 
   return candidates.slice(0, 5).map((driver, index) => ({
     id: driver.id ?? driver.driver_key ?? `${driver.name ?? "driver"}-${index}`,
-    name:
+    name: translateDynamicKpiName(
       driver.name ??
-      driver.driver_name ??
-      driver.title ??
-      driver.label ??
-      `Operational Driver ${index + 1}`,
+        driver.driver_name ??
+        driver.title ??
+        driver.label ??
+        translateTemplate(
+          t,
+          "executiveKpiDetail.operationalDriverFallback",
+          { number: index + 1 }
+        ),
+      t
+    ),
     value:
       driver.value ??
       driver.current_value ??
@@ -228,11 +285,11 @@ function getDriverItems(data) {
       driver.impact ??
       driver.impact_level ??
       driver.severity ??
-      "Medium",
+      t("executiveKpiDetail.medium"),
   }));
 }
 
-function getSupportingRows(data, dailyValues) {
+function getSupportingRows(data, dailyValues, t) {
   const candidates =
     data?.supporting_data ??
     data?.supporting_rows ??
@@ -267,7 +324,15 @@ function getSupportingRows(data, dailyValues) {
 
     return {
       id: row.id ?? row.date ?? `supporting-row-${index}`,
-      date: row.date ?? row.report_date ?? row.label ?? `Day ${index + 1}`,
+      date:
+        row.date ??
+        row.report_date ??
+        row.label ??
+        translateTemplate(
+          t,
+          "executiveKpiDetail.dayFallback",
+          { number: index + 1 }
+        ),
       actual,
       plan,
       variance,
@@ -291,6 +356,10 @@ export default function ExecutiveKpiDetailDialog({
   const [exportSuccess, setExportSuccess] = useState("");
 
   const { company, mine } = useConfig();
+  const {
+    language: uiLanguage,
+    t,
+  } = useLanguage();
 
   const configuredCompanyName =
     company?.company_name ||
@@ -300,7 +369,7 @@ export default function ExecutiveKpiDetailDialog({
   const configuredMineName =
     mine?.mine_name ||
     data?.mine_name ||
-    "Configured Mine";
+    t("executiveKpiDetail.configuredMine");
 
   const handleExportPdf = async () => {
     const selectedKpiKey = kpiKey || data?.kpi_key;
@@ -336,7 +405,7 @@ export default function ExecutiveKpiDetailDialog({
       window.URL.revokeObjectURL(downloadUrl);
 
       setExportSuccess(
-        "Executive KPI Analysis PDF downloaded successfully."
+        t("executiveKpiDetail.exportSuccess")
       );
 
       window.setTimeout(() => {
@@ -359,17 +428,17 @@ export default function ExecutiveKpiDetailDialog({
 
           setExportError(
             parsedError?.detail ||
-              "Unable to generate the Executive KPI PDF."
+              t("executiveKpiDetail.exportError")
           );
         } catch {
           setExportError(
-            "Unable to generate the Executive KPI PDF."
+            t("executiveKpiDetail.exportError")
           );
         }
       } else {
         setExportError(
           responseData?.detail ||
-            "Unable to generate the Executive KPI PDF."
+            t("executiveKpiDetail.exportError")
         );
       }
     } finally {
@@ -395,7 +464,7 @@ export default function ExecutiveKpiDetailDialog({
     : [];
 
   const chartPoints = buildChartPoints(dailyValues);
-  const kpiStatus = getKpiStatus(data);
+  const kpiStatus = getKpiStatus(data, t);
 
   const changeClass = getChangeClass(data?.direction, data?.change);
 
@@ -433,8 +502,8 @@ export default function ExecutiveKpiDetailDialog({
     data?.last_period_value ??
     null;
 
-  const operationalDrivers = getDriverItems(data);
-  const supportingRows = getSupportingRows(data, dailyValues);
+  const operationalDrivers = getDriverItems(data, t);
+  const supportingRows = getSupportingRows(data, dailyValues, t);
 
   const numericChange = Number(data?.change);
   const changePrefix = numericChange > 0 ? "+" : "";
@@ -451,21 +520,27 @@ export default function ExecutiveKpiDetailDialog({
         <header className="kpi-dialog-header">
           <div className="kpi-dialog-header-copy">
             <span className="kpi-dialog-label">
-              Executive KPI Analysis
+              {t("executiveKpiDetail.title")}
             </span>
 
             <div className="kpi-dialog-title-row">
               <h2 id="kpi-dialog-title">
-                {data?.kpi_name || "KPI Detail"}
+                {data?.kpi_name
+                  ? translateDynamicKpiName(data.kpi_name, t)
+                  : t("executiveKpiDetail.kpiDetail")}
               </h2>
 
               <span className="kpi-live-status">
                 <span aria-hidden="true" />
-                Live Data
+                {t("executiveKpiDetail.liveData")}
               </span>
             </div>
 
-            <p>{data?.period_label || "Last 7 Days"}</p>
+            <p>
+              {uiLanguage === "MN"
+                ? t("executiveKpiDetail.last7Days")
+                : data?.period_label || t("executiveKpiDetail.last7Days")}
+            </p>
           </div>
 
           <div className="kpi-dialog-header-actions">
@@ -487,7 +562,9 @@ export default function ExecutiveKpiDetailDialog({
             >
               <FiDownload />
               <span>
-                {exportingPdf ? "Generating..." : "Export PDF"}
+                {exportingPdf
+                  ? t("executiveKpiDetail.generating")
+                  : t("executiveKpiDetail.exportPdf")}
               </span>
             </button>
 
@@ -495,7 +572,7 @@ export default function ExecutiveKpiDetailDialog({
               type="button"
               className="kpi-dialog-close"
               onClick={onClose}
-              aria-label="Close KPI detail"
+              aria-label={t("executiveKpiDetail.closeAria")}
             >
               <FiX />
             </button>
@@ -511,7 +588,7 @@ export default function ExecutiveKpiDetailDialog({
             <button
               type="button"
               onClick={() => setExportSuccess("")}
-              aria-label="Dismiss export success message"
+              aria-label={t("executiveKpiDetail.dismissExportSuccess")}
             >
               <FiX />
             </button>
@@ -526,7 +603,7 @@ export default function ExecutiveKpiDetailDialog({
             <button
               type="button"
               onClick={() => setExportError("")}
-              aria-label="Dismiss export error"
+              aria-label={t("executiveKpiDetail.dismissExportError")}
             >
               <FiX />
             </button>
@@ -544,13 +621,13 @@ export default function ExecutiveKpiDetailDialog({
             <FiAlertCircle />
 
             <div>
-              <h3>Unable to load KPI analysis</h3>
+              <h3>{t("executiveKpiDetail.loadErrorTitle")}</h3>
               <p>{error}</p>
             </div>
 
             {onRetry && (
               <button type="button" onClick={onRetry}>
-                Retry
+                {t("executiveKpiDetail.retry")}
               </button>
             )}
           </div>
@@ -560,29 +637,32 @@ export default function ExecutiveKpiDetailDialog({
           <div className="kpi-dialog-content">
             <section className="kpi-dialog-summary kpi-dialog-summary-four">
               <div>
-                <span>Current Value</span>
+                <span>{t("executiveKpiDetail.currentValue")}</span>
                 <strong>
                   {formatValue(data.current_value)}
                   <small>{data.unit || ""}</small>
                 </strong>
-                <small className="kpi-summary-caption">Current period</small>
+                <small className="kpi-summary-caption">{t("executiveKpiDetail.currentPeriod")}</small>
               </div>
 
               <div>
-                <span>Target</span>
+                <span>{t("executiveKpiDetail.target")}</span>
                 <strong>
                   {formatValue(data.target)}
-                  <small>{data.unit || ""}</small>
+                  <small>
+                    {data.unit || ""}</small>
                 </strong>
-                <small className="kpi-summary-caption">Configured plan</small>
+                <small className="kpi-summary-caption">{t("executiveKpiDetail.configuredPlan")}</small>
               </div>
 
               <div>
-                <span>Change</span>
+                <span>{t("executiveKpiDetail.change")}</span>
                 <strong className={changeClass}>
                   {changePrefix}
                   {formatValue(data.change)}
-                  <small>{data.unit || ""}</small>
+                  <small>
+                    {data.unit === "%" ? " pp" : data.unit || ""}
+                  </small>
                 </strong>
 
                 <small className={`kpi-summary-caption ${changeClass}`}>
@@ -591,18 +671,18 @@ export default function ExecutiveKpiDetailDialog({
                   ) : (
                     <FiTrendingUp />
                   )}
-                  Versus previous period
+                  {t("executiveKpiDetail.versusPreviousPeriod")}
                 </small>
               </div>
 
               <div>
-                <span>Confidence</span>
+                <span>{t("executiveKpiDetail.confidence")}</span>
                 <strong>
                   {confidence !== null ? Math.round(confidence) : "—"}
                   <small>{confidence !== null ? "%" : ""}</small>
                 </strong>
                 <small className="kpi-summary-caption">
-                  AI analysis confidence
+                  {t("executiveKpiDetail.aiAnalysisConfidence")}
                 </small>
               </div>
             </section>
@@ -611,8 +691,8 @@ export default function ExecutiveKpiDetailDialog({
               <section className="performance-card kpi-analysis-panel">
                 <div className="kpi-dialog-section-heading">
                   <div>
-                    <h3>Performance Trend</h3>
-                    <p>Daily values for the selected period</p>
+                    <h3>{t("executiveKpiDetail.performanceTrend")}</h3>
+                    <p>{t("executiveKpiDetail.dailyValuesSubtitle")}</p>
                   </div>
 
                   <span>
@@ -627,7 +707,7 @@ export default function ExecutiveKpiDetailDialog({
                       viewBox="0 0 100 100"
                       preserveAspectRatio="none"
                       role="img"
-                      aria-label="KPI trend chart"
+                      aria-label={t("executiveKpiDetail.trendChartAria")}
                     >
                       <line x1="0" y1="90" x2="100" y2="90" />
                       <line x1="0" y1="55" x2="100" y2="55" />
@@ -635,7 +715,7 @@ export default function ExecutiveKpiDetailDialog({
                       <polyline points={chartPoints} />
                     </svg>
                   ) : (
-                    <p>No trend values available.</p>
+                    <p>{t("executiveKpiDetail.noTrendValues")}</p>
                   )}
                 </div>
 
@@ -648,7 +728,7 @@ export default function ExecutiveKpiDetailDialog({
                           `${item.value}-${index}`
                         }
                       >
-                        <span>{formatDate(item.date)}</span>
+                        <span>{formatDate(item.date, uiLanguage)}</span>
                         <strong>
                           {formatValue(item.value)}
                           {data.unit || ""}
@@ -674,7 +754,7 @@ export default function ExecutiveKpiDetailDialog({
                   currentValue={data.current_value}
                   previousValue={previousValue}
                   unit={data.unit || ""}
-                  title="Historical Analysis"
+                  title={t("executiveKpiDetail.historicalAnalysis")}
                 />
               </section>
 
@@ -691,8 +771,8 @@ export default function ExecutiveKpiDetailDialog({
               <section className="drivers-card kpi-analysis-panel">
                 <OperationalDriversGrid
                   drivers={operationalDrivers}
-                  title="Operational Drivers"
-                  subtitle="Linked operating conditions influencing this KPI"
+                  title={t("executiveKpiDetail.operationalDrivers")}
+                  subtitle={t("executiveKpiDetail.operationalDriversSubtitle")}
                 />
               </section>
 
@@ -707,15 +787,15 @@ export default function ExecutiveKpiDetailDialog({
                 <SupportingDataTable
                   rows={supportingRows}
                   unit={data.unit || ""}
-                  title="Supporting Data"
-                  subtitle="Evidence used in the KPI analysis"
+                  title={t("executiveKpiDetail.supportingData")}
+                  subtitle={t("executiveKpiDetail.supportingDataSubtitle")}
                 />
               </section>
             </div>
 
             <section
               className={`kpi-status-banner kpi-status-banner-compact ${kpiStatus.level}`}
-              aria-label={`KPI status: ${kpiStatus.label}`}
+              aria-label={translateTemplate(t, "executiveKpiDetail.statusAria", { status: kpiStatus.label })}
             >
               <div className="kpi-status-icon">
                 {renderStatusIcon(kpiStatus.level)}
@@ -724,7 +804,7 @@ export default function ExecutiveKpiDetailDialog({
               <div className="kpi-status-content">
                 <div className="kpi-status-topline">
                   <span className="kpi-status-eyebrow">
-                    Executive Status
+                    {t("executiveKpiDetail.executiveStatus")}
                   </span>
 
                   <span
@@ -743,7 +823,7 @@ export default function ExecutiveKpiDetailDialog({
 
         {!loading && !error && !data && (
           <div className="kpi-dialog-state">
-            No KPI analysis is available.
+            {t("executiveKpiDetail.noAnalysis")}
           </div>
         )}
       </div>

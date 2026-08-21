@@ -6,58 +6,68 @@ import {
   Typography,
 } from "@mui/material";
 
+import {
+  useLanguage,
+} from "../../context/LanguageContext";
+
 
 const SUMMARY_CARDS = [
   {
     key: "total",
-    label: "Total Actions",
-    helper:
-      "All executive actions",
+    labelKey:
+      "executiveActionSummary.totalActions",
+    helperKey:
+      "executiveActionSummary.allExecutiveActions",
     symbol: "Σ",
     tone: "neutral",
     clickable: true,
   },
   {
     key: "open",
-    label: "Open",
-    helper:
-      "Not yet started",
+    labelKey:
+      "executiveActionSummary.open",
+    helperKey:
+      "executiveActionSummary.notYetStarted",
     symbol: "○",
     tone: "neutral",
     clickable: true,
   },
   {
     key: "in_progress",
-    label: "In Progress",
-    helper:
-      "Currently being executed",
+    labelKey:
+      "executiveActionSummary.inProgress",
+    helperKey:
+      "executiveActionSummary.currentlyBeingExecuted",
     symbol: "◐",
     tone: "blue",
     clickable: true,
   },
   {
     key: "completed",
-    label: "Completed",
-    helper:
-      "Successfully closed",
+    labelKey:
+      "executiveActionSummary.completed",
+    helperKey:
+      "executiveActionSummary.successfullyClosed",
     symbol: "✓",
     tone: "green",
     clickable: true,
   },
   {
     key: "blocked",
-    label: "Blocked",
-    helper:
-      "Requires intervention",
+    labelKey:
+      "executiveActionSummary.blocked",
+    helperKey:
+      "executiveActionSummary.requiresIntervention",
     symbol: "⊘",
     tone: "red",
     clickable: true,
   },
   {
     key: "completion_percentage",
-    label: "Completion Rate",
-    helper:
-      "Overall completion",
+    labelKey:
+      "executiveActionSummary.completionRate",
+    helperKey:
+      "executiveActionSummary.overallCompletion",
     symbol: "↗",
     tone: "primary",
     clickable: false,
@@ -68,50 +78,79 @@ const SUMMARY_CARDS = [
 const PROGRESS_CARDS = [
   {
     key: "due_today",
-    label: "Due Today",
-    helper:
-      "Actions requiring attention today",
+    labelKey:
+      "executiveActionSummary.dueToday",
+    helperKey:
+      "executiveActionSummary.actionsRequiringAttentionToday",
     symbol: "⌚",
     tone: "amber",
     clickable: true,
   },
   {
     key: "overdue",
-    label: "Overdue",
-    helper:
-      "Past due and still active",
+    labelKey:
+      "executiveActionSummary.overdue",
+    helperKey:
+      "executiveActionSummary.pastDueAndStillActive",
     symbol: "!",
     tone: "red",
     clickable: true,
   },
   {
     key: "high_priority",
-    label: "High Priority",
-    helper:
-      "Critical and high active actions",
+    labelKey:
+      "executiveActionSummary.highPriority",
+    helperKey:
+      "executiveActionSummary.criticalAndHighActiveActions",
     symbol: "↑",
     tone: "orange",
     clickable: true,
   },
   {
     key: "completed_this_month",
-    label: "Completed This Month",
-    helper:
-      "Actions closed this month",
+    labelKey:
+      "executiveActionSummary.completedThisMonth",
+    helperKey:
+      "executiveActionSummary.actionsClosedThisMonth",
     symbol: "✓",
     tone: "green",
     clickable: true,
   },
   {
     key: "average_days_to_close",
-    label: "Average Close Time",
-    helper:
-      "Average days from creation to closure",
+    labelKey:
+      "executiveActionSummary.averageCloseTime",
+    helperKey:
+      "executiveActionSummary.averageDaysCreationToClosure",
     symbol: "◷",
     tone: "blue",
     clickable: false,
   },
 ];
+
+
+function translateTemplate(
+  t,
+  key,
+  variables = {}
+) {
+  let text = String(
+    t(key) || ""
+  );
+
+  Object.entries(
+    variables
+  ).forEach(
+    ([name, value]) => {
+      text = text.replaceAll(
+        `{${name}}`,
+        String(value ?? "")
+      );
+    }
+  );
+
+  return text;
+}
 
 
 function getToneStyles(
@@ -123,7 +162,8 @@ function getToneStyles(
       color: "#475569",
       backgroundColor:
         "#f1f5f9",
-      borderColor: "#e2e8f0",
+      borderColor:
+        "#e2e8f0",
       activeBackground:
         "#e2e8f0",
     },
@@ -132,7 +172,8 @@ function getToneStyles(
       color: "#1d4ed8",
       backgroundColor:
         "#eff6ff",
-      borderColor: "#bfdbfe",
+      borderColor:
+        "#bfdbfe",
       activeBackground:
         "#dbeafe",
     },
@@ -141,7 +182,8 @@ function getToneStyles(
       color: "#15803d",
       backgroundColor:
         "#f0fdf4",
-      borderColor: "#bbf7d0",
+      borderColor:
+        "#bbf7d0",
       activeBackground:
         "#dcfce7",
     },
@@ -150,7 +192,8 @@ function getToneStyles(
       color: "#b91c1c",
       backgroundColor:
         "#fef2f2",
-      borderColor: "#fecaca",
+      borderColor:
+        "#fecaca",
       activeBackground:
         "#fee2e2",
     },
@@ -159,7 +202,8 @@ function getToneStyles(
       color: "#a16207",
       backgroundColor:
         "#fefce8",
-      borderColor: "#fde68a",
+      borderColor:
+        "#fde68a",
       activeBackground:
         "#fef3c7",
     },
@@ -168,7 +212,8 @@ function getToneStyles(
       color: "#c2410c",
       backgroundColor:
         "#fff7ed",
-      borderColor: "#fed7aa",
+      borderColor:
+        "#fed7aa",
       activeBackground:
         "#ffedd5",
     },
@@ -193,7 +238,9 @@ function getToneStyles(
 
 function formatMetricValue(
   card,
-  value
+  value,
+  language,
+  t
 ) {
   const numericValue =
     Number(value);
@@ -214,7 +261,13 @@ function formatMetricValue(
       card.key ===
       "average_days_to_close"
     ) {
-      return "0.0 days";
+      return translateTemplate(
+        t,
+        "executiveActionSummary.daysValue",
+        {
+          value: "0.0",
+        }
+      );
     }
 
     return "0";
@@ -238,12 +291,23 @@ function formatMetricValue(
     card.key ===
     "average_days_to_close"
   ) {
-    return `${numericValue.toFixed(
-      1
-    )} days`;
+    return translateTemplate(
+      t,
+      "executiveActionSummary.daysValue",
+      {
+        value:
+          numericValue.toFixed(
+            1
+          ),
+      }
+    );
   }
 
-  return numericValue.toLocaleString();
+  return numericValue.toLocaleString(
+    language === "MN"
+      ? "mn-MN"
+      : "en-US"
+  );
 }
 
 
@@ -254,6 +318,8 @@ function SummaryCard({
   primaryColor,
   activeFilter,
   onCardClick,
+  language,
+  t,
 }) {
   const toneStyles =
     getToneStyles(
@@ -272,14 +338,23 @@ function SummaryCard({
     );
 
   const isActive =
-    activeFilter === card.key;
+    activeFilter ===
+    card.key;
+
+  const label =
+    t(card.labelKey);
+
+  const helper =
+    t(card.helperKey);
 
   const handleClick = () => {
     if (!isClickable) {
       return;
     }
 
-    onCardClick(card.key);
+    onCardClick(
+      card.key
+    );
   };
 
   const handleKeyDown = (
@@ -290,11 +365,15 @@ function SummaryCard({
     }
 
     if (
-      event.key === "Enter" ||
+      event.key ===
+        "Enter" ||
       event.key === " "
     ) {
       event.preventDefault();
-      onCardClick(card.key);
+
+      onCardClick(
+        card.key
+      );
     }
   };
 
@@ -325,6 +404,11 @@ function SummaryCard({
           ? isActive
           : undefined
       }
+      aria-label={
+        isClickable
+          ? label
+          : undefined
+      }
       onClick={
         isClickable
           ? handleClick
@@ -340,40 +424,67 @@ function SummaryCard({
         width: "100%",
         minHeight: 188,
         p: 2.5,
-        borderRadius: "18px",
-        border: "1px solid",
-        borderColor: isActive
-          ? toneStyles.color
-          : "#e2e8f0",
+
+        borderRadius:
+          "18px",
+
+        border:
+          "1px solid",
+
+        borderColor:
+          isActive
+            ? toneStyles.color
+            : "#e2e8f0",
+
         backgroundColor:
           isActive
             ? toneStyles.activeBackground
             : "#ffffff",
+
         display: "flex",
-        flexDirection: "column",
+
+        flexDirection:
+          "column",
+
         justifyContent:
           "space-between",
-        textAlign: "left",
-        fontFamily: "inherit",
-        appearance: "none",
-        cursor: isClickable
-          ? "pointer"
-          : "default",
-        position: "relative",
-        overflow: "hidden",
+
+        textAlign:
+          "left",
+
+        fontFamily:
+          "inherit",
+
+        appearance:
+          "none",
+
+        cursor:
+          isClickable
+            ? "pointer"
+            : "default",
+
+        position:
+          "relative",
+
+        overflow:
+          "hidden",
+
         transition:
           "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease",
 
-        "&:hover": isClickable
-          ? {
-              transform:
-                "translateY(-2px)",
-              borderColor:
-                toneStyles.color,
-              boxShadow:
-                "0 12px 28px rgba(15, 23, 42, 0.08)",
-            }
-          : {},
+        "&:hover":
+          isClickable
+            ? {
+                transform:
+                  "translateY(-2px)",
+
+                borderColor:
+                  toneStyles.color,
+
+                boxShadow:
+                  "0 12px 28px rgba(15, 23, 42, 0.08)",
+              }
+            : {},
 
         "&:focus-visible": {
           outline:
@@ -385,11 +496,15 @@ function SummaryCard({
       {isActive && (
         <Box
           sx={{
-            position: "absolute",
+            position:
+              "absolute",
+
             top: 0,
             left: 0,
             right: 0,
+
             height: 4,
+
             backgroundColor:
               toneStyles.color,
           }}
@@ -398,35 +513,50 @@ function SummaryCard({
 
       <Box
         sx={{
-          display: "flex",
+          display:
+            "flex",
+
           alignItems:
             "flex-start",
+
           justifyContent:
             "space-between",
+
           gap: 2,
         }}
       >
         <Box>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
               gap: 0.75,
-              flexWrap: "wrap",
+
+              flexWrap:
+                "wrap",
             }}
           >
             <Typography
               sx={{
-                color: isActive
-                  ? toneStyles.color
-                  : "#475569",
+                color:
+                  isActive
+                    ? toneStyles.color
+                    : "#475569",
+
                 fontSize: 13,
-                fontWeight: 800,
+
+                fontWeight:
+                  800,
+
                 letterSpacing:
                   "0.01em",
               }}
             >
-              {card.label}
+              {label}
             </Typography>
 
             {isActive && (
@@ -435,24 +565,37 @@ function SummaryCard({
                 sx={{
                   px: 0.8,
                   py: 0.25,
+
                   borderRadius:
                     "999px",
+
                   color:
                     toneStyles.color,
+
                   backgroundColor:
                     "#ffffff",
+
                   border:
                     `1px solid ${toneStyles.borderColor}`,
+
                   fontSize: 10,
-                  fontWeight: 900,
-                  lineHeight: 1.4,
+
+                  fontWeight:
+                    900,
+
+                  lineHeight:
+                    1.4,
+
                   textTransform:
                     "uppercase",
+
                   letterSpacing:
                     "0.04em",
                 }}
               >
-                Active
+                {t(
+                  "executiveActionSummary.active"
+                )}
               </Box>
             )}
           </Box>
@@ -470,21 +613,30 @@ function SummaryCard({
             <Typography
               sx={{
                 mt: 0.75,
+
                 color:
                   "#0f172a",
+
                 fontSize: {
                   xs: 30,
                   md: 34,
                 },
-                fontWeight: 900,
-                lineHeight: 1.15,
+
+                fontWeight:
+                  900,
+
+                lineHeight:
+                  1.15,
+
                 letterSpacing:
                   "-0.03em",
               }}
             >
               {formatMetricValue(
                 card,
-                value
+                value,
+                language,
+                t
               )}
             </Typography>
           )}
@@ -494,23 +646,36 @@ function SummaryCard({
           sx={{
             width: 44,
             height: 44,
+
             flexShrink: 0,
-            borderRadius: "13px",
+
+            borderRadius:
+              "13px",
+
             color:
               toneStyles.color,
+
             backgroundColor:
               isActive
                 ? "#ffffff"
                 : toneStyles.backgroundColor,
+
             border:
               `1px solid ${toneStyles.borderColor}`,
-            display: "flex",
+
+            display:
+              "flex",
+
             alignItems:
               "center",
+
             justifyContent:
               "center",
+
             fontSize: 20,
-            fontWeight: 900,
+
+            fontWeight:
+              900,
           }}
         >
           {card.symbol}
@@ -520,26 +685,38 @@ function SummaryCard({
       <Box
         sx={{
           mt: 2.25,
-          display: "flex",
+
+          display:
+            "flex",
+
           alignItems: {
-            xs: "flex-start",
-            sm: "center",
+            xs:
+              "flex-start",
+            sm:
+              "center",
           },
+
           justifyContent:
             "space-between",
+
           gap: 1,
         }}
       >
         <Typography
           sx={{
-            color: isActive
-              ? "#334155"
-              : "#64748b",
-            fontSize: 12.5,
-            lineHeight: 1.5,
+            color:
+              isActive
+                ? "#334155"
+                : "#64748b",
+
+            fontSize:
+              12.5,
+
+            lineHeight:
+              1.5,
           }}
         >
-          {card.helper}
+          {helper}
         </Typography>
 
         {isClickable && (
@@ -547,15 +724,23 @@ function SummaryCard({
             component="span"
             sx={{
               flexShrink: 0,
+
               color:
                 toneStyles.color,
+
               fontSize: 11,
-              fontWeight: 800,
+
+              fontWeight:
+                800,
             }}
           >
             {isActive
-              ? "Filtering"
-              : "View actions"}
+              ? t(
+                  "executiveActionSummary.filtering"
+                )
+              : t(
+                  "executiveActionSummary.viewActions"
+                )}
           </Typography>
         )}
       </Box>
@@ -568,6 +753,8 @@ function CompletionProgress({
   summary,
   loading,
   primaryColor,
+  language,
+  t,
 }) {
   const rawPercentage =
     Number(
@@ -591,12 +778,36 @@ function CompletionProgress({
 
   const completed =
     Number(
-      summary?.completed ?? 0
+      summary?.completed ??
+        0
     );
 
   const total =
     Number(
-      summary?.total ?? 0
+      summary?.total ??
+        0
+    );
+
+  const locale =
+    language === "MN"
+      ? "mn-MN"
+      : "en-US";
+
+  const progressDescription =
+    translateTemplate(
+      t,
+      "executiveActionSummary.actionsCompletedProgress",
+      {
+        completed:
+          completed.toLocaleString(
+            locale
+          ),
+
+        total:
+          total.toLocaleString(
+            locale
+          ),
+      }
     );
 
   return (
@@ -604,56 +815,82 @@ function CompletionProgress({
       elevation={0}
       sx={{
         mt: 3,
+
         p: {
           xs: 2,
           md: 2.5,
         },
-        borderRadius: "16px",
+
+        borderRadius:
+          "16px",
+
         border:
           "1px solid #e2e8f0",
+
         backgroundColor:
           "#ffffff",
       }}
     >
       <Box
         sx={{
-          display: "flex",
+          display:
+            "flex",
+
           alignItems: {
-            xs: "flex-start",
-            sm: "center",
+            xs:
+              "flex-start",
+            sm:
+              "center",
           },
+
           justifyContent:
             "space-between",
+
           flexDirection: {
-            xs: "column",
-            sm: "row",
+            xs:
+              "column",
+            sm:
+              "row",
           },
+
           gap: 1,
+
           mb: 1.5,
         }}
       >
         <Box>
           <Typography
             sx={{
-              color: "#0f172a",
+              color:
+                "#0f172a",
+
               fontSize: 15,
-              fontWeight: 800,
+
+              fontWeight:
+                800,
             }}
           >
-            Executive Action
-            Completion
+            {t(
+              "executiveActionSummary.executiveActionCompletion"
+            )}
           </Typography>
 
           <Typography
             sx={{
               mt: 0.35,
-              color: "#64748b",
-              fontSize: 12.5,
+
+              color:
+                "#64748b",
+
+              fontSize:
+                12.5,
             }}
           >
             {loading
-              ? "Loading action progress..."
-              : `${completed.toLocaleString()} of ${total.toLocaleString()} actions completed`}
+              ? t(
+                  "executiveActionSummary.loadingActionProgress"
+                )
+              : progressDescription}
           </Typography>
         </Box>
 
@@ -667,8 +904,11 @@ function CompletionProgress({
             sx={{
               color:
                 primaryColor,
+
               fontSize: 18,
-              fontWeight: 900,
+
+              fontWeight:
+                900,
             }}
           >
             {percentage.toFixed(
@@ -691,10 +931,15 @@ function CompletionProgress({
         <LinearProgress
           variant="determinate"
           value={percentage}
+          aria-label={t(
+            "executiveActionSummary.executiveActionCompletion"
+          )}
           sx={{
             height: 10,
+
             borderRadius:
               "999px",
+
             backgroundColor:
               "#e2e8f0",
 
@@ -702,6 +947,7 @@ function CompletionProgress({
               {
                 borderRadius:
                   "999px",
+
                 backgroundColor:
                   primaryColor,
               },
@@ -720,45 +966,71 @@ function ExecutiveActionSummary({
   onCardClick,
   activeFilter = "",
 }) {
+  const {
+    language,
+    t,
+  } = useLanguage();
+
   return (
     <Box>
       <Box
         sx={{
-          display: "flex",
+          display:
+            "flex",
+
           alignItems: {
-            xs: "flex-start",
-            sm: "center",
+            xs:
+              "flex-start",
+            sm:
+              "center",
           },
+
           justifyContent:
             "space-between",
+
           flexDirection: {
-            xs: "column",
-            sm: "row",
+            xs:
+              "column",
+            sm:
+              "row",
           },
+
           gap: 1,
+
           mb: 2,
         }}
       >
         <Box>
           <Typography
             sx={{
-              color: "#0f172a",
+              color:
+                "#0f172a",
+
               fontSize: 20,
-              fontWeight: 800,
+
+              fontWeight:
+                800,
             }}
           >
-            Execution Overview
+            {t(
+              "executiveActionSummary.executionOverview"
+            )}
           </Typography>
 
           <Typography
             sx={{
               mt: 0.4,
-              color: "#64748b",
-              fontSize: 13.5,
+
+              color:
+                "#64748b",
+
+              fontSize:
+                13.5,
             }}
           >
-            Select a card to filter
-            the executive-action table.
+            {t(
+              "executiveActionSummary.selectCardToFilter"
+            )}
           </Typography>
         </Box>
 
@@ -767,37 +1039,59 @@ function ExecutiveActionSummary({
             sx={{
               color:
                 primaryColor,
-              fontSize: 12.5,
-              fontWeight: 800,
+
+              fontSize:
+                12.5,
+
+              fontWeight:
+                800,
             }}
           >
-            Summary filter active
+            {t(
+              "executiveActionSummary.summaryFilterActive"
+            )}
           </Typography>
         )}
       </Box>
 
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm:
-              "repeat(2, minmax(0, 1fr))",
-            lg:
-              "repeat(3, minmax(0, 1fr))",
-            xl:
-              "repeat(6, minmax(0, 1fr))",
-          },
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            {
+              xs:
+                "1fr",
+
+              sm:
+                "repeat(2, minmax(0, 1fr))",
+
+              lg:
+                "repeat(3, minmax(0, 1fr))",
+
+              xl:
+                "repeat(6, minmax(0, 1fr))",
+            },
+
           gap: 2,
         }}
       >
         {SUMMARY_CARDS.map(
           (card) => (
             <SummaryCard
-              key={card.key}
-              card={card}
-              summary={summary}
-              loading={loading}
+              key={
+                card.key
+              }
+              card={
+                card
+              }
+              summary={
+                summary
+              }
+              loading={
+                loading
+              }
               primaryColor={
                 primaryColor
               }
@@ -807,17 +1101,29 @@ function ExecutiveActionSummary({
               onCardClick={
                 onCardClick
               }
+              language={
+                language
+              }
+              t={t}
             />
           )
         )}
       </Box>
 
       <CompletionProgress
-        summary={summary}
-        loading={loading}
+        summary={
+          summary
+        }
+        loading={
+          loading
+        }
         primaryColor={
           primaryColor
         }
+        language={
+          language
+        }
+        t={t}
       />
 
       <Box
@@ -828,50 +1134,75 @@ function ExecutiveActionSummary({
       >
         <Typography
           sx={{
-            color: "#0f172a",
+            color:
+              "#0f172a",
+
             fontSize: 20,
-            fontWeight: 800,
+
+            fontWeight:
+              800,
           }}
         >
-          Delivery &
-          Accountability
+          {t(
+            "executiveActionSummary.deliveryAccountability"
+          )}
         </Typography>
 
         <Typography
           sx={{
             mt: 0.4,
-            color: "#64748b",
-            fontSize: 13.5,
+
+            color:
+              "#64748b",
+
+            fontSize:
+              13.5,
           }}
         >
-          Time-sensitive actions,
-          priority exposure, and
-          closure performance.
+          {t(
+            "executiveActionSummary.deliveryDescription"
+          )}
         </Typography>
       </Box>
 
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm:
-              "repeat(2, minmax(0, 1fr))",
-            lg:
-              "repeat(3, minmax(0, 1fr))",
-            xl:
-              "repeat(5, minmax(0, 1fr))",
-          },
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            {
+              xs:
+                "1fr",
+
+              sm:
+                "repeat(2, minmax(0, 1fr))",
+
+              lg:
+                "repeat(3, minmax(0, 1fr))",
+
+              xl:
+                "repeat(5, minmax(0, 1fr))",
+            },
+
           gap: 2,
         }}
       >
         {PROGRESS_CARDS.map(
           (card) => (
             <SummaryCard
-              key={card.key}
-              card={card}
-              summary={summary}
-              loading={loading}
+              key={
+                card.key
+              }
+              card={
+                card
+              }
+              summary={
+                summary
+              }
+              loading={
+                loading
+              }
               primaryColor={
                 primaryColor
               }
@@ -881,6 +1212,10 @@ function ExecutiveActionSummary({
               onCardClick={
                 onCardClick
               }
+              language={
+                language
+              }
+              t={t}
             />
           )
         )}

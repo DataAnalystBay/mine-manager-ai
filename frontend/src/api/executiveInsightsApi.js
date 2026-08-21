@@ -1,7 +1,7 @@
 import axios from "axios";
 import { API_URL } from "../config/apiConfig";
-
-
+ 
+ 
 const executiveInsightsClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -9,36 +9,36 @@ const executiveInsightsClient = axios.create({
   },
   timeout: 20000,
 });
-
-
+ 
+ 
 executiveInsightsClient.interceptors.request.use(
   (config) => {
     const token =
       localStorage.getItem("access_token") ||
       localStorage.getItem("token");
-
+ 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
+ 
     return config;
   },
   (error) => Promise.reject(error)
 );
-
-
+ 
+ 
 executiveInsightsClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const backendDetail =
       error?.response?.data?.detail;
-
+ 
     const backendMessage =
       error?.response?.data?.message;
-
+ 
     let message =
       "An unexpected error occurred while loading executive insights.";
-
+ 
     if (typeof backendDetail === "string") {
       message = backendDetail;
     } else if (Array.isArray(backendDetail)) {
@@ -47,7 +47,7 @@ executiveInsightsClient.interceptors.response.use(
           if (typeof item === "string") {
             return item;
           }
-
+ 
           const location = Array.isArray(item?.loc)
             ? item.loc
                 .filter(
@@ -57,12 +57,12 @@ executiveInsightsClient.interceptors.response.use(
                 )
                 .join(".")
             : "";
-
+ 
           const itemMessage =
             item?.msg ||
             item?.message ||
             "Validation error";
-
+ 
           return location
             ? `${location}: ${itemMessage}`
             : itemMessage;
@@ -75,14 +75,14 @@ executiveInsightsClient.interceptors.response.use(
     } else if (error?.message) {
       message = error.message;
     }
-
+ 
     error.userMessage = message;
-
+ 
     return Promise.reject(error);
   }
 );
-
-
+ 
+ 
 /**
  * Normalize the mine name before sending it to the API.
  *
@@ -95,14 +95,14 @@ function normalizeMineName(
   const normalized = String(
     mineName || "Oyu Tolgoi Surface"
   ).trim();
-
+ 
   return (
     normalized ||
     "Oyu Tolgoi Surface"
   );
 }
-
-
+ 
+ 
 /**
  * Normalize the optional active Demo Mode scenario.
  *
@@ -119,8 +119,40 @@ function normalizeScenario(
     scenario || ""
   ).trim();
 }
-
-
+ 
+ 
+/**
+ * Normalize the selected UI language into the
+ * language code expected by the backend.
+ *
+ * Supported backend values:
+ * - en
+ * - mn
+ *
+ * @param {string} language
+ * @returns {"en" | "mn"}
+ */
+function normalizeLanguage(
+  language
+) {
+  const normalized =
+    String(language || "en")
+      .trim()
+      .toLowerCase();
+ 
+  if (
+    normalized === "mn" ||
+    normalized === "mon" ||
+    normalized === "mongolian" ||
+    normalized === "монгол"
+  ) {
+    return "mn";
+  }
+ 
+  return "en";
+}
+ 
+ 
 /**
  * Load structured AI executive insights.
  *
@@ -128,37 +160,55 @@ function normalizeScenario(
  * GET /api/executive-insights
  *
  * Live-mode example:
- * getExecutiveInsights("Oyu Tolgoi Surface")
+ * getExecutiveInsights(
+ *   "Oyu Tolgoi Surface",
+ *   "",
+ *   "en"
+ * )
+ *
+ * Mongolian live-mode example:
+ * getExecutiveInsights(
+ *   "Oyu Tolgoi Surface",
+ *   "",
+ *   "mn"
+ * )
  *
  * Demo-mode example:
  * getExecutiveInsights(
  *   "Oyu Tolgoi Surface",
- *   "Fleet Breakdown"
+ *   "Fleet Breakdown",
+ *   "mn"
  * )
  *
  * @param {string} mineName
  * @param {string} scenario
+ * @param {string} language
  * @returns {Promise<object>}
  */
 export async function getExecutiveInsights(
   mineName = "Oyu Tolgoi Surface",
-  scenario = ""
+  scenario = "",
+  language = "en"
 ) {
   const normalizedMineName =
     normalizeMineName(mineName);
-
+ 
   const normalizedScenario =
     normalizeScenario(scenario);
-
+ 
+  const normalizedLanguage =
+    normalizeLanguage(language);
+ 
   const params = {
     mine_name: normalizedMineName,
+    language: normalizedLanguage,
   };
-
+ 
   if (normalizedScenario) {
     params.scenario =
       normalizedScenario;
   }
-
+ 
   try {
     const response =
       await executiveInsightsClient.get(
@@ -167,24 +217,24 @@ export async function getExecutiveInsights(
           params,
         }
       );
-
+ 
     return response.data;
   } catch (error) {
     const modeLabel =
       normalizedScenario
         ? `demo scenario "${normalizedScenario}"`
         : "live mode";
-
+ 
     console.error(
-      `getExecutiveInsights failed for mine "${normalizedMineName}" in ${modeLabel}:`,
+      `getExecutiveInsights failed for mine "${normalizedMineName}" in ${modeLabel} with language "${normalizedLanguage}":`,
       error
     );
-
+ 
     throw error;
   }
 }
-
-
+ 
+ 
 /**
  * Check the Executive Insights service health.
  *
@@ -199,19 +249,19 @@ export async function getExecutiveInsightsHealth() {
       await executiveInsightsClient.get(
         "/executive-insights/health"
       );
-
+ 
     return response.data;
   } catch (error) {
     console.error(
       "getExecutiveInsightsHealth failed:",
       error
     );
-
+ 
     throw error;
   }
 }
-
-
+ 
+ 
 /**
  * Return a user-friendly API error message.
  *
@@ -229,16 +279,16 @@ export function getExecutiveInsightsErrorMessage(
   ) {
     return error.userMessage;
   }
-
+ 
   if (
     typeof error?.message === "string" &&
     error.message.trim()
   ) {
     return error.message;
   }
-
+ 
   return fallbackMessage;
 }
-
-
+ 
+ 
 export default executiveInsightsClient;

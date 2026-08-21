@@ -11,6 +11,10 @@ import {
   useConfig,
 } from "../context/ConfigContext";
 
+import {
+  useLanguage,
+} from "../context/LanguageContext";
+
 import useAuth
   from "../hooks/useAuth";
 
@@ -62,6 +66,10 @@ import {
   API_BASE_URL,
 } from "../config/apiConfig";
 
+import {
+  APP_VERSION,
+} from "../config/version";
+
 
 /* ============================================================
    Navigation Configuration
@@ -69,131 +77,178 @@ import {
 
 const navItems = [
   {
-    label:
-      "Dashboard",
+    labelKey:
+      "navigation.dashboard",
+
     path:
       "/",
+
     icon:
       DashboardIcon,
   },
+
   {
-    label:
-      "Upload Reports",
+    labelKey:
+      "navigation.uploadReports",
+
     path:
       "/upload",
+
     icon:
       CloudUploadIcon,
   },
+
   {
-    label:
-      "Production",
+    labelKey:
+      "navigation.production",
+
     path:
       "/production",
+
     icon:
       BarChartIcon,
   },
+
   {
-    label:
-      "Fleet",
+    labelKey:
+      "navigation.fleet",
+
     path:
       "/fleet",
+
     icon:
       LocalShippingIcon,
   },
+
   {
-    label:
-      "Plant",
+    labelKey:
+      "navigation.plant",
+
     path:
       "/plant",
+
     icon:
       FactoryIcon,
   },
+
   {
-    label:
-      "Safety",
+    labelKey:
+      "navigation.safety",
+
     path:
       "/safety",
+
     icon:
       HealthAndSafetyIcon,
   },
+
   {
-    label:
-      "Executive Actions",
+    labelKey:
+      "navigation.executiveActions",
+
     path:
       "/executive-actions",
+
     icon:
       AssignmentTurnedInIcon,
   },
+
   {
-    label:
-      "Executive Reports",
+    labelKey:
+      "navigation.executiveReports",
+
     path:
       "/reports",
+
     icon:
       DescriptionIcon,
   },
+
 
   /* =========================================================
      Administrator-only navigation
      ========================================================= */
 
   {
-    label:
-      "User Management",
+    labelKey:
+      "navigation.userManagement",
+
     path:
       "/users",
+
     icon:
       ManageAccountsIcon,
+
     adminOnly:
       true,
   },
+
   {
-    label:
-      "Audit Trail",
+    labelKey:
+      "navigation.auditTrail",
+
     path:
       "/audit-trail",
+
     icon:
       HistoryIcon,
+
     adminOnly:
       true,
   },
+
   {
-    label:
-      "System Health",
+    labelKey:
+      "navigation.systemHealth",
+
     path:
       "/system-health",
+
     icon:
       MonitorHeartIcon,
+
     adminOnly:
       true,
   },
+
   {
-    label:
-      "Support Diagnostics",
+    labelKey:
+      "navigation.supportDiagnostics",
+
     path:
       "/support-diagnostics",
+
     icon:
       SupportAgentIcon,
+
     adminOnly:
       true,
   },
+
   {
-    label:
-      "Security Center",
+    labelKey:
+      "navigation.security",
+
     path:
       "/security-configuration",
+
     icon:
       SecurityIcon,
+
     adminOnly:
       true,
   },
+
   {
-    label:
-      "Settings",
+    labelKey:
+      "navigation.settings",
+
     path:
       "/settings",
+
     icon:
       SettingsIcon,
+
     adminOnly:
       true,
   },
@@ -213,6 +268,11 @@ function Sidebar() {
   const {
     user,
   } = useAuth();
+
+  const {
+    language,
+    t,
+  } = useLanguage();
 
 
   /* ==========================================================
@@ -243,7 +303,11 @@ function Sidebar() {
 
   const mineName =
     mine?.mine_name ||
-    "Demo Mine";
+    (
+      language === "MN"
+        ? "Демо уурхай"
+        : "Demo Mine"
+    );
 
 
   const primaryColor =
@@ -251,9 +315,30 @@ function Sidebar() {
     "#16A34A";
 
 
-  const secondaryColor =
-    company?.secondary_color ||
-    "#1E293B";
+  /*
+   * Application shell colors
+   *
+   * Keep the Mine Manager AI navigation visually consistent across
+   * customers. Customer branding remains available through the company
+   * logo, company name, mine name, and configured brand colors elsewhere.
+   */
+  const sidebarBackground =
+    "#1B1917";
+
+  const sidebarText =
+    "#F8FAFC";
+
+  const sidebarMutedText =
+    "#CBD5E1";
+
+  const sidebarSubtleText =
+    "#94A3B8";
+
+  const sidebarAccent =
+    "#F97316";
+
+  const sidebarActiveBackground =
+    "#382316";
 
 
   /* ==========================================================
@@ -310,6 +395,28 @@ function Sidebar() {
 
 
   /* ==========================================================
+     Localized supporting text
+     ========================================================== */
+
+  const navigationLabel =
+    language === "MN"
+      ? "Үндсэн цэс"
+      : "Main navigation";
+
+
+  const commercialMvpLabel =
+    language === "MN"
+      ? "Арилжааны MVP"
+      : "Commercial MVP";
+
+
+  const platformDescription =
+    language === "MN"
+      ? "Уурхайн удирдлагын мэдээлэл, шинжилгээний платформ"
+      : "Executive operations intelligence platform";
+
+
+  /* ==========================================================
      Render
      ========================================================== */
 
@@ -336,7 +443,7 @@ function Sidebar() {
           "auto",
 
         bgcolor:
-          secondaryColor,
+          sidebarBackground,
 
         color:
           "#e5e7eb",
@@ -456,7 +563,7 @@ function Sidebar() {
               0.5,
 
             border:
-              `1px solid ${primaryColor}55`,
+              "1px solid rgba(255, 255, 255, 0.18)",
 
             boxSizing:
               "border-box",
@@ -489,7 +596,7 @@ function Sidebar() {
                 1.15,
 
               color:
-                "#ffffff",
+                sidebarText,
 
               overflow:
                 "hidden",
@@ -519,7 +626,7 @@ function Sidebar() {
                 1.4,
 
               color:
-                "#cbd5e1",
+                sidebarMutedText,
 
               overflow:
                 "hidden",
@@ -548,8 +655,9 @@ function Sidebar() {
       <Box
         component="nav"
 
-        aria-label=
-          "Main navigation"
+        aria-label={
+          navigationLabel
+        }
 
         sx={{
           display:
@@ -615,7 +723,7 @@ function Sidebar() {
                       "4px solid transparent",
 
                     color:
-                      "#cbd5e1",
+                      sidebarMutedText,
 
                     textDecoration:
                       "none",
@@ -645,7 +753,7 @@ function Sidebar() {
                           23,
 
                         color:
-                          "#cbd5e1",
+                          sidebarMutedText,
 
                         transition:
                           "color 0.2s ease",
@@ -667,7 +775,7 @@ function Sidebar() {
                         "& svg":
                           {
                             color:
-                              primaryColor,
+                              sidebarAccent,
                           },
                       },
 
@@ -675,22 +783,22 @@ function Sidebar() {
                     "&.active":
                       {
                         bgcolor:
-                          `${primaryColor}22`,
+                          sidebarActiveBackground,
 
                         color:
                           "#ffffff",
 
                         borderLeftColor:
-                          primaryColor,
+                          sidebarAccent,
 
                         boxShadow:
-                          `0 12px 28px ${primaryColor}30`,
+                          "0 12px 28px rgba(249, 115, 22, 0.12)",
 
 
                         "& svg":
                           {
                             color:
-                              primaryColor,
+                              sidebarAccent,
                           },
                       },
 
@@ -698,7 +806,7 @@ function Sidebar() {
                     "&:focus-visible":
                       {
                         outline:
-                          `2px solid ${primaryColor}`,
+                          `2px solid ${sidebarAccent}`,
 
                         outlineOffset:
                           "2px",
@@ -715,6 +823,12 @@ function Sidebar() {
                   <Box
                     component="span"
 
+                    title={
+                      t(
+                        item.labelKey
+                      )
+                    }
+
                     sx={{
                       minWidth:
                         0,
@@ -730,7 +844,9 @@ function Sidebar() {
                     }}
                   >
                     {
-                      item.label
+                      t(
+                        item.labelKey
+                      )
                     }
                   </Box>
 
@@ -769,7 +885,7 @@ function Sidebar() {
               "rgba(255, 255, 255, 0.06)",
 
             border:
-              `1px solid ${primaryColor}33`,
+              "1px solid rgba(249, 115, 22, 0.28)",
           }}
         >
 
@@ -798,10 +914,12 @@ function Sidebar() {
                   800,
 
                 color:
-                  "#ffffff",
+                  sidebarText,
               }}
             >
-              Commercial MVP
+              {
+                commercialMvpLabel
+              }
             </Typography>
 
 
@@ -820,10 +938,10 @@ function Sidebar() {
                   "50%",
 
                 bgcolor:
-                  primaryColor,
+                  sidebarAccent,
 
                 boxShadow:
-                  `0 0 0 4px ${primaryColor}20`,
+                  "0 0 0 4px rgba(249, 115, 22, 0.12)",
               }}
             />
 
@@ -842,11 +960,12 @@ function Sidebar() {
                 1.5,
 
               color:
-                "#94a3b8",
+                sidebarSubtleText,
             }}
           >
-            Executive operations intelligence
-            platform
+            {
+              platformDescription
+            }
           </Typography>
 
 
@@ -872,10 +991,12 @@ function Sidebar() {
                   700,
 
                 color:
-                  "#cbd5e1",
+                  sidebarMutedText,
               }}
             >
-              Mine Manager AI · Version 1.0
+              {
+                `Mine Manager AI · Version ${APP_VERSION}`
+              }
             </Typography>
 
           </Box>

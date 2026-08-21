@@ -1,352 +1,1438 @@
+import { useMemo, useState } from "react";
+
 import {
   Box,
-  Button,
-  FormControl,
-  InputAdornment,
-  InputLabel,
+  Chip,
+  CircularProgress,
+  IconButton,
+  Menu,
   MenuItem,
-  Select,
-  TextField,
+  Paper,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
-import SearchIcon from "@mui/icons-material/Search";
-import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteIcon from "@mui/icons-material/Delete";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-function ExecutiveActionFilters({
-  filters,
-  onFilterChange,
-  onClear,
-  owners = [],
-  primaryColor = "#16a34a",
-}) {
-  const handleChange = (field) => (event) => {
-    onFilterChange({
-      ...filters,
-      [field]: event.target.value,
-    });
-  };
+import { useLanguage } from "../../context/LanguageContext";
 
-  const hasActiveFilters =
-    Boolean(filters.search) ||
-    Boolean(filters.status) ||
-    Boolean(filters.priority) ||
-    Boolean(filters.owner);
+const STATUS_OPTIONS = [
+  {
+    value: "open",
+    labelKey: "executiveActionTable.status.open",
+    symbol: "○",
+  },
+  {
+    value: "in_progress",
+    labelKey: "executiveActionTable.status.inProgress",
+    symbol: "◐",
+  },
+  {
+    value: "completed",
+    labelKey: "executiveActionTable.status.completed",
+    symbol: "✓",
+  },
+  {
+    value: "blocked",
+    labelKey: "executiveActionTable.status.blocked",
+    symbol: "⊘",
+  },
+];
 
+function normalizeValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_");
+}
+
+function getActionId(action) {
+  return action?.id ?? action?.action_id;
+}
+
+function getActionTitle(action, t) {
   return (
-    <Box
-      sx={{
-        mt: 2.5,
-        mb: 2.5,
-        p: {
-          xs: 2,
-          sm: 2.5,
-        },
-        bgcolor: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: "18px",
-        boxShadow:
-          "0 8px 24px rgba(15, 23, 42, 0.04)",
-      }}
-    >
-      <Box
-        sx={{
-          mb: 2.25,
-          display: "flex",
-          alignItems: {
-            xs: "flex-start",
-            sm: "center",
-          },
-          justifyContent: "space-between",
-          flexDirection: {
-            xs: "column",
-            sm: "row",
-          },
-          gap: 1.5,
-        }}
-      >
-        <Box>
-          <Typography
-            sx={{
-              fontSize: 16,
-              fontWeight: 800,
-              color: "#0f172a",
-            }}
-          >
-            Filter Executive Actions
-          </Typography>
-
-          <Typography
-            sx={{
-              mt: 0.5,
-              fontSize: 13,
-              color: "#64748b",
-            }}
-          >
-            Narrow the table by keyword, status,
-            priority, or owner.
-          </Typography>
-        </Box>
-
-        <Button
-          variant="text"
-          startIcon={<FilterAltOffIcon />}
-          onClick={onClear}
-          disabled={!hasActiveFilters}
-          sx={{
-            minHeight: 40,
-            px: 1.75,
-            borderRadius: "10px",
-            color: hasActiveFilters
-              ? primaryColor
-              : "#94a3b8",
-            fontWeight: 800,
-            textTransform: "none",
-
-            "&:hover": {
-              bgcolor: `${primaryColor}0A`,
-            },
-
-            "&.Mui-disabled": {
-              color: "#cbd5e1",
-            },
-          }}
-        >
-          Clear Filters
-        </Button>
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, minmax(0, 1fr))",
-            lg: "2fr repeat(3, minmax(150px, 1fr))",
-          },
-          gap: 2,
-          alignItems: "center",
-        }}
-      >
-        <TextField
-          fullWidth
-          size="small"
-          label="Search"
-          placeholder="Search actions"
-          value={filters.search}
-          onChange={handleChange("search")}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon
-                    sx={{
-                      fontSize: 20,
-                      color: "#94a3b8",
-                    }}
-                  />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              minHeight: 44,
-              borderRadius: "12px",
-              bgcolor: "#ffffff",
-
-              "& fieldset": {
-                borderColor: "#cbd5e1",
-              },
-
-              "&:hover fieldset": {
-                borderColor: "#94a3b8",
-              },
-
-              "&.Mui-focused fieldset": {
-                borderColor: primaryColor,
-              },
-            },
-
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: primaryColor,
-            },
-          }}
-        />
-
-        <FormControl
-          fullWidth
-          size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              minHeight: 44,
-              borderRadius: "12px",
-
-              "& fieldset": {
-                borderColor: "#cbd5e1",
-              },
-
-              "&:hover fieldset": {
-                borderColor: "#94a3b8",
-              },
-
-              "&.Mui-focused fieldset": {
-                borderColor: primaryColor,
-              },
-            },
-
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: primaryColor,
-            },
-          }}
-        >
-          <InputLabel id="executive-action-status-filter-label">
-            Status
-          </InputLabel>
-
-          <Select
-            labelId="executive-action-status-filter-label"
-            value={filters.status}
-            label="Status"
-            onChange={handleChange("status")}
-          >
-            <MenuItem value="">
-              All Statuses
-            </MenuItem>
-
-            <MenuItem value="Open">
-              Open
-            </MenuItem>
-
-            <MenuItem value="To Do">
-              To Do
-            </MenuItem>
-
-            <MenuItem value="In Progress">
-              In Progress
-            </MenuItem>
-
-            <MenuItem value="Blocked">
-              Blocked
-            </MenuItem>
-
-            <MenuItem value="Completed">
-              Completed
-            </MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl
-          fullWidth
-          size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              minHeight: 44,
-              borderRadius: "12px",
-
-              "& fieldset": {
-                borderColor: "#cbd5e1",
-              },
-
-              "&:hover fieldset": {
-                borderColor: "#94a3b8",
-              },
-
-              "&.Mui-focused fieldset": {
-                borderColor: primaryColor,
-              },
-            },
-
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: primaryColor,
-            },
-          }}
-        >
-          <InputLabel id="executive-action-priority-filter-label">
-            Priority
-          </InputLabel>
-
-          <Select
-            labelId="executive-action-priority-filter-label"
-            value={filters.priority}
-            label="Priority"
-            onChange={handleChange("priority")}
-          >
-            <MenuItem value="">
-              All Priorities
-            </MenuItem>
-
-            <MenuItem value="Critical">
-              Critical
-            </MenuItem>
-
-            <MenuItem value="High">
-              High
-            </MenuItem>
-
-            <MenuItem value="Medium">
-              Medium
-            </MenuItem>
-
-            <MenuItem value="Low">
-              Low
-            </MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl
-          fullWidth
-          size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              minHeight: 44,
-              borderRadius: "12px",
-
-              "& fieldset": {
-                borderColor: "#cbd5e1",
-              },
-
-              "&:hover fieldset": {
-                borderColor: "#94a3b8",
-              },
-
-              "&.Mui-focused fieldset": {
-                borderColor: primaryColor,
-              },
-            },
-
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: primaryColor,
-            },
-          }}
-        >
-          <InputLabel id="executive-action-owner-filter-label">
-            Owner
-          </InputLabel>
-
-          <Select
-            labelId="executive-action-owner-filter-label"
-            value={filters.owner}
-            label="Owner"
-            onChange={handleChange("owner")}
-          >
-            <MenuItem value="">
-              All Owners
-            </MenuItem>
-
-            {owners.map((owner) => (
-              <MenuItem
-                key={owner}
-                value={owner}
-              >
-                {owner}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-    </Box>
+    action?.title ||
+    action?.action_title ||
+    action?.recommended_action ||
+    action?.action ||
+    t("executiveActionTable.untitledAction")
   );
 }
 
-export default ExecutiveActionFilters;
+function getActionDescription(action) {
+  return (
+    action?.description ||
+    action?.action_description ||
+    action?.recommendation ||
+    ""
+  );
+}
+
+function getActionOwner(action, t) {
+  return (
+    action?.owner ||
+    action?.owner_name ||
+    action?.assigned_to ||
+    t("executiveActionTable.unassigned")
+  );
+}
+
+function getActionCategory(action, t) {
+  return (
+    action?.category ||
+    action?.action_category ||
+    action?.kpi_name ||
+    action?.kpi_label ||
+    t("executiveActionTable.operations")
+  );
+}
+
+function getActionSource(action) {
+  return normalizeValue(
+    action?.source ||
+      action?.action_source ||
+      "manual"
+  );
+}
+
+function formatStatusLabel(status, t) {
+  const normalizedStatus =
+    normalizeValue(status);
+
+  const statusMap = {
+    open: "executiveActionTable.status.open",
+    to_do: "executiveActionTable.status.open",
+    todo: "executiveActionTable.status.open",
+    in_progress:
+      "executiveActionTable.status.inProgress",
+    completed:
+      "executiveActionTable.status.completed",
+    complete:
+      "executiveActionTable.status.completed",
+    blocked:
+      "executiveActionTable.status.blocked",
+  };
+
+  const translationKey =
+    statusMap[normalizedStatus] ||
+    "executiveActionTable.status.open";
+
+  return t(translationKey);
+}
+
+function formatPriorityLabel(priority, t) {
+  const normalizedPriority =
+    normalizeValue(priority);
+
+  const priorityMap = {
+    critical:
+      "executiveActionTable.priority.critical",
+    high:
+      "executiveActionTable.priority.high",
+    medium:
+      "executiveActionTable.priority.medium",
+    low:
+      "executiveActionTable.priority.low",
+  };
+
+  const translationKey =
+    priorityMap[normalizedPriority] ||
+    "executiveActionTable.priority.medium";
+
+  return t(translationKey);
+}
+
+function formatDate(
+  dateValue,
+  language,
+  t
+) {
+  if (!dateValue) {
+    return t(
+      "executiveActionTable.noDueDate"
+    );
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
+  }
+
+  return new Intl.DateTimeFormat(
+    language === "MN"
+      ? "mn-MN"
+      : "en-GB",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(date);
+}
+
+function isOverdue(action) {
+  if (!action?.due_date) {
+    return false;
+  }
+
+  const status = normalizeValue(
+    action?.status
+  );
+
+  if (status === "completed") {
+    return false;
+  }
+
+  const dueDate = new Date(
+    action.due_date
+  );
+
+  if (
+    Number.isNaN(
+      dueDate.getTime()
+    )
+  ) {
+    return false;
+  }
+
+  dueDate.setHours(
+    23,
+    59,
+    59,
+    999
+  );
+
+  return dueDate < new Date();
+}
+
+function getStatusStyles(status) {
+  const normalizedStatus =
+    normalizeValue(status);
+
+  const styles = {
+    open: {
+      color: "#475569",
+      backgroundColor: "#f1f5f9",
+      borderColor: "#cbd5e1",
+    },
+
+    to_do: {
+      color: "#475569",
+      backgroundColor: "#f1f5f9",
+      borderColor: "#cbd5e1",
+    },
+
+    todo: {
+      color: "#475569",
+      backgroundColor: "#f1f5f9",
+      borderColor: "#cbd5e1",
+    },
+
+    in_progress: {
+      color: "#1d4ed8",
+      backgroundColor: "#eff6ff",
+      borderColor: "#bfdbfe",
+    },
+
+    completed: {
+      color: "#15803d",
+      backgroundColor: "#f0fdf4",
+      borderColor: "#bbf7d0",
+    },
+
+    complete: {
+      color: "#15803d",
+      backgroundColor: "#f0fdf4",
+      borderColor: "#bbf7d0",
+    },
+
+    blocked: {
+      color: "#b91c1c",
+      backgroundColor: "#fef2f2",
+      borderColor: "#fecaca",
+    },
+  };
+
+  return (
+    styles[normalizedStatus] ||
+    styles.open
+  );
+}
+
+function getPriorityStyles(priority) {
+  const normalizedPriority =
+    normalizeValue(priority);
+
+  const styles = {
+    critical: {
+      color: "#991b1b",
+      backgroundColor: "#fee2e2",
+      borderColor: "#fecaca",
+    },
+
+    high: {
+      color: "#c2410c",
+      backgroundColor: "#fff7ed",
+      borderColor: "#fed7aa",
+    },
+
+    medium: {
+      color: "#a16207",
+      backgroundColor: "#fefce8",
+      borderColor: "#fde68a",
+    },
+
+    low: {
+      color: "#166534",
+      backgroundColor: "#f0fdf4",
+      borderColor: "#bbf7d0",
+    },
+  };
+
+  return (
+    styles[normalizedPriority] ||
+    styles.medium
+  );
+}
+
+function StatusMenuButton({
+  action,
+  updating,
+  onStatusChange,
+}) {
+  const { t } = useLanguage();
+
+  const [
+    anchorEl,
+    setAnchorEl,
+  ] = useState(null);
+
+  const menuOpen =
+    Boolean(anchorEl);
+
+  const currentStatus =
+    normalizeValue(
+      action?.status || "open"
+    );
+
+  const statusStyles =
+    getStatusStyles(
+      currentStatus
+    );
+
+  const currentOption =
+    STATUS_OPTIONS.find(
+      (option) =>
+        option.value ===
+        currentStatus
+    ) || STATUS_OPTIONS[0];
+
+  const handleOpenMenu = (
+    event
+  ) => {
+    event.stopPropagation();
+
+    if (!updating) {
+      setAnchorEl(
+        event.currentTarget
+      );
+    }
+  };
+
+  const handleCloseMenu = (
+    event
+  ) => {
+    event?.stopPropagation();
+    setAnchorEl(null);
+  };
+
+  const handleSelectStatus = (
+    event,
+    newStatus
+  ) => {
+    event.stopPropagation();
+    setAnchorEl(null);
+
+    if (
+      newStatus ===
+        currentStatus ||
+      updating
+    ) {
+      return;
+    }
+
+    onStatusChange?.(
+      action,
+      newStatus
+    );
+  };
+
+  return (
+    <>
+      <Tooltip
+        title={t(
+          "executiveActionTable.changeStatus"
+        )}
+      >
+        <Box
+          component="button"
+          type="button"
+          onClick={
+            handleOpenMenu
+          }
+          disabled={updating}
+          aria-haspopup="menu"
+          aria-expanded={
+            menuOpen
+              ? "true"
+              : undefined
+          }
+          sx={{
+            minWidth: 140,
+            height: 36,
+            px: 1.25,
+            borderRadius: "10px",
+            border: "1px solid",
+            borderColor:
+              statusStyles.borderColor,
+            backgroundColor:
+              statusStyles.backgroundColor,
+            color:
+              statusStyles.color,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent:
+              "space-between",
+            gap: 0.75,
+            cursor: updating
+              ? "not-allowed"
+              : "pointer",
+            opacity: updating
+              ? 0.7
+              : 1,
+            fontFamily: "inherit",
+            transition:
+              "all 0.2s ease",
+
+            "&:hover": {
+              transform: updating
+                ? "none"
+                : "translateY(-1px)",
+              filter: updating
+                ? "none"
+                : "brightness(0.98)",
+            },
+
+            "&:focus-visible": {
+              outline: `2px solid ${statusStyles.color}`,
+              outlineOffset: 2,
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              minWidth: 0,
+            }}
+          >
+            {!updating && (
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                }}
+              >
+                {
+                  currentOption.symbol
+                }
+              </Typography>
+            )}
+
+            <Typography
+              component="span"
+              sx={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {updating
+                ? t(
+                    "executiveActionTable.updating"
+                  )
+                : formatStatusLabel(
+                    currentStatus,
+                    t
+                  )}
+            </Typography>
+          </Box>
+
+          {updating ? (
+            <CircularProgress
+              size={15}
+              thickness={5}
+              sx={{
+                color:
+                  statusStyles.color,
+              }}
+            />
+          ) : (
+            <KeyboardArrowDownIcon
+              sx={{
+                fontSize: 18,
+              }}
+            />
+          )}
+        </Box>
+      </Tooltip>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={menuOpen}
+        onClose={
+          handleCloseMenu
+        }
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.75,
+              minWidth: 200,
+              borderRadius: "12px",
+              border:
+                "1px solid #e2e8f0",
+              boxShadow:
+                "0 16px 40px rgba(15, 23, 42, 0.14)",
+              p: 0.75,
+            },
+          },
+        }}
+      >
+        {STATUS_OPTIONS.map(
+          (option) => {
+            const optionStyles =
+              getStatusStyles(
+                option.value
+              );
+
+            const isSelected =
+              option.value ===
+              currentStatus;
+
+            return (
+              <MenuItem
+                key={
+                  option.value
+                }
+                selected={
+                  isSelected
+                }
+                onClick={(
+                  event
+                ) =>
+                  handleSelectStatus(
+                    event,
+                    option.value
+                  )
+                }
+                sx={{
+                  minHeight: 42,
+                  borderRadius: "9px",
+                  px: 1.25,
+                  gap: 1.25,
+                  color:
+                    optionStyles.color,
+                  fontSize: 13.5,
+                  fontWeight:
+                    isSelected
+                      ? 800
+                      : 700,
+
+                  "&.Mui-selected": {
+                    backgroundColor:
+                      optionStyles.backgroundColor,
+                  },
+
+                  "&.Mui-selected:hover": {
+                    backgroundColor:
+                      optionStyles.backgroundColor,
+                  },
+                }}
+              >
+                <Typography
+                  component="span"
+                  sx={{
+                    width: 20,
+                    fontSize: 17,
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    textAlign: "center",
+                  }}
+                >
+                  {option.symbol}
+                </Typography>
+
+                <Box
+                  sx={{
+                    flex: 1,
+                  }}
+                >
+                  {t(option.labelKey)}
+                </Box>
+
+                {isSelected && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: 15,
+                      fontWeight: 900,
+                    }}
+                  >
+                    ✓
+                  </Typography>
+                )}
+              </MenuItem>
+            );
+          }
+        )}
+      </Menu>
+    </>
+  );
+}
+
+function LoadingRows() {
+  return Array.from({
+    length: 5,
+  }).map((_, index) => (
+    <TableRow key={index}>
+      <TableCell>
+        <Skeleton
+          variant="rounded"
+          height={20}
+          width="75%"
+        />
+
+        <Skeleton
+          variant="text"
+          width="90%"
+        />
+      </TableCell>
+
+      <TableCell>
+        <Skeleton
+          variant="rounded"
+          width={90}
+          height={28}
+        />
+      </TableCell>
+
+      <TableCell>
+        <Skeleton
+          variant="rounded"
+          width={76}
+          height={28}
+        />
+      </TableCell>
+
+      <TableCell>
+        <Skeleton
+          variant="text"
+          width={100}
+        />
+      </TableCell>
+
+      <TableCell>
+        <Skeleton
+          variant="text"
+          width={90}
+        />
+      </TableCell>
+
+      <TableCell>
+        <Skeleton
+          variant="rounded"
+          width={140}
+          height={36}
+        />
+      </TableCell>
+
+      <TableCell align="right">
+        <Skeleton
+          variant="circular"
+          width={34}
+          height={34}
+          sx={{
+            display:
+              "inline-block",
+            mr: 1,
+          }}
+        />
+
+        <Skeleton
+          variant="circular"
+          width={34}
+          height={34}
+          sx={{
+            display:
+              "inline-block",
+          }}
+        />
+      </TableCell>
+    </TableRow>
+  ));
+}
+
+function EmptyState({ t }) {
+  return (
+    <TableRow>
+      <TableCell
+        colSpan={7}
+        sx={{
+          py: 9,
+          textAlign: "center",
+        }}
+      >
+        <Box
+          sx={{
+            width: 58,
+            height: 58,
+            mx: "auto",
+            mb: 2,
+            borderRadius: "16px",
+            backgroundColor:
+              "#f1f5f9",
+            color: "#64748b",
+            display: "flex",
+            alignItems: "center",
+            justifyContent:
+              "center",
+            fontSize: 28,
+            fontWeight: 900,
+          }}
+        >
+          ✓
+        </Box>
+
+        <Typography
+          sx={{
+            fontSize: 17,
+            fontWeight: 800,
+            color: "#0f172a",
+          }}
+        >
+          {t(
+            "executiveActionTable.emptyTitle"
+          )}
+        </Typography>
+
+        <Typography
+          sx={{
+            mt: 0.75,
+            fontSize: 14,
+            color: "#64748b",
+          }}
+        >
+          {t(
+            "executiveActionTable.emptyMessage"
+          )}
+        </Typography>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function ExecutiveActionTable({
+  actions = [],
+  loading = false,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  updatingStatusId = null,
+}) {
+  const { language, t } =
+    useLanguage();
+
+  const tableHeadings = [
+    {
+      key: "action",
+      label: t(
+        "executiveActionTable.columns.action"
+      ),
+      align: "left",
+    },
+    {
+      key: "category",
+      label: t(
+        "executiveActionTable.columns.category"
+      ),
+      align: "left",
+    },
+    {
+      key: "priority",
+      label: t(
+        "executiveActionTable.columns.priority"
+      ),
+      align: "left",
+    },
+    {
+      key: "owner",
+      label: t(
+        "executiveActionTable.columns.owner"
+      ),
+      align: "left",
+    },
+    {
+      key: "dueDate",
+      label: t(
+        "executiveActionTable.columns.dueDate"
+      ),
+      align: "left",
+    },
+    {
+      key: "status",
+      label: t(
+        "executiveActionTable.columns.status"
+      ),
+      align: "left",
+    },
+    {
+      key: "actions",
+      label: t(
+        "executiveActionTable.columns.actions"
+      ),
+      align: "right",
+    },
+  ];
+
+  const normalizedActions =
+    useMemo(
+      () =>
+        Array.isArray(actions)
+          ? actions
+          : [],
+      [actions]
+    );
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        mt: 2,
+        overflow: "hidden",
+        borderRadius: "16px",
+        border:
+          "1px solid #e2e8f0",
+        backgroundColor:
+          "#ffffff",
+      }}
+    >
+      <TableContainer
+        sx={{
+          overflowX: "auto",
+        }}
+      >
+        <Table
+          sx={{
+            minWidth: 1120,
+          }}
+        >
+          <TableHead>
+            <TableRow
+              sx={{
+                backgroundColor:
+                  "#f8fafc",
+              }}
+            >
+              {tableHeadings.map(
+                (heading) => (
+                  <TableCell
+                    key={heading.key}
+                    align={heading.align}
+                    sx={{
+                      py: 1.75,
+                      borderBottom:
+                        "1px solid #e2e8f0",
+                      color:
+                        "#475569",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      letterSpacing:
+                        "0.04em",
+                      textTransform:
+                        "uppercase",
+                      whiteSpace:
+                        "nowrap",
+                    }}
+                  >
+                    {heading.label}
+                  </TableCell>
+                )
+              )}
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {loading ? (
+              <LoadingRows />
+            ) : normalizedActions.length ===
+              0 ? (
+              <EmptyState t={t} />
+            ) : (
+              normalizedActions.map(
+                (
+                  action,
+                  index
+                ) => {
+                  const actionId =
+                    getActionId(
+                      action
+                    );
+
+                  const actionTitle =
+                    getActionTitle(
+                      action,
+                      t
+                    );
+
+                  const actionDescription =
+                    getActionDescription(
+                      action
+                    );
+
+                  const priorityStyles =
+                    getPriorityStyles(
+                      action?.priority
+                    );
+
+                  const source =
+                    getActionSource(
+                      action
+                    );
+
+                  const overdue =
+                    isOverdue(
+                      action
+                    );
+
+                  const isUpdating =
+                    String(
+                      updatingStatusId
+                    ) ===
+                    String(
+                      actionId
+                    );
+
+                  return (
+                    <TableRow
+                      key={
+                        actionId ||
+                        action?.action_key ||
+                        `${actionTitle}-${index}`
+                      }
+                      hover
+                      sx={{
+                        "&:last-child td": {
+                          borderBottom:
+                            0,
+                        },
+
+                        "&:hover": {
+                          backgroundColor:
+                            "#fbfdff",
+                        },
+                      }}
+                    >
+                      <TableCell
+                        sx={{
+                          width: 360,
+                          maxWidth: 360,
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display:
+                              "flex",
+                            alignItems:
+                              "flex-start",
+                            gap: 1.25,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 34,
+                              height: 34,
+                              flexShrink: 0,
+                              borderRadius:
+                                "10px",
+                              backgroundColor:
+                                source ===
+                                "ai"
+                                  ? "#eef2ff"
+                                  : "#f1f5f9",
+                              color:
+                                source ===
+                                "ai"
+                                  ? "#4f46e5"
+                                  : "#475569",
+                              display:
+                                "flex",
+                              alignItems:
+                                "center",
+                              justifyContent:
+                                "center",
+                              fontSize:
+                                source ===
+                                "ai"
+                                  ? 11
+                                  : 13,
+                              fontWeight:
+                                900,
+                            }}
+                          >
+                            {source ===
+                            "ai"
+                              ? "AI"
+                              : "M"}
+                          </Box>
+
+                          <Box
+                            sx={{
+                              minWidth: 0,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display:
+                                  "flex",
+                                alignItems:
+                                  "center",
+                                flexWrap:
+                                  "wrap",
+                                gap: 0.75,
+                              }}
+                            >
+                              <Typography
+                                sx={{
+                                  color:
+                                    "#0f172a",
+                                  fontSize:
+                                    14,
+                                  fontWeight:
+                                    800,
+                                  lineHeight:
+                                    1.4,
+                                }}
+                              >
+                                {
+                                  actionTitle
+                                }
+                              </Typography>
+
+                              <Chip
+                                size="small"
+                                label={
+                                  source ===
+                                  "ai"
+                                    ? "AI"
+                                    : t(
+                                        "executiveActionTable.manual"
+                                      )
+                                }
+                                sx={{
+                                  height: 21,
+                                  borderRadius:
+                                    "7px",
+                                  color:
+                                    source ===
+                                    "ai"
+                                      ? "#4338ca"
+                                      : "#475569",
+                                  backgroundColor:
+                                    source ===
+                                    "ai"
+                                      ? "#eef2ff"
+                                      : "#f1f5f9",
+                                  fontSize:
+                                    10.5,
+                                  fontWeight:
+                                    800,
+
+                                  "& .MuiChip-label": {
+                                    px: 0.85,
+                                  },
+                                }}
+                              />
+                            </Box>
+
+                            {actionDescription && (
+                              <Typography
+                                title={
+                                  actionDescription
+                                }
+                                sx={{
+                                  mt: 0.55,
+                                  color:
+                                    "#64748b",
+                                  fontSize:
+                                    12.5,
+                                  lineHeight:
+                                    1.5,
+                                  display:
+                                    "-webkit-box",
+                                  WebkitLineClamp:
+                                    2,
+                                  WebkitBoxOrient:
+                                    "vertical",
+                                  overflow:
+                                    "hidden",
+                                }}
+                              >
+                                {
+                                  actionDescription
+                                }
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color:
+                              "#334155",
+                            fontSize:
+                              13,
+                            fontWeight:
+                              700,
+                          }}
+                        >
+                          {getActionCategory(
+                            action,
+                            t
+                          )}
+                        </Typography>
+
+                        {action?.kpi_key && (
+                          <Typography
+                            sx={{
+                              mt: 0.35,
+                              color:
+                                "#94a3b8",
+                              fontSize:
+                                11.5,
+                            }}
+                          >
+                            {
+                              action.kpi_key
+                            }
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                        }}
+                      >
+                        <Chip
+                          size="small"
+                          label={formatPriorityLabel(
+                            action?.priority,
+                            t
+                          )}
+                          variant="outlined"
+                          sx={{
+                            height: 28,
+                            borderRadius:
+                              "8px",
+                            color:
+                              priorityStyles.color,
+                            borderColor:
+                              priorityStyles.borderColor,
+                            backgroundColor:
+                              priorityStyles.backgroundColor,
+                            fontSize:
+                              11.5,
+                            fontWeight:
+                              800,
+
+                            "& .MuiChip-label": {
+                              px: 1.15,
+                            },
+                          }}
+                        />
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color:
+                              "#334155",
+                            fontSize:
+                              13,
+                            fontWeight:
+                              700,
+                          }}
+                        >
+                          {getActionOwner(
+                            action,
+                            t
+                          )}
+                        </Typography>
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color:
+                              overdue
+                                ? "#b91c1c"
+                                : "#334155",
+                            fontSize:
+                              13,
+                            fontWeight:
+                              overdue
+                                ? 800
+                                : 700,
+                          }}
+                        >
+                          {formatDate(
+                            action?.due_date,
+                            language,
+                            t
+                          )}
+                        </Typography>
+
+                        {overdue && (
+                          <Typography
+                            sx={{
+                              mt: 0.25,
+                              color:
+                                "#dc2626",
+                              fontSize:
+                                11.5,
+                              fontWeight:
+                                800,
+                            }}
+                          >
+                            {t(
+                              "executiveActionTable.overdue"
+                            )}
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                        }}
+                      >
+                        <StatusMenuButton
+                          action={
+                            action
+                          }
+                          updating={
+                            isUpdating
+                          }
+                          onStatusChange={
+                            onStatusChange
+                          }
+                        />
+                      </TableCell>
+
+                      <TableCell
+                        align="right"
+                        sx={{
+                          py: 2,
+                          borderColor:
+                            "#eef2f7",
+                          whiteSpace:
+                            "nowrap",
+                        }}
+                      >
+                        <Tooltip
+                          title={t(
+                            "executiveActionTable.editAction"
+                          )}
+                        >
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                onEdit?.(
+                                  action
+                                )
+                              }
+                              disabled={
+                                isUpdating
+                              }
+                              sx={{
+                                width: 34,
+                                height: 34,
+                                mr: 0.75,
+                                color:
+                                  "#475569",
+                                border:
+                                  "1px solid #e2e8f0",
+                                backgroundColor:
+                                  "#ffffff",
+
+                                "&:hover": {
+                                  color:
+                                    "#1d4ed8",
+                                  borderColor:
+                                    "#bfdbfe",
+                                  backgroundColor:
+                                    "#eff6ff",
+                                },
+                              }}
+                            >
+                              <EditOutlinedIcon
+                                sx={{
+                                  fontSize:
+                                    18,
+                                }}
+                              />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+
+                        <Tooltip
+                          title={t(
+                            "executiveActionTable.deleteAction"
+                          )}
+                        >
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                onDelete?.(
+                                  action
+                                )
+                              }
+                              disabled={
+                                isUpdating
+                              }
+                              sx={{
+                                width: 34,
+                                height: 34,
+                                color:
+                                  "#64748b",
+                                border:
+                                  "1px solid #e2e8f0",
+                                backgroundColor:
+                                  "#ffffff",
+
+                                "&:hover": {
+                                  color:
+                                    "#dc2626",
+                                  borderColor:
+                                    "#fecaca",
+                                  backgroundColor:
+                                    "#fef2f2",
+                                },
+                              }}
+                            >
+                              <DeleteIcon
+                                sx={{
+                                  fontSize:
+                                    18,
+                                }}
+                              />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+              )
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {!loading &&
+        normalizedActions.length >
+          0 && (
+          <Box
+            sx={{
+              px: 2.5,
+              py: 1.5,
+              borderTop:
+                "1px solid #eef2f7",
+              backgroundColor:
+                "#fbfdff",
+            }}
+          >
+            <Typography
+              sx={{
+                color: "#64748b",
+                fontSize: 12.5,
+                fontWeight: 600,
+              }}
+            >
+              {String(
+                normalizedActions.length === 1
+                  ? t(
+                      "executiveActionTable.showingSingle"
+                    )
+                  : t(
+                      "executiveActionTable.showingPlural"
+                    )
+              ).replace(
+                "{count}",
+                String(
+                  normalizedActions.length
+                )
+              )}
+            </Typography>
+          </Box>
+        )}
+    </Paper>
+  );
+}
+
+export default ExecutiveActionTable;

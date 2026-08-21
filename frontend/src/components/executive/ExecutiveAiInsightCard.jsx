@@ -18,6 +18,16 @@ import {
   FaMountain,
 } from "react-icons/fa";
 
+import { useLanguage } from "../../context/LanguageContext";
+
+import {
+  translateDynamicExecutiveText,
+  translateDynamicInsightTitle,
+  translateDynamicKpiName,
+  translateDynamicPriority,
+  translateDynamicSourceType,
+} from "../../i18n/dynamicTranslations";
+
 import "./ExecutiveAiInsightCard.css";
 
 
@@ -57,33 +67,47 @@ function normalizeSeverity(value) {
 }
 
 
-function getSeverityContent(value) {
+function getSeverityContent(value, t) {
   const severity = normalizeSeverity(value);
 
   const content = {
     critical: {
       className: "critical",
-      label: "Critical",
+      label: t(
+        "executiveAiInsightCard.severity.critical"
+      ),
       icon: <FiAlertTriangle />,
     },
+
     high: {
       className: "high",
-      label: "High Priority",
+      label: t(
+        "executiveAiInsightCard.severity.high"
+      ),
       icon: <FiAlertTriangle />,
     },
+
     medium: {
       className: "medium",
-      label: "Medium Priority",
+      label: t(
+        "executiveAiInsightCard.severity.medium"
+      ),
       icon: <FiActivity />,
     },
+
     low: {
       className: "low",
-      label: "Low Priority",
+      label: t(
+        "executiveAiInsightCard.severity.low"
+      ),
       icon: <FiCheckCircle />,
     },
+
     neutral: {
       className: "neutral",
-      label: "Priority Unavailable",
+      label: t(
+        "executiveAiInsightCard.severity.unavailable"
+      ),
       icon: <FiActivity />,
     },
   };
@@ -207,7 +231,10 @@ function formatVariance(value) {
     return "";
   }
 
-  const prefix = numericValue > 0 ? "+" : "";
+  const prefix =
+    numericValue > 0
+      ? "+"
+      : "";
 
   return `${prefix}${numericValue.toFixed(1)}%`;
 }
@@ -219,20 +246,48 @@ export default function ExecutiveAiInsightCard({
   forecast,
   riskLevel,
   confidence,
-  title = "AI Executive Insight",
+  title,
 }) {
-  const cardTitle =
-    getTextValue(insight?.title) ||
-    getTextValue(title) ||
-    "AI Executive Insight";
+  const { t } = useLanguage();
 
-  const cardSummary =
+  const defaultTitle = t(
+    "executiveAiInsightCard.defaultTitle"
+  );
+
+  const rawTitle =
+    getTextValue(insight?.title) ||
+    getTextValue(title);
+
+  const cardTitle =
+    rawTitle
+      ? translateDynamicInsightTitle(
+          rawTitle,
+          t
+        )
+      : defaultTitle;
+
+  const rawCardSummary =
     getTextValue(insight?.summary) ||
     getTextValue(summary);
 
-  const kpiName =
+  const cardSummary =
+    rawCardSummary
+      ? translateDynamicExecutiveText(
+          rawCardSummary,
+          t
+        )
+      : "";
+
+  const rawKpiName =
     getTextValue(insight?.kpi_name) ||
+    rawTitle ||
     cardTitle;
+
+  const translatedKpiName =
+    translateDynamicKpiName(
+      rawKpiName,
+      t
+    ) || cardTitle;
 
   const severityValue =
     insight?.severity ||
@@ -243,55 +298,134 @@ export default function ExecutiveAiInsightCard({
     insight?.confidence ?? confidence;
 
   const confidencePercent =
-    normalizeConfidence(cardConfidence);
+    normalizeConfidence(
+      cardConfidence
+    );
 
   const severity =
-    getSeverityContent(severityValue);
+    getSeverityContent(
+      severityValue,
+      t
+    );
 
   const trendDirection =
     insight?.trend?.direction ||
     insight?.trend_direction ||
     "";
 
-  const trendSummary =
-    getTextValue(insight?.trend?.summary) ||
+  const rawTrendSummary =
+    getTextValue(
+      insight?.trend?.summary
+    ) ||
     getTextValue(forecast);
 
-  const likelyDriver =
-    getTextValue(insight?.likely_driver);
+  const trendSummary =
+    rawTrendSummary
+      ? translateDynamicExecutiveText(
+          rawTrendSummary,
+          t
+        )
+      : "";
 
-  const impactDescription =
+  const rawLikelyDriver =
+    getTextValue(
+      insight?.likely_driver
+    );
+
+  const likelyDriver =
+    rawLikelyDriver
+      ? translateDynamicExecutiveText(
+          rawLikelyDriver,
+          t
+        )
+      : "";
+
+  const rawImpactDescription =
     getTextValue(
       insight?.estimated_impact?.description
     );
 
-  const recommendation =
+  const impactDescription =
+    rawImpactDescription
+      ? translateDynamicExecutiveText(
+          rawImpactDescription,
+          t
+        )
+      : "";
+
+  const rawRecommendation =
     getTextValue(
       insight?.recommended_priority
     );
 
+  const recommendation =
+    rawRecommendation
+      ? translateDynamicExecutiveText(
+          rawRecommendation,
+          t
+        )
+      : "";
+
+  const rawPriority =
+    getTextValue(
+      insight?.priority
+    );
+
   const priority =
-    getTextValue(insight?.priority);
+    rawPriority
+      ? translateDynamicPriority(
+          rawPriority,
+          t
+        )
+      : "";
+
+  const rawConfidenceLabel =
+    getTextValue(
+      insight?.confidence_label
+    );
 
   const confidenceLabel =
-    getTextValue(insight?.confidence_label) ||
-    "Rule-based estimate";
+    rawConfidenceLabel
+      ? translateDynamicSourceType(
+          rawConfidenceLabel,
+          t
+        )
+      : t(
+          "executiveAiInsightCard.ruleBasedEstimate"
+        );
+
+  const rawSourceType =
+    getTextValue(
+      insight?.source?.type
+    );
 
   const sourceType =
-    getTextValue(insight?.source?.type)
-      .replaceAll("_", " ");
+    rawSourceType
+      ? translateDynamicSourceType(
+          rawSourceType,
+          t
+        )
+      : "";
 
   const performancePercent =
-    Number(insight?.performance_percent);
+    Number(
+      insight?.performance_percent
+    );
 
   const variancePercent =
-    Number(insight?.variance_percent);
+    Number(
+      insight?.variance_percent
+    );
 
   const hasPerformance =
-    Number.isFinite(performancePercent);
+    Number.isFinite(
+      performancePercent
+    );
 
   const hasVariance =
-    Number.isFinite(variancePercent);
+    Number.isFinite(
+      variancePercent
+    );
 
   return (
     <article
@@ -300,18 +434,36 @@ export default function ExecutiveAiInsightCard({
       }
       aria-label={cardTitle}
     >
+      {/* ==================================================
+          1. CARD HEADER
+          KPI identity + severity only.
+          ================================================== */}
       <header className="executive-ai-card-header">
         <div className="executive-ai-card-title-group">
-          <span className="executive-ai-card-kpi-icon">
-            {getKpiIcon(kpiName)}
+          <span
+            className="executive-ai-card-kpi-icon"
+            aria-hidden="true"
+          >
+            {getKpiIcon(
+              rawKpiName
+            )}
           </span>
 
           <div className="executive-ai-card-heading-copy">
             <span className="executive-ai-card-eyebrow">
-              Mine Manager AI
+              {t("common.appName")}
             </span>
 
-            <h3>{cardTitle}</h3>
+            <h3>
+              {cardTitle}
+            </h3>
+
+            {translatedKpiName &&
+              translatedKpiName !== cardTitle && (
+                <p className="executive-ai-card-kpi-name">
+                  {translatedKpiName}
+                </p>
+              )}
 
             {priority && (
               <p className="executive-ai-card-priority">
@@ -331,23 +483,42 @@ export default function ExecutiveAiInsightCard({
         </span>
       </header>
 
+      {/* ==================================================
+          2. EXECUTIVE SUMMARY + PRIMARY KPI METRICS
+          Answer "What is happening?" first.
+          ================================================== */}
       <div className="executive-ai-card-summary-row">
         <div className="executive-ai-card-summary">
           <span className="executive-ai-card-section-label">
-            Executive Summary
+            {t(
+              "executiveAiInsightCard.executiveSummary"
+            )}
           </span>
 
-          <p>
+          <p className="executive-ai-card-summary-text">
             {cardSummary ||
-              "Executive interpretation is not currently available for this KPI."}
+              t(
+                "executiveAiInsightCard.noExecutiveInterpretation"
+              )}
           </p>
         </div>
 
-        {(hasPerformance || hasVariance) && (
-          <div className="executive-ai-card-metrics">
+        {(hasPerformance ||
+          hasVariance) && (
+          <div
+            className="executive-ai-card-metrics"
+            aria-label={t(
+              "executiveAiInsightCard.performance"
+            )}
+          >
             {hasPerformance && (
-              <div>
-                <span>Performance</span>
+              <div className="executive-ai-card-metric">
+                <span>
+                  {t(
+                    "executiveAiInsightCard.performance"
+                  )}
+                </span>
+
                 <strong>
                   {performancePercent.toFixed(1)}%
                 </strong>
@@ -355,8 +526,13 @@ export default function ExecutiveAiInsightCard({
             )}
 
             {hasVariance && (
-              <div>
-                <span>Variance</span>
+              <div className="executive-ai-card-metric">
+                <span>
+                  {t(
+                    "executiveAiInsightCard.variance"
+                  )}
+                </span>
+
                 <strong
                   className={
                     variancePercent < 0
@@ -366,7 +542,9 @@ export default function ExecutiveAiInsightCard({
                       : ""
                   }
                 >
-                  {formatVariance(variancePercent)}
+                  {formatVariance(
+                    variancePercent
+                  )}
                 </strong>
               </div>
             )}
@@ -374,95 +552,149 @@ export default function ExecutiveAiInsightCard({
         )}
       </div>
 
-      <div className="executive-ai-card-detail-grid">
-        <section className="executive-ai-card-detail full">
-          <span className="executive-ai-card-detail-icon trend">
-            {getTrendIcon(trendDirection)}
+      {/* ==================================================
+          3. MANAGEMENT ACTION
+          Deliberately moved above diagnostic detail so an
+          executive can see the decision/action immediately.
+          ================================================== */}
+      <section
+        className="executive-ai-card-recommendation executive-ai-card-recommendation--primary"
+      >
+        <span
+          className="executive-ai-card-detail-icon action"
+          aria-hidden="true"
+        >
+          <FiZap />
+        </span>
+
+        <div className="executive-ai-card-recommendation-copy">
+          <span className="executive-ai-card-section-label">
+            {t(
+              "executiveAiInsightCard.recommendedPriority"
+            )}
           </span>
 
-          <div>
+          <p>
+            {recommendation ||
+              t(
+                "executiveAiInsightCard.continueMonitoring"
+              )}
+          </p>
+        </div>
+      </section>
+
+      {/* ==================================================
+          4. SUPPORTING ANALYSIS
+          Why / trend / likely impact.
+          ================================================== */}
+      <div className="executive-ai-card-detail-grid executive-ai-card-analysis-grid">
+        <section className="executive-ai-card-detail full executive-ai-card-detail--trend">
+          <span
+            className="executive-ai-card-detail-icon trend"
+            aria-hidden="true"
+          >
+            {getTrendIcon(
+              trendDirection
+            )}
+          </span>
+
+          <div className="executive-ai-card-detail-copy">
             <span className="executive-ai-card-section-label">
-              Performance Trend
+              {t(
+                "executiveAiInsightCard.performanceTrend"
+              )}
             </span>
 
             <p>
               {trendSummary ||
-                "Trend information is not currently available."}
+                t(
+                  "executiveAiInsightCard.noTrendInformation"
+                )}
             </p>
           </div>
         </section>
 
-        <section className="executive-ai-card-detail">
-          <span className="executive-ai-card-detail-icon driver">
+        <section className="executive-ai-card-detail executive-ai-card-detail--driver">
+          <span
+            className="executive-ai-card-detail-icon driver"
+            aria-hidden="true"
+          >
             <FiActivity />
           </span>
 
-          <div>
+          <div className="executive-ai-card-detail-copy">
             <span className="executive-ai-card-section-label">
-              Likely Driver
+              {t(
+                "executiveAiInsightCard.likelyDriver"
+              )}
             </span>
 
             <p>
               {likelyDriver ||
-                "No material operating driver identified."}
+                t(
+                  "executiveAiInsightCard.noDriverIdentified"
+                )}
             </p>
           </div>
         </section>
 
-        <section className="executive-ai-card-detail">
-          <span className="executive-ai-card-detail-icon impact">
+        <section className="executive-ai-card-detail executive-ai-card-detail--impact">
+          <span
+            className="executive-ai-card-detail-icon impact"
+            aria-hidden="true"
+          >
             <FiTarget />
           </span>
 
-          <div>
+          <div className="executive-ai-card-detail-copy">
             <span className="executive-ai-card-section-label">
-              Estimated Impact
+              {t(
+                "executiveAiInsightCard.estimatedImpact"
+              )}
             </span>
 
             <p>
               {impactDescription ||
-                "No material negative impact estimated."}
+                t(
+                  "executiveAiInsightCard.noNegativeImpact"
+                )}
             </p>
           </div>
         </section>
       </div>
 
-      <section className="executive-ai-card-recommendation">
-        <span className="executive-ai-card-detail-icon action">
-          <FiZap />
-        </span>
-
-        <div>
-          <span className="executive-ai-card-section-label">
-            Recommended Management Priority
-          </span>
-
-          <p>
-            {recommendation ||
-              "Continue monitoring operational performance."}
-          </p>
-        </div>
-      </section>
-
+      {/* ==================================================
+          5. SOURCE + CONFIDENCE
+          Secondary evidence, intentionally last.
+          ================================================== */}
       <footer className="executive-ai-card-footer">
         <div className="executive-ai-card-source">
-          <FiCheckCircle />
+          <FiCheckCircle aria-hidden="true" />
 
           <span>
-            Operational KPI trends, configured targets
+            {t(
+              "executiveAiInsightCard.sourceBase"
+            )}
+
             {sourceType
-              ? ` and ${sourceType}`
+              ? ` ${t(
+                  "executiveAiInsightCard.and"
+                )} ${sourceType}`
               : ""}
           </span>
         </div>
 
         <div className="executive-ai-card-confidence">
           <div className="executive-ai-card-confidence-heading">
-            <span>{confidenceLabel}</span>
+            <span>
+              {confidenceLabel}
+            </span>
 
             <strong>
               {confidencePercent !== null
-                ? `${Math.round(confidencePercent)}%`
+                ? `${Math.round(
+                    confidencePercent
+                  )}%`
                 : "—"}
             </strong>
           </div>
@@ -470,12 +702,16 @@ export default function ExecutiveAiInsightCard({
           <div
             className="executive-ai-card-confidence-track"
             role="progressbar"
-            aria-label="Executive insight confidence"
+            aria-label={t(
+              "executiveAiInsightCard.confidenceAria"
+            )}
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow={
               confidencePercent !== null
-                ? Math.round(confidencePercent)
+                ? Math.round(
+                    confidencePercent
+                  )
                 : 0
             }
           >

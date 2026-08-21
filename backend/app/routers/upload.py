@@ -26,13 +26,78 @@ router = APIRouter(
     ],
 )
 
+
 UPLOAD_FOLDER = Path("uploads")
 UPLOAD_FOLDER.mkdir(
     parents=True,
     exist_ok=True,
 )
 
+
 DEFAULT_MINE_NAME = "Oyu Tolgoi Surface"
+
+
+# ============================================================
+# TENANT RESOLUTION
+# ============================================================
+
+def resolve_tenant(
+    db,
+    mine_name: str,
+):
+    """
+    Resolve a configured mine into its immutable tenant IDs.
+
+    Operational records are isolated using:
+        company_id + mine_id
+
+    mine_name is retained for display and backward compatibility.
+    """
+
+    normalized_mine_name = str(
+        mine_name or ""
+    ).strip()
+
+    if not normalized_mine_name:
+        raise HTTPException(
+            status_code=400,
+            detail="mine_name is required.",
+        )
+
+    tenant = db.execute(
+        text(
+            """
+            SELECT
+                m.id AS mine_id,
+                m.company_id AS company_id,
+                m.mine_name AS mine_name,
+                c.company_name AS company_name
+            FROM public.mine_settings AS m
+            JOIN public.company_settings AS c
+                ON c.id = m.company_id
+            WHERE m.mine_name = :mine_name
+            """
+        ),
+        {
+            "mine_name": normalized_mine_name,
+        },
+    ).mappings().first()
+
+    if tenant is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Configured mine not found: "
+                f"{normalized_mine_name}"
+            ),
+        )
+
+    return {
+        "company_id": int(tenant["company_id"]),
+        "mine_id": int(tenant["mine_id"]),
+        "company_name": tenant["company_name"],
+        "mine_name": tenant["mine_name"],
+    }
 
 
 # ============================================================
@@ -369,11 +434,6 @@ def normalize_fleet_dataframe(
 ):
     """
     Validate and normalize a Fleet Excel report.
-
-    Required columns:
-    - report_date
-    - availability
-    - utilization
     """
 
     df = normalize_column_names(df)
@@ -447,12 +507,6 @@ def normalize_plant_dataframe(
 ):
     """
     Validate and normalize a Plant Excel report.
-
-    Required columns:
-    - report_date
-    - throughput_plan
-    - throughput_actual
-    - recovery
     """
 
     df = normalize_column_names(df)
@@ -528,13 +582,6 @@ def normalize_safety_dataframe(
 ):
     """
     Validate and normalize a Safety Excel report.
-
-    Required columns:
-    - report_date
-    - incidents
-    - near_misses
-    - critical_risks
-    - safety_score
     """
 
     df = normalize_column_names(df)
@@ -647,18 +694,8 @@ def import_production_excel(
     mine_name: str,
 ):
     """
-    Import Production Excel data into PostgreSQL.
+    Import Production Excel data using tenant-safe isolation.
     """
-
-    normalized_mine_name = str(
-        mine_name or ""
-    ).strip()
-
-    if not normalized_mine_name:
-        raise HTTPException(
-            status_code=400,
-            detail="mine_name is required.",
-        )
 
     try:
         df = pd.read_excel(file_path)
@@ -680,18 +717,29 @@ def import_production_excel(
     updated_count = 0
 
     try:
+        tenant = resolve_tenant(
+            db=db,
+            mine_name=mine_name,
+        )
+
+        company_id = tenant["company_id"]
+        mine_id = tenant["mine_id"]
+        normalized_mine_name = tenant["mine_name"]
+
         for _, row in df.iterrows():
             existing_id = db.execute(
                 text(
                     """
                     SELECT id
                     FROM public.production_daily
-                    WHERE mine_name = :mine_name
+                    WHERE company_id = :company_id
+                      AND mine_id = :mine_id
                       AND report_date = :report_date
                     """
                 ),
                 {
-                    "mine_name": normalized_mine_name,
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "report_date": row["report_date"],
                 },
             ).scalar_one_or_none()
@@ -701,6 +749,8 @@ def import_production_excel(
                     """
                     INSERT INTO public.production_daily
                     (
+                        company_id,
+                        mine_id,
                         mine_name,
                         report_date,
                         ore_plan,
@@ -710,6 +760,8 @@ def import_production_excel(
                     )
                     VALUES
                     (
+                        :company_id,
+                        :mine_id,
                         :mine_name,
                         :report_date,
                         :ore_plan,
@@ -718,35 +770,25 @@ def import_production_excel(
                         :waste_actual
                     )
                     ON CONFLICT
-                        (mine_name, report_date)
+                        (company_id, mine_id, report_date)
                     DO UPDATE SET
-                        ore_plan =
-                            EXCLUDED.ore_plan,
-                        ore_actual =
-                            EXCLUDED.ore_actual,
-                        waste_plan =
-                            EXCLUDED.waste_plan,
-                        waste_actual =
-                            EXCLUDED.waste_actual,
-                        created_at =
-                            CURRENT_TIMESTAMP
+                        mine_name = EXCLUDED.mine_name,
+                        ore_plan = EXCLUDED.ore_plan,
+                        ore_actual = EXCLUDED.ore_actual,
+                        waste_plan = EXCLUDED.waste_plan,
+                        waste_actual = EXCLUDED.waste_actual,
+                        created_at = CURRENT_TIMESTAMP
                     """
                 ),
                 {
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "mine_name": normalized_mine_name,
                     "report_date": row["report_date"],
-                    "ore_plan": float(
-                        row["ore_plan"]
-                    ),
-                    "ore_actual": float(
-                        row["ore_actual"]
-                    ),
-                    "waste_plan": float(
-                        row["waste_plan"]
-                    ),
-                    "waste_actual": float(
-                        row["waste_actual"]
-                    ),
+                    "ore_plan": float(row["ore_plan"]),
+                    "ore_actual": float(row["ore_actual"]),
+                    "waste_plan": float(row["waste_plan"]),
+                    "waste_actual": float(row["waste_actual"]),
                 },
             )
 
@@ -758,6 +800,9 @@ def import_production_excel(
         db.commit()
 
         return {
+            "company_id": company_id,
+            "mine_id": mine_id,
+            "company_name": tenant["company_name"],
             "mine_name": normalized_mine_name,
             "processed_rows": int(len(df)),
             "inserted_rows": inserted_count,
@@ -789,18 +834,8 @@ def import_fleet_excel(
     mine_name: str,
 ):
     """
-    Import Fleet Excel data into PostgreSQL.
+    Import Fleet Excel data using tenant-safe isolation.
     """
-
-    normalized_mine_name = str(
-        mine_name or ""
-    ).strip()
-
-    if not normalized_mine_name:
-        raise HTTPException(
-            status_code=400,
-            detail="mine_name is required.",
-        )
 
     try:
         df = pd.read_excel(file_path)
@@ -822,18 +857,29 @@ def import_fleet_excel(
     updated_count = 0
 
     try:
+        tenant = resolve_tenant(
+            db=db,
+            mine_name=mine_name,
+        )
+
+        company_id = tenant["company_id"]
+        mine_id = tenant["mine_id"]
+        normalized_mine_name = tenant["mine_name"]
+
         for _, row in df.iterrows():
             existing_id = db.execute(
                 text(
                     """
                     SELECT id
                     FROM public.fleet_daily
-                    WHERE mine_name = :mine_name
+                    WHERE company_id = :company_id
+                      AND mine_id = :mine_id
                       AND report_date = :report_date
                     """
                 ),
                 {
-                    "mine_name": normalized_mine_name,
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "report_date": row["report_date"],
                 },
             ).scalar_one_or_none()
@@ -843,6 +889,8 @@ def import_fleet_excel(
                     """
                     INSERT INTO public.fleet_daily
                     (
+                        company_id,
+                        mine_id,
                         mine_name,
                         report_date,
                         availability,
@@ -850,23 +898,25 @@ def import_fleet_excel(
                     )
                     VALUES
                     (
+                        :company_id,
+                        :mine_id,
                         :mine_name,
                         :report_date,
                         :availability,
                         :utilization
                     )
                     ON CONFLICT
-                        (mine_name, report_date)
+                        (company_id, mine_id, report_date)
                     DO UPDATE SET
-                        availability =
-                            EXCLUDED.availability,
-                        utilization =
-                            EXCLUDED.utilization,
-                        created_at =
-                            CURRENT_TIMESTAMP
+                        mine_name = EXCLUDED.mine_name,
+                        availability = EXCLUDED.availability,
+                        utilization = EXCLUDED.utilization,
+                        created_at = CURRENT_TIMESTAMP
                     """
                 ),
                 {
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "mine_name": normalized_mine_name,
                     "report_date": row["report_date"],
                     "availability": float(
@@ -886,6 +936,9 @@ def import_fleet_excel(
         db.commit()
 
         return {
+            "company_id": company_id,
+            "mine_id": mine_id,
+            "company_name": tenant["company_name"],
             "mine_name": normalized_mine_name,
             "processed_rows": int(len(df)),
             "inserted_rows": inserted_count,
@@ -917,18 +970,8 @@ def import_plant_excel(
     mine_name: str,
 ):
     """
-    Import Plant Excel data into PostgreSQL.
+    Import Plant Excel data using tenant-safe isolation.
     """
-
-    normalized_mine_name = str(
-        mine_name or ""
-    ).strip()
-
-    if not normalized_mine_name:
-        raise HTTPException(
-            status_code=400,
-            detail="mine_name is required.",
-        )
 
     try:
         df = pd.read_excel(file_path)
@@ -950,18 +993,29 @@ def import_plant_excel(
     updated_count = 0
 
     try:
+        tenant = resolve_tenant(
+            db=db,
+            mine_name=mine_name,
+        )
+
+        company_id = tenant["company_id"]
+        mine_id = tenant["mine_id"]
+        normalized_mine_name = tenant["mine_name"]
+
         for _, row in df.iterrows():
             existing_id = db.execute(
                 text(
                     """
                     SELECT id
                     FROM public.plant_daily
-                    WHERE mine_name = :mine_name
+                    WHERE company_id = :company_id
+                      AND mine_id = :mine_id
                       AND report_date = :report_date
                     """
                 ),
                 {
-                    "mine_name": normalized_mine_name,
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "report_date": row["report_date"],
                 },
             ).scalar_one_or_none()
@@ -971,6 +1025,8 @@ def import_plant_excel(
                     """
                     INSERT INTO public.plant_daily
                     (
+                        company_id,
+                        mine_id,
                         mine_name,
                         report_date,
                         throughput_plan,
@@ -979,6 +1035,8 @@ def import_plant_excel(
                     )
                     VALUES
                     (
+                        :company_id,
+                        :mine_id,
                         :mine_name,
                         :report_date,
                         :throughput_plan,
@@ -986,19 +1044,18 @@ def import_plant_excel(
                         :recovery
                     )
                     ON CONFLICT
-                        (mine_name, report_date)
+                        (company_id, mine_id, report_date)
                     DO UPDATE SET
-                        throughput_plan =
-                            EXCLUDED.throughput_plan,
-                        throughput_actual =
-                            EXCLUDED.throughput_actual,
-                        recovery =
-                            EXCLUDED.recovery,
-                        created_at =
-                            CURRENT_TIMESTAMP
+                        mine_name = EXCLUDED.mine_name,
+                        throughput_plan = EXCLUDED.throughput_plan,
+                        throughput_actual = EXCLUDED.throughput_actual,
+                        recovery = EXCLUDED.recovery,
+                        created_at = CURRENT_TIMESTAMP
                     """
                 ),
                 {
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "mine_name": normalized_mine_name,
                     "report_date": row["report_date"],
                     "throughput_plan": float(
@@ -1021,6 +1078,9 @@ def import_plant_excel(
         db.commit()
 
         return {
+            "company_id": company_id,
+            "mine_id": mine_id,
+            "company_name": tenant["company_name"],
             "mine_name": normalized_mine_name,
             "processed_rows": int(len(df)),
             "inserted_rows": inserted_count,
@@ -1052,18 +1112,8 @@ def import_safety_excel(
     mine_name: str,
 ):
     """
-    Import Safety Excel data into PostgreSQL.
+    Import Safety Excel data using tenant-safe isolation.
     """
-
-    normalized_mine_name = str(
-        mine_name or ""
-    ).strip()
-
-    if not normalized_mine_name:
-        raise HTTPException(
-            status_code=400,
-            detail="mine_name is required.",
-        )
 
     try:
         df = pd.read_excel(file_path)
@@ -1085,18 +1135,29 @@ def import_safety_excel(
     updated_count = 0
 
     try:
+        tenant = resolve_tenant(
+            db=db,
+            mine_name=mine_name,
+        )
+
+        company_id = tenant["company_id"]
+        mine_id = tenant["mine_id"]
+        normalized_mine_name = tenant["mine_name"]
+
         for _, row in df.iterrows():
             existing_id = db.execute(
                 text(
                     """
                     SELECT id
                     FROM public.safety_daily
-                    WHERE mine_name = :mine_name
+                    WHERE company_id = :company_id
+                      AND mine_id = :mine_id
                       AND report_date = :report_date
                     """
                 ),
                 {
-                    "mine_name": normalized_mine_name,
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "report_date": row["report_date"],
                 },
             ).scalar_one_or_none()
@@ -1106,6 +1167,8 @@ def import_safety_excel(
                     """
                     INSERT INTO public.safety_daily
                     (
+                        company_id,
+                        mine_id,
                         mine_name,
                         report_date,
                         incidents,
@@ -1115,6 +1178,8 @@ def import_safety_excel(
                     )
                     VALUES
                     (
+                        :company_id,
+                        :mine_id,
                         :mine_name,
                         :report_date,
                         :incidents,
@@ -1123,21 +1188,19 @@ def import_safety_excel(
                         :safety_score
                     )
                     ON CONFLICT
-                        (mine_name, report_date)
+                        (company_id, mine_id, report_date)
                     DO UPDATE SET
-                        incidents =
-                            EXCLUDED.incidents,
-                        near_misses =
-                            EXCLUDED.near_misses,
-                        critical_risks =
-                            EXCLUDED.critical_risks,
-                        safety_score =
-                            EXCLUDED.safety_score,
-                        created_at =
-                            CURRENT_TIMESTAMP
+                        mine_name = EXCLUDED.mine_name,
+                        incidents = EXCLUDED.incidents,
+                        near_misses = EXCLUDED.near_misses,
+                        critical_risks = EXCLUDED.critical_risks,
+                        safety_score = EXCLUDED.safety_score,
+                        created_at = CURRENT_TIMESTAMP
                     """
                 ),
                 {
+                    "company_id": company_id,
+                    "mine_id": mine_id,
                     "mine_name": normalized_mine_name,
                     "report_date": row["report_date"],
                     "incidents": int(
@@ -1163,6 +1226,9 @@ def import_safety_excel(
         db.commit()
 
         return {
+            "company_id": company_id,
+            "mine_id": mine_id,
+            "company_name": tenant["company_name"],
             "mine_name": normalized_mine_name,
             "processed_rows": int(len(df)),
             "inserted_rows": inserted_count,
@@ -1225,8 +1291,7 @@ async def upload_production(
     ),
 ):
     """
-    Upload and synchronize Production data
-    with PostgreSQL.
+    Upload and synchronize Production data with PostgreSQL.
     """
 
     upload_result = upload_report(
@@ -1282,8 +1347,7 @@ async def upload_fleet(
     ),
 ):
     """
-    Upload and synchronize Fleet data
-    with PostgreSQL.
+    Upload and synchronize Fleet data with PostgreSQL.
     """
 
     upload_result = upload_report(
@@ -1339,8 +1403,7 @@ async def upload_plant(
     ),
 ):
     """
-    Upload and synchronize Plant data
-    with PostgreSQL.
+    Upload and synchronize Plant data with PostgreSQL.
     """
 
     upload_result = upload_report(
@@ -1396,8 +1459,7 @@ async def upload_safety(
     ),
 ):
     """
-    Upload and synchronize Safety data
-    with PostgreSQL.
+    Upload and synchronize Safety data with PostgreSQL.
     """
 
     upload_result = upload_report(

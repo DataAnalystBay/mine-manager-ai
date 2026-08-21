@@ -1,4 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   FiAlertTriangle,
   FiBarChart2,
@@ -8,10 +12,45 @@ import {
   FiUser,
 } from "react-icons/fi";
 
+import {
+  useLanguage,
+} from "../../context/LanguageContext";
+
 import "./ExecutiveRootCauseCard.css";
 
-function normalizeImpact(impact) {
-  const value = String(impact || "")
+
+function translateTemplate(
+  t,
+  key,
+  variables = {},
+) {
+  let text = t(key);
+
+  Object.entries(
+    variables,
+  ).forEach(
+    ([name, value]) => {
+      text = String(
+        text,
+      ).replaceAll(
+        `{${name}}`,
+        String(
+          value ?? "",
+        ),
+      );
+    },
+  );
+
+  return text;
+}
+
+
+function normalizeImpact(
+  impact,
+) {
+  const value = String(
+    impact || "",
+  )
     .trim()
     .toLowerCase();
 
@@ -31,47 +70,82 @@ function normalizeImpact(impact) {
     return "medium";
   }
 
-  if (value === "low" || value === "minor") {
+  if (
+    value === "low" ||
+    value === "minor"
+  ) {
     return "low";
   }
 
   return "neutral";
 }
 
-function normalizeConfidence(confidence) {
-  if (confidence === null || confidence === undefined) {
+
+function normalizeConfidence(
+  confidence,
+) {
+  if (
+    confidence === null ||
+    confidence === undefined
+  ) {
     return null;
   }
 
   const parsed = Number(
-    String(confidence).replace("%", "").trim()
+    String(confidence)
+      .replace("%", "")
+      .trim(),
   );
 
-  if (!Number.isFinite(parsed)) {
+  if (
+    !Number.isFinite(parsed)
+  ) {
     return null;
   }
 
   const percentage =
-    parsed > 0 && parsed <= 1
+    parsed > 0 &&
+    parsed <= 1
       ? parsed * 100
       : parsed;
 
-  return Math.min(Math.max(percentage, 0), 100);
+  return Math.min(
+    Math.max(
+      percentage,
+      0,
+    ),
+    100,
+  );
 }
 
-function normalizeCause(cause, index) {
-  if (typeof cause === "string") {
+
+function normalizeCause(
+  cause,
+  index,
+  t,
+) {
+  if (
+    typeof cause ===
+    "string"
+  ) {
     return {
       title: cause,
+
       impact:
         index === 0
           ? "high"
           : index === 1
             ? "medium"
             : "low",
+
       evidence: "",
+
       expectedImpact: "",
-      owner: "Operations",
+
+      owner: t(
+        "executiveRootCauseCard.defaults.operations",
+      ),
+
       confidence: null,
     };
   }
@@ -82,7 +156,9 @@ function normalizeCause(cause, index) {
       cause?.root_cause ||
       cause?.name ||
       cause?.description ||
-      "Operational constraint",
+      t(
+        "executiveRootCauseCard.defaults.operationalConstraint",
+      ),
 
     impact:
       cause?.impact ||
@@ -109,7 +185,9 @@ function normalizeCause(cause, index) {
       cause?.responsible_owner ||
       cause?.responsible_function ||
       cause?.function ||
-      "Operations",
+      t(
+        "executiveRootCauseCard.defaults.operations",
+      ),
 
     confidence:
       cause?.confidence ??
@@ -119,55 +197,128 @@ function normalizeCause(cause, index) {
   };
 }
 
-function formatImpactLabel(impactClass) {
-  if (impactClass === "high") {
-    return "High Impact";
+
+function formatImpactLabel(
+  impactClass,
+  t,
+) {
+  if (
+    impactClass === "high"
+  ) {
+    return t(
+      "executiveRootCauseCard.impact.high",
+    );
   }
 
-  if (impactClass === "medium") {
-    return "Medium Impact";
+  if (
+    impactClass === "medium"
+  ) {
+    return t(
+      "executiveRootCauseCard.impact.medium",
+    );
   }
 
-  if (impactClass === "low") {
-    return "Low Impact";
+  if (
+    impactClass === "low"
+  ) {
+    return t(
+      "executiveRootCauseCard.impact.low",
+    );
   }
 
-  return "Impact Unavailable";
+  return t(
+    "executiveRootCauseCard.impact.unavailable",
+  );
 }
 
-function getPriorityLabel(index) {
+
+function getPriorityLabel(
+  index,
+) {
   return `P${index + 1}`;
 }
 
+
 export default function ExecutiveRootCauseCard({
   causes = [],
-  title = "Root Cause Analysis",
+  title,
 }) {
-  const normalizedCauses = Array.isArray(causes)
-    ? causes.map(normalizeCause)
-    : [];
+  const { t } =
+    useLanguage();
 
-  const [expandedItems, setExpandedItems] = useState(() =>
-    normalizedCauses.length > 0 ? [0] : []
+  const displayTitle =
+    title ||
+    t(
+      "executiveRootCauseCard.defaultTitle",
+    );
+
+  const normalizedCauses =
+    Array.isArray(causes)
+      ? causes.map(
+          (
+            cause,
+            index,
+          ) =>
+            normalizeCause(
+              cause,
+              index,
+              t,
+            ),
+        )
+      : [];
+
+  const [
+    expandedItems,
+    setExpandedItems,
+  ] = useState(
+    () =>
+      normalizedCauses.length >
+      0
+        ? [0]
+        : [],
   );
 
   useEffect(() => {
     setExpandedItems(
-      normalizedCauses.length > 0 ? [0] : []
+      normalizedCauses.length >
+        0
+        ? [0]
+        : [],
     );
   }, [causes]);
 
-  const toggleItem = (index) => {
-    setExpandedItems((currentItems) =>
-      currentItems.includes(index)
-        ? currentItems.filter((item) => item !== index)
-        : [...currentItems, index]
+  const toggleItem = (
+    index,
+  ) => {
+    setExpandedItems(
+      (
+        currentItems,
+      ) =>
+        currentItems.includes(
+          index,
+        )
+          ? currentItems.filter(
+              (
+                item,
+              ) =>
+                item !==
+                index,
+            )
+          : [
+              ...currentItems,
+              index,
+            ],
     );
   };
 
   const expandAll = () => {
     setExpandedItems(
-      normalizedCauses.map((_, index) => index)
+      normalizedCauses.map(
+        (
+          _,
+          index,
+        ) => index,
+      ),
     );
   };
 
@@ -176,13 +327,17 @@ export default function ExecutiveRootCauseCard({
   };
 
   const allExpanded =
-    normalizedCauses.length > 0 &&
-    expandedItems.length === normalizedCauses.length;
+    normalizedCauses.length >
+      0 &&
+    expandedItems.length ===
+      normalizedCauses.length;
 
   return (
     <section
       className="executive-root-cause-card"
-      aria-label={title}
+      aria-label={
+        displayTitle
+      }
     >
       <header className="executive-root-cause-header">
         <div className="executive-root-cause-title">
@@ -191,190 +346,309 @@ export default function ExecutiveRootCauseCard({
           </span>
 
           <div>
-            <small>AI Diagnostic Analysis</small>
-            <h3>{title}</h3>
+            <small>
+              {t(
+                "executiveRootCauseCard.aiDiagnosticAnalysis",
+              )}
+            </small>
+
+            <h3>
+              {displayTitle}
+            </h3>
           </div>
         </div>
 
         <div className="executive-root-cause-header-actions">
-          {normalizedCauses.length > 1 && (
+          {normalizedCauses.length >
+            1 && (
             <button
               type="button"
               className="executive-root-cause-toggle-all"
-              onClick={allExpanded ? collapseAll : expandAll}
+              onClick={
+                allExpanded
+                  ? collapseAll
+                  : expandAll
+              }
             >
-              {allExpanded ? "Collapse All" : "Expand All"}
+              {allExpanded
+                ? t(
+                    "executiveRootCauseCard.collapseAll",
+                  )
+                : t(
+                    "executiveRootCauseCard.expandAll",
+                  )}
             </button>
           )}
 
           <span className="executive-root-cause-count">
-            {normalizedCauses.length} identified
+            {translateTemplate(
+              t,
+              "executiveRootCauseCard.identifiedCount",
+              {
+                count:
+                  normalizedCauses.length,
+              },
+            )}
           </span>
         </div>
       </header>
 
-      {normalizedCauses.length > 0 ? (
+      {normalizedCauses.length >
+      0 ? (
         <div className="executive-root-cause-list">
-          {normalizedCauses.map((cause, index) => {
-            const impactClass = normalizeImpact(cause.impact);
+          {normalizedCauses.map(
+            (
+              cause,
+              index,
+            ) => {
+              const impactClass =
+                normalizeImpact(
+                  cause.impact,
+                );
 
-            const confidence = normalizeConfidence(
-              cause.confidence
-            );
+              const confidence =
+                normalizeConfidence(
+                  cause.confidence,
+                );
 
-            const isExpanded =
-              expandedItems.includes(index);
+              const isExpanded =
+                expandedItems.includes(
+                  index,
+                );
 
-            const detailsId = `root-cause-details-${index}`;
+              const detailsId =
+                `root-cause-details-${index}`;
 
-            return (
-              <article
-                className={`executive-root-cause-item ${
-                  isExpanded ? "expanded" : "collapsed"
-                }`}
-                key={`${cause.title}-${index}`}
-              >
-                <button
-                  type="button"
-                  className="executive-root-cause-summary"
-                  onClick={() => toggleItem(index)}
-                  aria-expanded={isExpanded}
-                  aria-controls={detailsId}
+              return (
+                <article
+                  className={`executive-root-cause-item ${
+                    isExpanded
+                      ? "expanded"
+                      : "collapsed"
+                  }`}
+                  key={`${cause.title}-${index}`}
                 >
-                  <span
-                    className={`executive-root-cause-priority priority-${index + 1}`}
+                  <button
+                    type="button"
+                    className="executive-root-cause-summary"
+                    onClick={() =>
+                      toggleItem(
+                        index,
+                      )
+                    }
+                    aria-expanded={
+                      isExpanded
+                    }
+                    aria-controls={
+                      detailsId
+                    }
                   >
-                    {getPriorityLabel(index)}
-                  </span>
-
-                  <span className="executive-root-cause-summary-content">
-                    <span className="executive-root-cause-summary-topline">
-                      <strong>{cause.title}</strong>
-
-                      <span
-                        className={`executive-root-cause-impact ${impactClass}`}
-                      >
-                        {formatImpactLabel(impactClass)}
-                      </span>
+                    <span
+                      className={`executive-root-cause-priority priority-${
+                        index +
+                        1
+                      }`}
+                    >
+                      {getPriorityLabel(
+                        index,
+                      )}
                     </span>
 
-                    <span className="executive-root-cause-summary-meta">
-                      <span>
-                        <FiUser />
-                        {cause.owner}
-                      </span>
-
-                      <span>
-                        <FiCheckCircle />
-                        {confidence !== null
-                          ? `${Math.round(confidence)}% confidence`
-                          : "Confidence unavailable"}
-                      </span>
-                    </span>
-                  </span>
-
-                  <span
-                    className={`executive-root-cause-chevron ${
-                      isExpanded ? "expanded" : ""
-                    }`}
-                  >
-                    <FiChevronDown />
-                  </span>
-                </button>
-
-                <div
-                  id={detailsId}
-                  className="executive-root-cause-details"
-                  hidden={!isExpanded}
-                >
-                  <div className="executive-root-cause-details-inner">
-                    {cause.evidence && (
-                      <div className="executive-root-cause-evidence">
-                        <FiBarChart2 />
-
-                        <div>
-                          <small>Supporting Evidence</small>
-                          <p>{cause.evidence}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {cause.expectedImpact && (
-                      <div className="executive-root-cause-expected-impact">
-                        <FiTarget />
-
-                        <div>
-                          <small>
-                            Expected Operational Impact
-                          </small>
-
-                          <strong>
-                            {cause.expectedImpact}
-                          </strong>
-                        </div>
-                      </div>
-                    )}
-
-                    <footer className="executive-root-cause-footer">
-                      <div className="executive-root-cause-owner">
-                        <FiUser />
-
-                        <span>Responsible Function</span>
-
-                        <strong>{cause.owner}</strong>
-                      </div>
-
-                      <div className="executive-root-cause-confidence">
-                        <div className="executive-root-cause-confidence-heading">
-                          <span>AI Confidence</span>
-
-                          <strong>
-                            {confidence !== null
-                              ? `${Math.round(confidence)}%`
-                              : "—"}
-                          </strong>
-                        </div>
-
-                        <div
-                          className="executive-root-cause-confidence-track"
-                          role="progressbar"
-                          aria-label={`AI confidence for ${cause.title}`}
-                          aria-valuemin="0"
-                          aria-valuemax="100"
-                          aria-valuenow={
-                            confidence !== null
-                              ? Math.round(confidence)
-                              : 0
+                    <span className="executive-root-cause-summary-content">
+                      <span className="executive-root-cause-summary-topline">
+                        <strong>
+                          {
+                            cause.title
                           }
+                        </strong>
+
+                        <span
+                          className={`executive-root-cause-impact ${impactClass}`}
                         >
-                          <span
-                            style={{
-                              width: `${
-                                confidence !== null
-                                  ? confidence
-                                  : 0
-                              }%`,
-                            }}
-                          />
+                          {formatImpactLabel(
+                            impactClass,
+                            t,
+                          )}
+                        </span>
+                      </span>
+
+                      <span className="executive-root-cause-summary-meta">
+                        <span>
+                          <FiUser />
+
+                          {
+                            cause.owner
+                          }
+                        </span>
+
+                        <span>
+                          <FiCheckCircle />
+
+                          {confidence !==
+                          null
+                            ? `${Math.round(
+                                confidence,
+                              )}%`
+                            : t(
+                                "executiveRootCauseCard.confidenceUnavailable",
+                              )}
+                        </span>
+                      </span>
+                    </span>
+
+                    <span
+                      className={`executive-root-cause-chevron ${
+                        isExpanded
+                          ? "expanded"
+                          : ""
+                      }`}
+                    >
+                      <FiChevronDown />
+                    </span>
+                  </button>
+
+                  <div
+                    id={
+                      detailsId
+                    }
+                    className="executive-root-cause-details"
+                    hidden={
+                      !isExpanded
+                    }
+                  >
+                    <div className="executive-root-cause-details-inner">
+                      {cause.evidence && (
+                        <div className="executive-root-cause-evidence">
+                          <FiBarChart2 />
+
+                          <div>
+                            <small>
+                              {t(
+                                "executiveRootCauseCard.supportingEvidence",
+                              )}
+                            </small>
+
+                            <p>
+                              {
+                                cause.evidence
+                              }
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </footer>
+                      )}
+
+                      {cause.expectedImpact && (
+                        <div className="executive-root-cause-expected-impact">
+                          <FiTarget />
+
+                          <div>
+                            <small>
+                              {t(
+                                "executiveRootCauseCard.expectedOperationalImpact",
+                              )}
+                            </small>
+
+                            <strong>
+                              {
+                                cause.expectedImpact
+                              }
+                            </strong>
+                          </div>
+                        </div>
+                      )}
+
+                      <footer className="executive-root-cause-footer">
+                        <div className="executive-root-cause-owner">
+                          <FiUser />
+
+                          <span>
+                            {t(
+                              "executiveRootCauseCard.responsibleFunction",
+                            )}
+                          </span>
+
+                          <strong>
+                            {
+                              cause.owner
+                            }
+                          </strong>
+                        </div>
+
+                        <div className="executive-root-cause-confidence">
+                          <div className="executive-root-cause-confidence-heading">
+                            <span>
+                              {t(
+                                "executiveRootCauseCard.aiConfidence",
+                              )}
+                            </span>
+
+                            <strong>
+                              {confidence !==
+                              null
+                                ? `${Math.round(
+                                    confidence,
+                                  )}%`
+                                : "—"}
+                            </strong>
+                          </div>
+
+                          <div
+                            className="executive-root-cause-confidence-track"
+                            role="progressbar"
+                            aria-label={translateTemplate(
+                              t,
+                              "executiveRootCauseCard.aiConfidenceAria",
+                              {
+                                title:
+                                  cause.title,
+                              },
+                            )}
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            aria-valuenow={
+                              confidence !==
+                              null
+                                ? Math.round(
+                                    confidence,
+                                  )
+                                : 0
+                            }
+                          >
+                            <span
+                              style={{
+                                width: `${
+                                  confidence !==
+                                  null
+                                    ? confidence
+                                    : 0
+                                }%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </footer>
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            },
+          )}
         </div>
       ) : (
         <div className="executive-root-cause-empty">
           <FiCheckCircle />
 
           <div>
-            <h4>No material root causes detected</h4>
+            <h4>
+              {t(
+                "executiveRootCauseCard.noMaterialRootCauses",
+              )}
+            </h4>
 
             <p>
-              Current KPI performance does not indicate a
-              significant operational constraint.
+              {t(
+                "executiveRootCauseCard.noSignificantConstraint",
+              )}
             </p>
           </div>
         </div>

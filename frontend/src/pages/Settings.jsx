@@ -327,13 +327,21 @@ function Settings() {
                     SelectProps={{ native: true }}
                     label="Language"
                     name="language"
-                    value={companyForm.language || "English"}
+                    value={
+                      companyForm.language === "English"
+                        ? "en"
+                        : companyForm.language === "Монгол"
+                        ? "mn"
+                        : companyForm.language === "中文"
+                        ? "zh"
+                        : companyForm.language || "en"
+                    }
                     onChange={handleCompanyChange}
                     fullWidth
                   >
-                    <option value="English">English</option>
-                    <option value="Монгол">Монгол</option>
-                    <option value="中文">中文</option>
+                    <option value="en">English</option>
+                    <option value="mn">Монгол</option>
+                    <option value="zh">中文</option>
                   </TextField>
                 </Stack>
               </CardContent>
@@ -621,7 +629,21 @@ function PreviewCard({ companyForm, mineForm, logoSrc }) {
 
         <Stack spacing={1.3}>
           <Chip label={`Timezone: ${companyForm.timezone || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
-          <Chip label={`Language: ${companyForm.language || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
+          <Chip
+            label={`Language: ${
+              companyForm.language === "mn" || companyForm.language === "Монгол"
+                ? "Монгол"
+                : companyForm.language === "zh" || companyForm.language === "中文"
+                ? "中文"
+                : companyForm.language === "en" || companyForm.language === "English"
+                ? "English"
+                : "-"
+            }`}
+            sx={{
+              bgcolor: "rgba(255,255,255,0.08)",
+              color: "#ffffff",
+            }}
+          />
           <Chip label={`Location: ${mineForm.location || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
           <Chip label={`Mine Type: ${mineForm.mine_type || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
         </Stack>

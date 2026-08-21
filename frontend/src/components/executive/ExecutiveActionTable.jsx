@@ -23,25 +23,36 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
+import { useLanguage } from "../../context/LanguageContext";
+
+import {
+  translateDynamicExecutiveActionCategory,
+  translateDynamicExecutiveActionOwner,
+  translateDynamicExecutiveActionSource,
+  translateDynamicExecutiveActionTitle,
+  translateDynamicExecutiveText,
+  translateDynamicKpiName,
+} from "../../i18n/dynamicTranslations";
+
 const STATUS_OPTIONS = [
   {
     value: "open",
-    label: "Open",
+    labelKey: "executiveActionTable.status.open",
     symbol: "○",
   },
   {
     value: "in_progress",
-    label: "In Progress",
+    labelKey: "executiveActionTable.status.inProgress",
     symbol: "◐",
   },
   {
     value: "completed",
-    label: "Completed",
+    labelKey: "executiveActionTable.status.completed",
     symbol: "✓",
   },
   {
     value: "blocked",
-    label: "Blocked",
+    labelKey: "executiveActionTable.status.blocked",
     symbol: "⊘",
   },
 ];
@@ -58,41 +69,74 @@ function getActionId(action) {
   return action?.id ?? action?.action_id;
 }
 
-function getActionTitle(action) {
-  return (
+function getActionTitle(action, t) {
+  const rawTitle =
     action?.title ||
     action?.action_title ||
     action?.recommended_action ||
     action?.action ||
-    "Untitled Executive Action"
+    t("executiveActionTable.untitledAction");
+
+  return translateDynamicExecutiveActionTitle(
+    rawTitle,
+    t
   );
 }
 
-function getActionDescription(action) {
-  return (
+function getActionDescription(action, t) {
+  const rawDescription =
     action?.description ||
     action?.action_description ||
     action?.recommendation ||
-    ""
+    "";
+
+  if (!rawDescription) {
+    return "";
+  }
+
+  const translatedAsActionTitle =
+    translateDynamicExecutiveActionTitle(
+      rawDescription,
+      t
+    );
+
+  if (
+    translatedAsActionTitle !==
+    rawDescription
+  ) {
+    return translatedAsActionTitle;
+  }
+
+  return translateDynamicExecutiveText(
+    rawDescription,
+    t
   );
 }
 
-function getActionOwner(action) {
-  return (
+function getActionOwner(action, t) {
+  const rawOwner =
     action?.owner ||
     action?.owner_name ||
     action?.assigned_to ||
-    "Unassigned"
+    t("executiveActionTable.unassigned");
+
+  return translateDynamicExecutiveActionOwner(
+    rawOwner,
+    t
   );
 }
 
-function getActionCategory(action) {
-  return (
+function getActionCategory(action, t) {
+  const rawCategory =
     action?.category ||
     action?.action_category ||
     action?.kpi_name ||
     action?.kpi_label ||
-    "Operations"
+    t("executiveActionTable.operations");
+
+  return translateDynamicExecutiveActionCategory(
+    rawCategory,
+    t
   );
 }
 
@@ -104,46 +148,75 @@ function getActionSource(action) {
   );
 }
 
-function formatStatusLabel(status) {
+
+function getActionSourceLabel(action, t) {
+  const rawSource =
+    action?.source ||
+    action?.action_source ||
+    "manual";
+
+  return translateDynamicExecutiveActionSource(
+    rawSource,
+    t
+  );
+}
+
+function formatStatusLabel(status, t) {
   const normalizedStatus =
     normalizeValue(status);
 
   const statusMap = {
-    open: "Open",
-    to_do: "Open",
-    todo: "Open",
-    in_progress: "In Progress",
-    completed: "Completed",
-    complete: "Completed",
-    blocked: "Blocked",
+    open: "executiveActionTable.status.open",
+    to_do: "executiveActionTable.status.open",
+    todo: "executiveActionTable.status.open",
+    in_progress:
+      "executiveActionTable.status.inProgress",
+    completed:
+      "executiveActionTable.status.completed",
+    complete:
+      "executiveActionTable.status.completed",
+    blocked:
+      "executiveActionTable.status.blocked",
   };
 
-  return (
+  const translationKey =
     statusMap[normalizedStatus] ||
-    "Open"
-  );
+    "executiveActionTable.status.open";
+
+  return t(translationKey);
 }
 
-function formatPriorityLabel(priority) {
+function formatPriorityLabel(priority, t) {
   const normalizedPriority =
     normalizeValue(priority);
 
   const priorityMap = {
-    critical: "Critical",
-    high: "High",
-    medium: "Medium",
-    low: "Low",
+    critical:
+      "executiveActionTable.priority.critical",
+    high:
+      "executiveActionTable.priority.high",
+    medium:
+      "executiveActionTable.priority.medium",
+    low:
+      "executiveActionTable.priority.low",
   };
 
-  return (
+  const translationKey =
     priorityMap[normalizedPriority] ||
-    "Medium"
-  );
+    "executiveActionTable.priority.medium";
+
+  return t(translationKey);
 }
 
-function formatDate(dateValue) {
+function formatDate(
+  dateValue,
+  language,
+  t
+) {
   if (!dateValue) {
-    return "No due date";
+    return t(
+      "executiveActionTable.noDueDate"
+    );
   }
 
   const date = new Date(dateValue);
@@ -153,7 +226,9 @@ function formatDate(dateValue) {
   }
 
   return new Intl.DateTimeFormat(
-    "en-GB",
+    language === "MN"
+      ? "mn-MN"
+      : "en-GB",
     {
       day: "2-digit",
       month: "short",
@@ -292,6 +367,8 @@ function StatusMenuButton({
   updating,
   onStatusChange,
 }) {
+  const { t } = useLanguage();
+
   const [
     anchorEl,
     setAnchorEl,
@@ -359,7 +436,11 @@ function StatusMenuButton({
 
   return (
     <>
-      <Tooltip title="Change status">
+      <Tooltip
+        title={t(
+          "executiveActionTable.changeStatus"
+        )}
+      >
         <Box
           component="button"
           type="button"
@@ -448,9 +529,12 @@ function StatusMenuButton({
               }}
             >
               {updating
-                ? "Updating..."
+                ? t(
+                    "executiveActionTable.updating"
+                  )
                 : formatStatusLabel(
-                    currentStatus
+                    currentStatus,
+                    t
                   )}
             </Typography>
           </Box>
@@ -564,7 +648,7 @@ function StatusMenuButton({
                     flex: 1,
                   }}
                 >
-                  {option.label}
+                  {t(option.labelKey)}
                 </Box>
 
                 {isSelected && (
@@ -669,7 +753,7 @@ function LoadingRows() {
   ));
 }
 
-function EmptyState() {
+function EmptyState({ t }) {
   return (
     <TableRow>
       <TableCell
@@ -707,8 +791,9 @@ function EmptyState() {
             color: "#0f172a",
           }}
         >
-          No executive actions
-          found
+          {t(
+            "executiveActionTable.emptyTitle"
+          )}
         </Typography>
 
         <Typography
@@ -718,9 +803,9 @@ function EmptyState() {
             color: "#64748b",
           }}
         >
-          Create a new action or
-          adjust the filters to
-          display existing actions.
+          {t(
+            "executiveActionTable.emptyMessage"
+          )}
         </Typography>
       </TableCell>
     </TableRow>
@@ -735,6 +820,61 @@ function ExecutiveActionTable({
   onStatusChange,
   updatingStatusId = null,
 }) {
+  const { language, t } =
+    useLanguage();
+
+  const tableHeadings = [
+    {
+      key: "action",
+      label: t(
+        "executiveActionTable.columns.action"
+      ),
+      align: "left",
+    },
+    {
+      key: "category",
+      label: t(
+        "executiveActionTable.columns.category"
+      ),
+      align: "left",
+    },
+    {
+      key: "priority",
+      label: t(
+        "executiveActionTable.columns.priority"
+      ),
+      align: "left",
+    },
+    {
+      key: "owner",
+      label: t(
+        "executiveActionTable.columns.owner"
+      ),
+      align: "left",
+    },
+    {
+      key: "dueDate",
+      label: t(
+        "executiveActionTable.columns.dueDate"
+      ),
+      align: "left",
+    },
+    {
+      key: "status",
+      label: t(
+        "executiveActionTable.columns.status"
+      ),
+      align: "left",
+    },
+    {
+      key: "actions",
+      label: t(
+        "executiveActionTable.columns.actions"
+      ),
+      align: "right",
+    },
+  ];
+
   const normalizedActions =
     useMemo(
       () =>
@@ -774,24 +914,11 @@ function ExecutiveActionTable({
                   "#f8fafc",
               }}
             >
-              {[
-                "Action",
-                "Category",
-                "Priority",
-                "Owner",
-                "Due Date",
-                "Status",
-                "Actions",
-              ].map(
+              {tableHeadings.map(
                 (heading) => (
                   <TableCell
-                    key={heading}
-                    align={
-                      heading ===
-                      "Actions"
-                        ? "right"
-                        : "left"
-                    }
+                    key={heading.key}
+                    align={heading.align}
                     sx={{
                       py: 1.75,
                       borderBottom:
@@ -808,7 +935,7 @@ function ExecutiveActionTable({
                         "nowrap",
                     }}
                   >
-                    {heading}
+                    {heading.label}
                   </TableCell>
                 )
               )}
@@ -820,7 +947,7 @@ function ExecutiveActionTable({
               <LoadingRows />
             ) : normalizedActions.length ===
               0 ? (
-              <EmptyState />
+              <EmptyState t={t} />
             ) : (
               normalizedActions.map(
                 (
@@ -834,12 +961,14 @@ function ExecutiveActionTable({
 
                   const actionTitle =
                     getActionTitle(
-                      action
+                      action,
+                      t
                     );
 
                   const actionDescription =
                     getActionDescription(
-                      action
+                      action,
+                      t
                     );
 
                   const priorityStyles =
@@ -850,6 +979,12 @@ function ExecutiveActionTable({
                   const source =
                     getActionSource(
                       action
+                    );
+
+                  const sourceLabel =
+                    getActionSourceLabel(
+                      action,
+                      t
                     );
 
                   const overdue =
@@ -980,7 +1115,7 @@ function ExecutiveActionTable({
                                   source ===
                                   "ai"
                                     ? "AI"
-                                    : "Manual"
+                                    : sourceLabel
                                 }
                                 sx={{
                                   height: 21,
@@ -1058,7 +1193,8 @@ function ExecutiveActionTable({
                           }}
                         >
                           {getActionCategory(
-                            action
+                            action,
+                            t
                           )}
                         </Typography>
 
@@ -1073,7 +1209,10 @@ function ExecutiveActionTable({
                             }}
                           >
                             {
-                              action.kpi_key
+                              translateDynamicKpiName(
+                                action.kpi_key,
+                                t
+                              )
                             }
                           </Typography>
                         )}
@@ -1089,7 +1228,8 @@ function ExecutiveActionTable({
                         <Chip
                           size="small"
                           label={formatPriorityLabel(
-                            action?.priority
+                            action?.priority,
+                            t
                           )}
                           variant="outlined"
                           sx={{
@@ -1132,7 +1272,8 @@ function ExecutiveActionTable({
                           }}
                         >
                           {getActionOwner(
-                            action
+                            action,
+                            t
                           )}
                         </Typography>
                       </TableCell>
@@ -1159,7 +1300,9 @@ function ExecutiveActionTable({
                           }}
                         >
                           {formatDate(
-                            action?.due_date
+                            action?.due_date,
+                            language,
+                            t
                           )}
                         </Typography>
 
@@ -1175,7 +1318,9 @@ function ExecutiveActionTable({
                                 800,
                             }}
                           >
-                            Overdue
+                            {t(
+                              "executiveActionTable.overdue"
+                            )}
                           </Typography>
                         )}
                       </TableCell>
@@ -1210,7 +1355,11 @@ function ExecutiveActionTable({
                             "nowrap",
                         }}
                       >
-                        <Tooltip title="Edit action">
+                        <Tooltip
+                          title={t(
+                            "executiveActionTable.editAction"
+                          )}
+                        >
                           <span>
                             <IconButton
                               size="small"
@@ -1253,7 +1402,11 @@ function ExecutiveActionTable({
                           </span>
                         </Tooltip>
 
-                        <Tooltip title="Delete action">
+                        <Tooltip
+                          title={t(
+                            "executiveActionTable.deleteAction"
+                          )}
+                        >
                           <span>
                             <IconButton
                               size="small"
@@ -1324,15 +1477,20 @@ function ExecutiveActionTable({
                 fontWeight: 600,
               }}
             >
-              Showing{" "}
-              {
-                normalizedActions.length
-              }{" "}
-              executive{" "}
-              {normalizedActions.length ===
-              1
-                ? "action"
-                : "actions"}
+              {String(
+                normalizedActions.length === 1
+                  ? t(
+                      "executiveActionTable.showingSingle"
+                    )
+                  : t(
+                      "executiveActionTable.showingPlural"
+                    )
+              ).replace(
+                "{count}",
+                String(
+                  normalizedActions.length
+                )
+              )}
             </Typography>
           </Box>
         )}

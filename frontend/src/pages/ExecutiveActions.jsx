@@ -44,6 +44,7 @@ import {
 } from "../api/executiveKpiContextApi";
 
 import { useConfig } from "../context/ConfigContext";
+import { useLanguage } from "../context/LanguageContext";
 
 
 function normalizeValue(value) {
@@ -55,51 +56,90 @@ function normalizeValue(value) {
 }
 
 
-function formatStatusLabel(status) {
+function isMongolianLanguage(t) {
+  return t("common.language") === "Хэл";
+}
+
+
+function localizeLabel(t, english, mongolian) {
+  return isMongolianLanguage(t)
+    ? mongolian
+    : english;
+}
+
+
+function formatStatusLabel(status, t) {
   const normalizedStatus =
     normalizeValue(status);
 
-  const statusLabels = {
-    open: "Open",
-    to_do: "To Do",
-    todo: "To Do",
-    in_progress: "In Progress",
-    blocked: "Blocked",
-    completed: "Completed",
-    complete: "Completed",
-  };
+  const statusLabels = isMongolianLanguage(t)
+    ? {
+        open: "Нээлттэй",
+        to_do: "Хийх",
+        todo: "Хийх",
+        in_progress: "Хэрэгжиж байна",
+        blocked: "Саатсан",
+        completed: "Дууссан",
+        complete: "Дууссан",
+      }
+    : {
+        open: "Open",
+        to_do: "To Do",
+        todo: "To Do",
+        in_progress: "In Progress",
+        blocked: "Blocked",
+        completed: "Completed",
+        complete: "Completed",
+      };
 
   return (
     statusLabels[normalizedStatus] ||
     status ||
-    "Open"
+    localizeLabel(t, "Open", "Нээлттэй")
   );
 }
 
 
-function formatSpecialFilterLabel(filterKey) {
-  const labels = {
-    due_today: "Due Today",
-    overdue: "Overdue",
-    high_priority: "High Priority",
-    completed_this_month:
-      "Completed This Month",
-  };
+function formatSpecialFilterLabel(filterKey, t) {
+  const labels = isMongolianLanguage(t)
+    ? {
+        due_today: "Өнөөдөр хугацаатай",
+        overdue: "Хугацаа хэтэрсэн",
+        high_priority: "Өндөр ач холбогдолтой",
+        completed_this_month:
+          "Энэ сард дууссан",
+      }
+    : {
+        due_today: "Due Today",
+        overdue: "Overdue",
+        high_priority: "High Priority",
+        completed_this_month:
+          "Completed This Month",
+      };
 
   return labels[filterKey] || "";
 }
 
 
 
-function formatKpiLabel(kpiKey) {
-  const labels = {
-    ore: "Ore Performance",
-    waste: "Waste Movement",
-    fleet: "Fleet Performance",
-    plant: "Plant Performance",
-    safety: "Safety",
-    mine_health: "Mine Health",
-  };
+function formatKpiLabel(kpiKey, t) {
+  const labels = isMongolianLanguage(t)
+    ? {
+        ore: "Хүдрийн гүйцэтгэл",
+        waste: "Хөрс хуулалт",
+        fleet: "Техникийн гүйцэтгэл",
+        plant: "Үйлдвэрийн гүйцэтгэл",
+        safety: "Аюулгүй ажиллагаа",
+        mine_health: "Уурхайн ерөнхий төлөв",
+      }
+    : {
+        ore: "Ore Performance",
+        waste: "Waste Movement",
+        fleet: "Fleet Performance",
+        plant: "Plant Performance",
+        safety: "Safety",
+        mine_health: "Mine Health",
+      };
 
   const normalizedKey =
     normalizeValue(kpiKey);
@@ -320,6 +360,9 @@ function getFirstDayOfCurrentMonth() {
 function ExecutiveActions() {
   const { company } =
     useConfig();
+
+  const { t } =
+    useLanguage();
 
   const navigate =
     useNavigate();
@@ -624,7 +667,7 @@ function ExecutiveActions() {
         setErrorMessage(
           getBackendErrorMessage(
             error,
-            "Failed to load the executive action summary."
+            localizeLabel(t, "Failed to load the executive action summary.", "Арга хэмжээний хураангуйг ачаалж чадсангүй.")
           )
         );
       } finally {
@@ -698,7 +741,7 @@ function ExecutiveActions() {
         setErrorMessage(
           getBackendErrorMessage(
             error,
-            "Failed to load executive actions."
+            localizeLabel(t, "Failed to load executive actions.", "Арга хэмжээнүүдийг ачаалж чадсангүй.")
           )
         );
 
@@ -979,7 +1022,7 @@ function ExecutiveActions() {
           );
 
           setSuccessMessage(
-            "Executive action updated successfully."
+            localizeLabel(t, "Executive action updated successfully.", "Арга хэмжээ амжилттай шинэчлэгдлээ.")
           );
         } else {
           await createExecutiveAction({
@@ -988,7 +1031,7 @@ function ExecutiveActions() {
           });
 
           setSuccessMessage(
-            "Executive action created successfully."
+            localizeLabel(t, "Executive action created successfully.", "Арга хэмжээ амжилттай үүслээ.")
           );
         }
 
@@ -1008,8 +1051,8 @@ function ExecutiveActions() {
           getBackendErrorMessage(
             error,
             isEditMode
-              ? "Failed to update the executive action."
-              : "Failed to create the executive action."
+              ? localizeLabel(t, "Failed to update the executive action.", "Арга хэмжээг шинэчилж чадсангүй.")
+              : localizeLabel(t, "Failed to create the executive action.", "Арга хэмжээг үүсгэж чадсангүй.")
           )
         );
       } finally {
@@ -1028,7 +1071,7 @@ function ExecutiveActions() {
 
       if (!actionId) {
         setErrorMessage(
-          "This action does not have a valid database ID."
+          localizeLabel(t, "This action does not have a valid database ID.", "Энэ арга хэмжээнд хүчинтэй өгөгдлийн сангийн ID алга.")
         );
 
         return;
@@ -1062,7 +1105,7 @@ function ExecutiveActions() {
         setErrorMessage(
           getBackendErrorMessage(
             error,
-            "Failed to update the action status."
+            localizeLabel(t, "Failed to update the action status.", "Арга хэмжээний төлөвийг шинэчилж чадсангүй.")
           )
         );
       } finally {
@@ -1105,7 +1148,7 @@ function ExecutiveActions() {
 
       if (!actionId) {
         setErrorMessage(
-          "This action does not have a valid database ID."
+          localizeLabel(t, "This action does not have a valid database ID.", "Энэ арга хэмжээнд хүчинтэй өгөгдлийн сангийн ID алга.")
         );
 
         return;
@@ -1120,7 +1163,7 @@ function ExecutiveActions() {
         );
 
         setSuccessMessage(
-          "Executive action deleted successfully."
+          localizeLabel(t, "Executive action deleted successfully.", "Арга хэмжээ амжилттай устгагдлаа.")
         );
 
         setDeleteDialogOpen(
@@ -1139,7 +1182,7 @@ function ExecutiveActions() {
         setErrorMessage(
           getBackendErrorMessage(
             error,
-            "Failed to delete the executive action."
+            localizeLabel(t, "Failed to delete the executive action.", "Арга хэмжээг устгаж чадсангүй.")
           )
         );
       } finally {
@@ -1164,7 +1207,7 @@ function ExecutiveActions() {
         );
 
         setSuccessMessage(
-          "Live KPI context loaded successfully. Check the browser console."
+          localizeLabel(t, "Live KPI context loaded successfully. Check the browser console.", "Live KPI контекст амжилттай ачааллаа. Browser console-ийг шалгана уу.")
         );
       } catch (error) {
         console.error(
@@ -1175,7 +1218,7 @@ function ExecutiveActions() {
         setErrorMessage(
           getBackendErrorMessage(
             error,
-            "Unable to load live KPI context."
+            localizeLabel(t, "Unable to load live KPI context.", "Live KPI контекстийг ачаалж чадсангүй.")
           )
         );
       }
@@ -1194,11 +1237,13 @@ function ExecutiveActions() {
   const activeSummaryLabel =
     filters.special
       ? formatSpecialFilterLabel(
-          filters.special
+          filters.special,
+          t
         )
       : filters.status
         ? formatStatusLabel(
-            filters.status
+            filters.status,
+            t
           )
         : "";
 
@@ -1237,7 +1282,11 @@ function ExecutiveActions() {
               color: "#0f172a",
             }}
           >
-            Executive Action Center
+            {localizeLabel(
+              t,
+              "Executive Action Center",
+              "Гүйцэтгэх удирдлагын арга хэмжээ"
+            )}
           </Typography>
 
           <Typography
@@ -1246,10 +1295,11 @@ function ExecutiveActions() {
               color: "#64748b",
             }}
           >
-            Manage AI-generated and
-            manually created actions
-            across all mining
-            operations.
+            {localizeLabel(
+              t,
+              "Manage AI-generated and manually created actions across all mining operations.",
+              "AI-аар үүсгэсэн болон гараар бүртгэсэн арга хэмжээг уурхайн бүх үйл ажиллагааны хүрээнд удирдана."
+            )}
           </Typography>
         </Box>
 
@@ -1304,8 +1354,16 @@ function ExecutiveActions() {
             }}
           >
             {isRefreshing
-              ? "Refreshing..."
-              : "Refresh"}
+              ? localizeLabel(
+                  t,
+                  "Refreshing...",
+                  "Шинэчилж байна..."
+                )
+              : localizeLabel(
+                  t,
+                  "Refresh",
+                  "Шинэчлэх"
+                )}
           </Button>
 
           <Button
@@ -1335,7 +1393,11 @@ function ExecutiveActions() {
               },
             }}
           >
-            Test KPI Context
+            {localizeLabel(
+              t,
+              "Test KPI Context",
+              "KPI контекст шалгах"
+            )}
           </Button>
 
           <Button
@@ -1378,7 +1440,11 @@ function ExecutiveActions() {
               },
             }}
           >
-            New Executive Action
+            {localizeLabel(
+              t,
+              "New Executive Action",
+              "Шинэ арга хэмжээ"
+            )}
           </Button>
         </Box>
       </Box>
@@ -1450,7 +1516,11 @@ function ExecutiveActions() {
                 color: "#0f172a",
               }}
             >
-              Executive Actions
+              {localizeLabel(
+                t,
+                "Executive Actions",
+                "Гүйцэтгэх арга хэмжээнүүд"
+              )}
             </Typography>
 
             <Typography
@@ -1460,15 +1530,21 @@ function ExecutiveActions() {
                 color: "#64748b",
               }}
             >
-              Review ownership,
-              priority, due dates, and
-              current execution status.
+              {localizeLabel(
+                t,
+                "Review ownership, priority, due dates, and current execution status.",
+                "Хариуцагч, ач холбогдол, хугацаа болон хэрэгжилтийн одоогийн төлөвийг хянана."
+              )}
             </Typography>
           </Box>
 
           {activeSummaryLabel && (
             <Chip
-              label={`Filtered: ${activeSummaryLabel}`}
+              label={`${localizeLabel(
+                t,
+                "Filtered",
+                "Шүүлтүүр"
+              )}: ${activeSummaryLabel}`}
               onDelete={
                 handleRemoveSummaryFilter
               }

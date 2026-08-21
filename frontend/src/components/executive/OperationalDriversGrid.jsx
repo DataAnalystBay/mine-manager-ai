@@ -7,7 +7,30 @@ import {
   FiArrowUpRight,
 } from "react-icons/fi";
 
+import { useLanguage } from "../../context/LanguageContext";
+
 import "./OperationalDriversGrid.css";
+
+
+function translateTemplate(
+  t,
+  key,
+  variables = {},
+) {
+  let text = t(key);
+
+  Object.entries(variables).forEach(
+    ([name, value]) => {
+      text = String(text).replaceAll(
+        `{${name}}`,
+        String(value ?? ""),
+      );
+    },
+  );
+
+  return text;
+}
+
 
 function formatValue(value) {
   const numericValue = Number(value);
@@ -24,8 +47,11 @@ function formatValue(value) {
       });
 }
 
+
 function normalizeDirection(direction, change) {
-  const normalizedDirection = String(direction || "")
+  const normalizedDirection = String(
+    direction || "",
+  )
     .trim()
     .toLowerCase();
 
@@ -58,8 +84,11 @@ function normalizeDirection(direction, change) {
   return "neutral";
 }
 
-function normalizeImpact(impact) {
-  const normalizedImpact = String(impact || "")
+
+function normalizeImpact(impact, t) {
+  const normalizedImpact = String(
+    impact || "",
+  )
     .trim()
     .toLowerCase();
 
@@ -69,14 +98,18 @@ function normalizeImpact(impact) {
   ) {
     return {
       className: "critical",
-      label: "Critical",
+      label: t(
+        "operationalDriversGrid.impact.critical",
+      ),
     };
   }
 
   if (normalizedImpact === "high") {
     return {
       className: "high",
-      label: "High",
+      label: t(
+        "operationalDriversGrid.impact.high",
+      ),
     };
   }
 
@@ -86,22 +119,29 @@ function normalizeImpact(impact) {
   ) {
     return {
       className: "medium",
-      label: "Medium",
+      label: t(
+        "operationalDriversGrid.impact.medium",
+      ),
     };
   }
 
   if (normalizedImpact === "low") {
     return {
       className: "low",
-      label: "Low",
+      label: t(
+        "operationalDriversGrid.impact.low",
+      ),
     };
   }
 
   return {
     className: "neutral",
-    label: "Unrated",
+    label: t(
+      "operationalDriversGrid.impact.unrated",
+    ),
   };
 }
+
 
 function getTrendIcon(direction) {
   if (direction === "positive") {
@@ -115,65 +155,125 @@ function getTrendIcon(direction) {
   return <FiArrowRight />;
 }
 
-function normalizeDrivers(drivers) {
+
+function normalizeDrivers(
+  drivers,
+  t,
+) {
   if (!Array.isArray(drivers)) {
     return [];
   }
 
-  return drivers.map((driver, index) => ({
-    id:
-      driver?.id ??
-      driver?.driver_key ??
-      driver?.key ??
-      `${driver?.name || driver?.title || "driver"}-${index}`,
-    name:
-      driver?.name ??
-      driver?.driver_name ??
-      driver?.title ??
-      driver?.label ??
-      `Operational Driver ${index + 1}`,
-    value:
-      driver?.value ??
-      driver?.current_value ??
-      driver?.metric_value ??
-      driver?.score ??
-      null,
-    unit: driver?.unit ?? driver?.suffix ?? "",
-    change:
-      driver?.change ??
-      driver?.change_percent ??
-      driver?.variance ??
-      driver?.delta ??
-      null,
-    direction: driver?.direction ?? driver?.trend ?? null,
-    impact:
-      driver?.impact ??
-      driver?.impact_level ??
-      driver?.severity ??
-      "Unrated",
-    description:
-      driver?.description ??
-      driver?.insight ??
-      driver?.commentary ??
-      "",
-  }));
+  return drivers.map(
+    (driver, index) => ({
+      id:
+        driver?.id ??
+        driver?.driver_key ??
+        driver?.key ??
+        `${
+          driver?.name ||
+          driver?.title ||
+          "driver"
+        }-${index}`,
+
+      name:
+        driver?.name ??
+        driver?.driver_name ??
+        driver?.title ??
+        driver?.label ??
+        translateTemplate(
+          t,
+          "operationalDriversGrid.driverFallback",
+          {
+            number: index + 1,
+          },
+        ),
+
+      value:
+        driver?.value ??
+        driver?.current_value ??
+        driver?.metric_value ??
+        driver?.score ??
+        null,
+
+      unit:
+        driver?.unit ??
+        driver?.suffix ??
+        "",
+
+      change:
+        driver?.change ??
+        driver?.change_percent ??
+        driver?.variance ??
+        driver?.delta ??
+        null,
+
+      direction:
+        driver?.direction ??
+        driver?.trend ??
+        null,
+
+      impact:
+        driver?.impact ??
+        driver?.impact_level ??
+        driver?.severity ??
+        "Unrated",
+
+      description:
+        driver?.description ??
+        driver?.insight ??
+        driver?.commentary ??
+        "",
+    }),
+  );
 }
+
 
 export default function OperationalDriversGrid({
   drivers = [],
-  title = "Operational Drivers",
-  subtitle = "Linked operating conditions influencing this KPI",
+  title,
+  subtitle,
   loading = false,
-  emptyMessage = "Operational driver data is not available for this KPI.",
+  emptyMessage,
   onDriverClick,
 }) {
-  const normalizedDrivers = normalizeDrivers(drivers);
+  const { t } = useLanguage();
+
+  const displayTitle =
+    title ||
+    t(
+      "operationalDriversGrid.defaultTitle",
+    );
+
+  const displaySubtitle =
+    subtitle ||
+    t(
+      "operationalDriversGrid.defaultSubtitle",
+    );
+
+  const displayEmptyMessage =
+    emptyMessage ||
+    t(
+      "operationalDriversGrid.defaultEmptyMessage",
+    );
+
+  const normalizedDrivers =
+    normalizeDrivers(
+      drivers,
+      t,
+    );
 
   if (loading) {
     return (
       <section
         className="operational-drivers"
-        aria-label={`${title} loading`}
+        aria-label={translateTemplate(
+          t,
+          "operationalDriversGrid.loadingAria",
+          {
+            title: displayTitle,
+          },
+        )}
       >
         <div className="operational-drivers-header">
           <div className="operational-drivers-heading">
@@ -182,32 +282,37 @@ export default function OperationalDriversGrid({
             </span>
 
             <div>
-              <h3>{title}</h3>
-              <p>{subtitle}</p>
+              <h3>{displayTitle}</h3>
+              <p>{displaySubtitle}</p>
             </div>
           </div>
         </div>
 
         <div className="operational-drivers-grid">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div
-              className="operational-driver-skeleton"
-              key={`driver-skeleton-${index}`}
-              aria-hidden="true"
-            >
-              <span />
-              <strong />
-              <small />
-              <em />
-            </div>
-          ))}
+          {Array.from({ length: 5 }).map(
+            (_, index) => (
+              <div
+                className="operational-driver-skeleton"
+                key={`driver-skeleton-${index}`}
+                aria-hidden="true"
+              >
+                <span />
+                <strong />
+                <small />
+                <em />
+              </div>
+            ),
+          )}
         </div>
       </section>
     );
   }
 
   return (
-    <section className="operational-drivers" aria-label={title}>
+    <section
+      className="operational-drivers"
+      aria-label={displayTitle}
+    >
       <div className="operational-drivers-header">
         <div className="operational-drivers-heading">
           <span className="operational-drivers-heading-icon">
@@ -215,15 +320,23 @@ export default function OperationalDriversGrid({
           </span>
 
           <div>
-            <h3>{title}</h3>
-            <p>{subtitle}</p>
+            <h3>{displayTitle}</h3>
+            <p>{displaySubtitle}</p>
           </div>
         </div>
 
         {normalizedDrivers.length > 0 && (
           <span className="operational-drivers-count">
-            {normalizedDrivers.length} driver
-            {normalizedDrivers.length === 1 ? "" : "s"}
+            {translateTemplate(
+              t,
+              normalizedDrivers.length === 1
+                ? "operationalDriversGrid.driverCountSingle"
+                : "operationalDriversGrid.driverCountPlural",
+              {
+                count:
+                  normalizedDrivers.length,
+              },
+            )}
           </span>
         )}
       </div>
@@ -231,97 +344,151 @@ export default function OperationalDriversGrid({
       {normalizedDrivers.length === 0 ? (
         <div className="operational-drivers-empty">
           <FiAlertTriangle />
+
           <div>
-            <strong>No driver analysis available</strong>
-            <p>{emptyMessage}</p>
+            <strong>
+              {t(
+                "operationalDriversGrid.noAnalysis",
+              )}
+            </strong>
+
+            <p>
+              {displayEmptyMessage}
+            </p>
           </div>
         </div>
       ) : (
         <div className="operational-drivers-grid">
-          {normalizedDrivers.map((driver) => {
-            const direction = normalizeDirection(
-              driver.direction,
-              driver.change
-            );
+          {normalizedDrivers.map(
+            (driver) => {
+              const direction =
+                normalizeDirection(
+                  driver.direction,
+                  driver.change,
+                );
 
-            const impact = normalizeImpact(driver.impact);
-            const numericChange = Number(driver.change);
-            const hasChange = Number.isFinite(numericChange);
+              const impact =
+                normalizeImpact(
+                  driver.impact,
+                  t,
+                );
 
-            const cardContent = (
-              <>
-                <div className="operational-driver-card-top">
-                  <span className="operational-driver-name">
-                    {driver.name}
-                  </span>
+              const numericChange =
+                Number(driver.change);
 
-                  <span
-                    className={`operational-driver-impact ${impact.className}`}
-                  >
-                    {impact.label}
-                  </span>
-                </div>
+              const hasChange =
+                Number.isFinite(
+                  numericChange,
+                );
 
-                <div className="operational-driver-value">
-                  <strong>{formatValue(driver.value)}</strong>
-                  {driver.unit && <span>{driver.unit}</span>}
-                </div>
+              const cardContent = (
+                <>
+                  <div className="operational-driver-card-top">
+                    <span className="operational-driver-name">
+                      {driver.name}
+                    </span>
 
-                <div
-                  className={`operational-driver-trend ${direction}`}
-                >
-                  {getTrendIcon(direction)}
+                    <span
+                      className={`operational-driver-impact ${impact.className}`}
+                    >
+                      {impact.label}
+                    </span>
+                  </div>
 
-                  <span>
-                    {hasChange ? (
-                      <>
-                        {numericChange > 0 ? "+" : ""}
-                        {formatValue(driver.change)}%
-                      </>
-                    ) : (
-                      "No change data"
+                  <div className="operational-driver-value">
+                    <strong>
+                      {formatValue(
+                        driver.value,
+                      )}
+                    </strong>
+
+                    {driver.unit && (
+                      <span>
+                        {driver.unit}
+                      </span>
                     )}
-                  </span>
-                </div>
+                  </div>
 
-                {driver.description && (
-                  <p className="operational-driver-description">
-                    {driver.description}
-                  </p>
-                )}
+                  <div
+                    className={`operational-driver-trend ${direction}`}
+                  >
+                    {getTrendIcon(
+                      direction,
+                    )}
 
-                {onDriverClick && (
-                  <span className="operational-driver-drilldown">
-                    View driver details
-                    <FiArrowRight />
-                  </span>
-                )}
-              </>
-            );
+                    <span>
+                      {hasChange ? (
+                        <>
+                          {numericChange > 0
+                            ? "+"
+                            : ""}
+                          {formatValue(
+                            driver.change,
+                          )}
+                          %
+                        </>
+                      ) : (
+                        t(
+                          "operationalDriversGrid.noChangeData",
+                        )
+                      )}
+                    </span>
+                  </div>
 
-            if (onDriverClick) {
+                  {driver.description && (
+                    <p className="operational-driver-description">
+                      {
+                        driver.description
+                      }
+                    </p>
+                  )}
+
+                  {onDriverClick && (
+                    <span className="operational-driver-drilldown">
+                      {t(
+                        "operationalDriversGrid.viewDetails",
+                      )}
+                      <FiArrowRight />
+                    </span>
+                  )}
+                </>
+              );
+
+              if (onDriverClick) {
+                return (
+                  <button
+                    type="button"
+                    className="operational-driver-card clickable"
+                    key={driver.id}
+                    onClick={() =>
+                      onDriverClick(
+                        driver,
+                      )
+                    }
+                    aria-label={translateTemplate(
+                      t,
+                      "operationalDriversGrid.openDetailsAria",
+                      {
+                        name:
+                          driver.name,
+                      },
+                    )}
+                  >
+                    {cardContent}
+                  </button>
+                );
+              }
+
               return (
-                <button
-                  type="button"
-                  className="operational-driver-card clickable"
+                <article
+                  className="operational-driver-card"
                   key={driver.id}
-                  onClick={() => onDriverClick(driver)}
-                  aria-label={`Open ${driver.name} details`}
                 >
                   {cardContent}
-                </button>
+                </article>
               );
-            }
-
-            return (
-              <article
-                className="operational-driver-card"
-                key={driver.id}
-              >
-                {cardContent}
-              </article>
-            );
-          })}
+            },
+          )}
         </div>
       )}
     </section>

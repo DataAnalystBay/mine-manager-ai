@@ -23,6 +23,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { useLanguage } from "../context/LanguageContext";
+
 
 const ABOVE_TARGET_COLOR = "#16a34a";
 const BELOW_TARGET_COLOR = "#dc2626";
@@ -33,7 +35,9 @@ function FleetTrendChart({
   data = [],
   target = 90,
 }) {
-  const [mode, setMode] =
+    const { t } = useLanguage();
+
+const [mode, setMode] =
     useState("availability");
 
 
@@ -55,8 +59,8 @@ function FleetTrendChart({
 
   const metricLabel =
     mode === "availability"
-      ? "Fleet Availability"
-      : "Fleet Utilization";
+      ? t("fleet.availability")
+      : t("fleet.utilization");
 
 
   const chartData = useMemo(() => {
@@ -98,14 +102,15 @@ function FleetTrendChart({
 
         performance_status:
           isAtOrAboveTarget
-            ? "At / Above Target"
-            : "Below Target",
+            ? t("fleet.atOrAboveTarget")
+            : t("fleet.belowTarget"),
       };
     });
   }, [
     data,
     metricKey,
     target,
+  t,
   ]);
 
 
@@ -217,7 +222,7 @@ function FleetTrendChart({
               fontSize: 11,
             }}
           >
-            Target
+            {t("fleet.target")}
           </Typography>
 
           <Typography
@@ -248,7 +253,7 @@ function FleetTrendChart({
               fontSize: 11,
             }}
           >
-            Actual
+            {t("fleet.actual")}
           </Typography>
 
           <Typography
@@ -281,7 +286,7 @@ function FleetTrendChart({
               fontSize: 11,
             }}
           >
-            Variance
+            {t("fleet.variance")}
           </Typography>
 
           <Typography
@@ -328,8 +333,8 @@ function FleetTrendChart({
           }}
         >
           {isAtOrAboveTarget
-            ? "AT / ABOVE TARGET"
-            : "BELOW TARGET"}
+            ? t("fleet.atOrAboveTarget").toUpperCase()
+            : t("fleet.belowTarget").toUpperCase()}
         </Box>
       </Box>
     );
@@ -396,7 +401,7 @@ function FleetTrendChart({
                 fontWeight: 900,
               }}
             >
-              Fleet Performance Trend
+              {t("fleet.fleetPerformanceTrend")}
             </Typography>
 
             <Typography
@@ -407,8 +412,7 @@ function FleetTrendChart({
                 fontSize: 10,
               }}
             >
-              {metricLabel}: actual performance
-              against target, last 30 days
+              {metricLabel}: {t("fleet.chartActualAgainstTarget")}
             </Typography>
           </Box>
 
@@ -436,13 +440,13 @@ function FleetTrendChart({
             <ToggleButton
               value="availability"
             >
-              Availability
+              {t("fleet.availability")}
             </ToggleButton>
 
             <ToggleButton
               value="utilization"
             >
-              Utilization
+              {t("fleet.utilization")}
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
@@ -492,7 +496,7 @@ function FleetTrendChart({
                 fontWeight: 800,
               }}
             >
-              Target {target}%
+              {t("fleet.target")} {target}%
             </Typography>
           </Box>
 
@@ -524,7 +528,7 @@ function FleetTrendChart({
                 fontWeight: 800,
               }}
             >
-              Actual ≥ Target
+              {t("fleet.actualAtOrAboveTarget")}
             </Typography>
           </Box>
 
@@ -556,7 +560,7 @@ function FleetTrendChart({
                 fontWeight: 800,
               }}
             >
-              Actual &lt; Target
+              {t("fleet.actualBelowTarget")}
             </Typography>
           </Box>
 
@@ -673,8 +677,7 @@ function FleetTrendChart({
               <Bar
                 dataKey=
                   "actual_above_target"
-                name=
-                  "Actual ≥ Target"
+                name={t("fleet.actualAtOrAboveTarget")}
                 fill={
                   ABOVE_TARGET_COLOR
                 }
@@ -698,8 +701,7 @@ function FleetTrendChart({
               <Bar
                 dataKey=
                   "actual_below_target"
-                name=
-                  "Actual < Target"
+                name={t("fleet.actualBelowTarget")}
                 fill={
                   BELOW_TARGET_COLOR
                 }
@@ -724,7 +726,7 @@ function FleetTrendChart({
                 type="monotone"
                 dataKey=
                   "chart_target"
-                name="Target"
+                name={t("fleet.target")}
                 stroke={
                   TARGET_COLOR
                 }

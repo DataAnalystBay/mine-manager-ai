@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -15,14 +16,16 @@ import {
   getPredictionSummary,
 } from "../../api/predictionsApi";
 
+import { useLanguage } from "../../context/LanguageContext";
 import ExecutiveForecastRiskStrip from "./ExecutiveForecastRiskStrip";
 import PredictionCard from "./PredictionCard";
 
 import "./PredictionSummaryPanel.css";
 
 
-const PREDICTION_ORDER = [
+const STANDARD_PREDICTION_ORDER = [
   "mine_health",
+  "production",
   "ore_production",
   "waste_movement",
   "fleet_performance",
@@ -30,8 +33,61 @@ const PREDICTION_ORDER = [
   "safety_performance",
 ];
 
+const SXEW_PREDICTION_ORDER = [
+  "mine_health",
+  "production",
+  "plant_performance",
+  "cu_recovery",
+  "safety_performance",
+];
 
-function getOutlookConfig(outlook) {
+
+function resolveOperationProfile(
+  predictionData,
+  mineName,
+) {
+  const backendProfile = String(
+    predictionData?.operation_profile ||
+      predictionData?.operationProfile ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (backendProfile) {
+    return backendProfile;
+  }
+
+  const normalizedMineName = String(
+    mineName || "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (
+    normalizedMineName.includes("achit-ikht") ||
+    normalizedMineName.includes("achit ikht") ||
+    normalizedMineName.includes("copper cathode")
+  ) {
+    return "sxew_copper";
+  }
+
+  return "standard_mine";
+}
+
+
+function getPredictionOrder(
+  operationProfile,
+) {
+  if (operationProfile === "sxew_copper") {
+    return SXEW_PREDICTION_ORDER;
+  }
+
+  return STANDARD_PREDICTION_ORDER;
+}
+
+
+function getOutlookConfig(outlook, t) {
   const normalizedOutlook = String(
     outlook || "",
   )
@@ -40,7 +96,9 @@ function getOutlookConfig(outlook) {
 
   if (normalizedOutlook === "improving") {
     return {
-      label: "Improving",
+      label: t(
+        "predictionSummary.outlook.improving",
+      ),
       className: "improving",
       icon: <FiCheckCircle />,
     };
@@ -51,7 +109,9 @@ function getOutlookConfig(outlook) {
     "attention required"
   ) {
     return {
-      label: "Attention Required",
+      label: t(
+        "predictionSummary.outlook.attentionRequired",
+      ),
       className: "attention",
       icon: <FiAlertTriangle />,
     };
@@ -59,27 +119,39 @@ function getOutlookConfig(outlook) {
 
   if (normalizedOutlook === "stable") {
     return {
-      label: "Stable",
+      label: t(
+        "predictionSummary.outlook.stable",
+      ),
       className: "stable",
       icon: <FiActivity />,
     };
   }
 
   return {
-    label: outlook || "Unavailable",
+    label:
+      outlook ||
+      t(
+        "predictionSummary.outlook.unavailable",
+      ),
     className: "unavailable",
     icon: <FiActivity />,
   };
 }
 
 
-function formatGeneratedAt(value) {
+function formatGeneratedAt(
+  value,
+  language,
+  fallbackLabel,
+) {
   if (!(value instanceof Date)) {
-    return "Not generated";
+    return fallbackLabel;
   }
 
   return value.toLocaleString(
-    "en-GB",
+    language === "MN"
+      ? "mn-MN"
+      : "en-GB",
     {
       day: "2-digit",
       month: "short",
@@ -149,6 +221,11 @@ function getPredictionPriority(
 function PredictionSummaryPanel({
   mineName = "Oyu Tolgoi Surface",
 }) {
+  const {
+    language: uiLanguage,
+    t,
+  } = useLanguage();
+
   const [
     predictionData,
     setPredictionData,
@@ -169,40 +246,106 @@ function PredictionSummaryPanel({
     setGeneratedAt,
   ] = useState(null);
 
-  const loadPredictions = async () => {
-    setIsLoading(true);
-    setError("");
+  const loadPredictions =
+    useCallback(async () => {
+      setIsLoading(true);
+      setError("");
 
-    try {
-      const result =
-        await getPredictionSummary(
-          mineName,
+      try {
+        const result =
+          await getPredictionSummary(
+            mineName,
+          );
+
+        setPredictionData(result);
+        setGeneratedAt(new Date());
+      } catch (requestError) {
+        console.error(
+          "Prediction summary load failed:",
+          requestError,
         );
 
-      setPredictionData(result);
-      setGeneratedAt(new Date());
-    } catch (requestError) {
-      setError(
-        requestError?.message ||
-          "Unable to load Predictive Intelligence.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setError(
+          t(
+            "predictionSummary.loadError",
+          ),
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }, [mineName, t]);
 
   useEffect(() => {
     loadPredictions();
-  }, [mineName]);
+  }, [loadPredictions]);
+
+  const operationProfile = useMemo(
+    () =>
+      resolveOperationProfile(
+        predictionData,
+        mineName,
+      ),
+    [
+      predictionData,
+      mineName,
+    ],
+  );
+
+  const isSxewOperation =
+    operationProfile === "sxew_copper";
+
+
+  const operationProfileLabel = useMemo(() => {
+    if (!isSxewOperation) {
+      return "";
+    }
+
+    return uiLanguage === "MN"
+      ? "SX-EW зэсийн үйл ажиллагаа"
+      : "SX-EW Copper Operation";
+  }, [
+    isSxewOperation,
+    uiLanguage,
+  ]);
+
 
   const orderedPredictions = useMemo(() => {
-    const predictions =
-      PREDICTION_ORDER.map(
-        (predictionKey) =>
-          predictionData?.predictions?.[
-            predictionKey
-          ],
-      ).filter(Boolean);
+    const predictionMap =
+      predictionData?.predictions || {};
+
+    const predictionOrder =
+      getPredictionOrder(
+        operationProfile,
+      );
+
+    const orderedByProfile =
+      predictionOrder
+        .map(
+          (predictionKey) =>
+            predictionMap?.[
+              predictionKey
+            ],
+        )
+        .filter(Boolean);
+
+    const knownPredictionObjects =
+      new Set(orderedByProfile);
+
+    const extraPredictions =
+      Object.values(
+        predictionMap,
+      ).filter(
+        (prediction) =>
+          prediction &&
+          !knownPredictionObjects.has(
+            prediction,
+          ),
+      );
+
+    const predictions = [
+      ...orderedByProfile,
+      ...extraPredictions,
+    ];
 
     return [...predictions].sort(
       (
@@ -247,7 +390,10 @@ function PredictionSummaryPanel({
         );
       },
     );
-  }, [predictionData]);
+  }, [
+    predictionData,
+    operationProfile,
+  ]);
 
   const highestRiskKpiName = useMemo(() => {
     const availablePredictions =
@@ -307,53 +453,150 @@ function PredictionSummaryPanel({
     return highestRiskPrediction.kpi_name;
   }, [orderedPredictions]);
 
-  const outlookConfig =
-    getOutlookConfig(
+  const outlookConfig = useMemo(
+    () =>
+      getOutlookConfig(
+        predictionData?.overall_outlook,
+        t,
+      ),
+    [
       predictionData?.overall_outlook,
-    );
+      t,
+    ],
+  );
 
   const overallConfidence = Number(
     predictionData?.overall_confidence || 0,
   );
 
   const availableCount = Number(
-    predictionData?.data_quality
-      ?.available_count || 0,
+    predictionData?.available_prediction_count ??
+      predictionData?.data_quality
+        ?.available_count ??
+      0,
   );
 
   const unavailableCount = Number(
     predictionData?.data_quality
-      ?.unavailable_count || 0,
+      ?.unavailable_count ?? 0,
+  );
+
+  const applicableForecastCount = Number(
+    predictionData?.applicable_prediction_count ??
+      predictionData?.data_quality
+        ?.applicable_count ??
+      availableCount + unavailableCount,
   );
 
   const totalForecastCount =
-    availableCount + unavailableCount;
+    applicableForecastCount > 0
+      ? applicableForecastCount
+      : availableCount + unavailableCount;
 
-  const generatedAtLabel =
-    formatGeneratedAt(generatedAt);
+  const generatedAtLabel = useMemo(
+    () =>
+      formatGeneratedAt(
+        generatedAt,
+        uiLanguage,
+        t(
+          "predictionSummary.notGenerated",
+        ),
+      ),
+    [
+      generatedAt,
+      uiLanguage,
+      t,
+    ],
+  );
+
+  const dataQualityLabel = useMemo(() => {
+    const rawStatus = String(
+      predictionData?.data_quality
+        ?.data_quality_status || "",
+    )
+      .trim()
+      .toLowerCase();
+
+    const statusKeys = {
+      good:
+        "predictionSummary.dataQualityStatus.good",
+      fair:
+        "predictionSummary.dataQualityStatus.fair",
+      poor:
+        "predictionSummary.dataQualityStatus.poor",
+      complete:
+        "predictionSummary.dataQualityStatus.complete",
+      partial:
+        "predictionSummary.dataQualityStatus.partial",
+      limited:
+        "predictionSummary.dataQualityStatus.limited",
+      unknown:
+        "predictionSummary.dataQualityStatus.unknown",
+    };
+
+    if (!rawStatus) {
+      return t(
+        "predictionSummary.dataQualityStatus.unknown",
+      );
+    }
+
+    return statusKeys[rawStatus]
+      ? t(statusKeys[rawStatus])
+      : predictionData?.data_quality
+          ?.data_quality_status;
+  }, [
+    predictionData?.data_quality
+      ?.data_quality_status,
+    t,
+  ]);
 
   return (
-    <section className="prediction-summary">
+    <section
+      className="prediction-summary"
+      aria-label={t(
+        "predictionSummary.ariaLabel",
+      )}
+    >
       <header className="prediction-summary__header">
         <div>
           <p className="prediction-summary__eyebrow">
-            Sprint 10.19
+            {t(
+              "predictionSummary.sprintLabel",
+            )}
           </p>
 
           <h2 className="prediction-summary__title">
-            Predictive Intelligence
+            {t(
+              "predictionSummary.title",
+            )}
           </h2>
 
           <p className="prediction-summary__subtitle">
-            Short-term operational forecasts
-            for the next three shifts.
+            {t(
+              "predictionSummary.subtitle",
+            )}
           </p>
+
+          {operationProfileLabel ? (
+            <p
+              style={{
+                margin: "5px 0 0",
+                color: "#64748b",
+                fontSize: 10,
+                fontWeight: 800,
+              }}
+            >
+              {operationProfileLabel}
+            </p>
+          ) : null}
         </div>
 
         <div className="prediction-summary__header-actions">
           <div className="prediction-summary__generated">
             <span>
-              Forecast generated
+              {t(
+                "predictionSummary.forecastGenerated",
+              )}
             </span>
 
             <strong>
@@ -366,6 +609,15 @@ function PredictionSummaryPanel({
             className="prediction-summary__refresh"
             onClick={loadPredictions}
             disabled={isLoading}
+            aria-label={
+              isLoading
+                ? t(
+                    "predictionSummary.refreshing",
+                  )
+                : t(
+                    "predictionSummary.refreshForecasts",
+                  )
+            }
           >
             <FiRefreshCw
               className={
@@ -377,35 +629,50 @@ function PredictionSummaryPanel({
 
             <span>
               {isLoading
-                ? "Refreshing"
-                : "Refresh forecasts"}
+                ? t(
+                    "predictionSummary.refreshing",
+                  )
+                : t(
+                    "predictionSummary.refreshForecasts",
+                  )}
             </span>
           </button>
         </div>
       </header>
 
       {isLoading && !predictionData ? (
-        <div className="prediction-summary__state">
+        <div
+          className="prediction-summary__state"
+          role="status"
+          aria-live="polite"
+        >
           <div className="prediction-summary__loader" />
 
           <strong>
-            Loading Predictive Intelligence
+            {t(
+              "predictionSummary.loadingTitle",
+            )}
           </strong>
 
           <p>
-            Analysing recent KPI performance
-            and generating three-shift
-            forecasts.
+            {t(
+              "predictionSummary.loadingMessage",
+            )}
           </p>
         </div>
       ) : null}
 
       {!isLoading && error ? (
-        <div className="prediction-summary__state prediction-summary__state--error">
+        <div
+          className="prediction-summary__state prediction-summary__state--error"
+          role="alert"
+        >
           <FiAlertTriangle />
 
           <strong>
-            Forecasts could not be loaded
+            {t(
+              "predictionSummary.errorTitle",
+            )}
           </strong>
 
           <p>
@@ -416,7 +683,9 @@ function PredictionSummaryPanel({
             type="button"
             onClick={loadPredictions}
           >
-            Try again
+            {t(
+              "predictionSummary.tryAgain",
+            )}
           </button>
         </div>
       ) : null}
@@ -437,30 +706,35 @@ function PredictionSummaryPanel({
                 </div>
 
                 <span className="prediction-summary__overview-label">
-                  Executive Forecast
+                  {t(
+                    "predictionSummary.executiveForecast",
+                  )}
                 </span>
               </div>
 
               <h3>
-                Executive Forecast Outlook
+                {t(
+                  "predictionSummary.executiveForecastOutlook",
+                )}
               </h3>
 
               <p className="prediction-summary__overview-message">
-                {
-                  predictionData.executive_message
-                }
+                {predictionData.executive_message}
               </p>
 
               <div className="prediction-summary__overview-note">
-                Forecast horizon: next three
-                operational shifts
+                {t(
+                  "predictionSummary.forecastHorizon",
+                )}
               </div>
             </div>
 
             <div className="prediction-summary__metrics">
               <div className="prediction-summary__metric">
                 <span>
-                  Overall confidence
+                  {t(
+                    "predictionSummary.overallConfidence",
+                  )}
                 </span>
 
                 <strong>
@@ -470,7 +744,9 @@ function PredictionSummaryPanel({
 
               <div className="prediction-summary__metric">
                 <span>
-                  Available forecasts
+                  {t(
+                    "predictionSummary.availableForecasts",
+                  )}
                 </span>
 
                 <strong>
@@ -481,14 +757,13 @@ function PredictionSummaryPanel({
 
               <div className="prediction-summary__metric">
                 <span>
-                  Data quality
+                  {t(
+                    "predictionSummary.dataQuality",
+                  )}
                 </span>
 
                 <strong>
-                  {predictionData
-                    ?.data_quality
-                    ?.data_quality_status ||
-                    "Unknown"}
+                  {dataQualityLabel}
                 </strong>
               </div>
             </div>

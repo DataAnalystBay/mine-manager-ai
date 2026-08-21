@@ -310,6 +310,7 @@ def get_shared_analytics(
     mine_name: str,
     report_date: Optional[date] = None,
     days: int = 7,
+    language: str = "en",
 ) -> Dict[str, Any]:
     """
     Main entry point for shared executive analytics.
@@ -351,6 +352,7 @@ def get_shared_analytics(
     trend_analysis = get_trend_analysis_service(
         mine_name=cleaned_mine_name,
         db=db,
+        language=language,
     )
 
     response["summary"] = {

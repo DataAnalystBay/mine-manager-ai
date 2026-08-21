@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import { useLanguage } from "../../context/LanguageContext";
 
 function ReportCard({
   title,
@@ -25,6 +26,7 @@ function ReportCard({
   format = "PDF",
   badge,
 }) {
+  const { t } = useLanguage();
   const accentColor = featured ? "#f97316" : "#16a34a";
   const accentDark = featured ? "#ea580c" : "#15803d";
   const accentLight = featured ? "#fff7ed" : "#ecfdf5";
@@ -219,7 +221,7 @@ function ReportCard({
                 mb: 1.25,
               }}
             >
-              Includes
+              {t("reports.includes")}
             </Typography>
 
             <Stack spacing={1.05}>
