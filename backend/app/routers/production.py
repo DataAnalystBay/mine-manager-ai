@@ -1,5 +1,3 @@
-import os
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -18,6 +16,9 @@ from app.database import (
     SessionLocal,
 )
 
+from app.models.user import User
+from app.services.tenant_service import resolve_authenticated_tenant
+
 
 # ============================================================
 # Router
@@ -31,25 +32,6 @@ router = APIRouter(
             get_current_user
         ),
     ],
-)
-
-
-# ============================================================
-# Active Tenant
-# ============================================================
-
-ACTIVE_COMPANY_ID = int(
-    os.getenv(
-        "ACTIVE_COMPANY_ID",
-        "1",
-    )
-)
-
-ACTIVE_MINE_ID = int(
-    os.getenv(
-        "ACTIVE_MINE_ID",
-        "1",
-    )
 )
 
 
@@ -85,123 +67,29 @@ def get_db():
 
 
 # ============================================================
-# ACTIVE TENANT RESOLUTION
+# AUTHENTICATED TENANT RESOLUTION
 # ============================================================
 
 def resolve_active_tenant(
     db: Session,
+    current_user: User,
 ):
     """
-    Resolve the active company and mine.
+    Resolve the operational tenant from the authenticated user.
 
-    ACTIVE_COMPANY_ID + ACTIVE_MINE_ID are the authoritative
-    V1.0 tenant boundary.
+    Security boundary:
+        authenticated user
+            -> auth company
+            -> operational company
+            -> operational mine
 
-    Operational queries must not rely on mine_name alone.
+    Production queries must use company_id + mine_id.
     """
 
-    tenant = db.execute(
-        text(
-            """
-            SELECT
-                m.id AS mine_id,
-                m.company_id AS company_id,
-                m.mine_name AS mine_name,
-                m.mine_type AS mine_type,
-                c.company_name AS company_name
-            FROM public.mine_settings AS m
-            JOIN public.company_settings AS c
-                ON c.id = m.company_id
-            WHERE m.id = :mine_id
-              AND m.company_id = :company_id
-            """
-        ),
-        {
-            "company_id":
-                ACTIVE_COMPANY_ID,
-
-            "mine_id":
-                ACTIVE_MINE_ID,
-        },
-    ).mappings().first()
-
-    if tenant is None:
-        raise HTTPException(
-            status_code=(
-                status.HTTP_404_NOT_FOUND
-            ),
-            detail=(
-                "Active tenant was not found: "
-                f"company_id={ACTIVE_COMPANY_ID}, "
-                f"mine_id={ACTIVE_MINE_ID}"
-            ),
-        )
-
-    mine_type = str(
-        tenant[
-            "mine_type"
-        ]
-        or ""
-    ).strip().lower()
-
-    is_sxew_operation = (
-        mine_type
-        in {
-            "processing plant / sx-ew",
-            "sx-ew",
-            "hydrometallurgical copper processing",
-        }
-        or tenant[
-            "mine_name"
-        ]
-        == (
-            "Achit-Ikht Copper "
-            "Cathode Operation"
-        )
+    return resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
     )
-
-    return {
-        "company_id":
-            int(
-                tenant[
-                    "company_id"
-                ]
-            ),
-
-        "mine_id":
-            int(
-                tenant[
-                    "mine_id"
-                ]
-            ),
-
-        "company_name":
-            tenant[
-                "company_name"
-            ],
-
-        "mine_name":
-            tenant[
-                "mine_name"
-            ],
-
-        "mine_type":
-            tenant[
-                "mine_type"
-            ],
-
-        "operation_profile":
-            (
-                "sxew_copper"
-                if is_sxew_operation
-                else "standard_mine"
-            ),
-
-        "waste_applicable":
-            (
-                not is_sxew_operation
-            ),
-    }
 
 
 # ============================================================
@@ -300,6 +188,9 @@ def get_today_production(
     db: Session = Depends(
         get_db
     ),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
     Return the latest available Production record for the
@@ -315,6 +206,7 @@ def get_today_production(
         tenant = (
             resolve_active_tenant(
                 db=db,
+                current_user=current_user,
             )
         )
 
@@ -551,6 +443,9 @@ def get_production_trend(
     db: Session = Depends(
         get_db
     ),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
     Return Production trend data for the active tenant.
@@ -586,6 +481,7 @@ def get_production_trend(
         tenant = (
             resolve_active_tenant(
                 db=db,
+                current_user=current_user,
             )
         )
 
