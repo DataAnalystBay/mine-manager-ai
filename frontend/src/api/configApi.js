@@ -1,23 +1,23 @@
-
-import axios from "axios";
-import { API_BASE_URL } from "../config/apiConfig";
+import api from "../services/api";
 
 // ======================================================
 // Company Configuration
 // ======================================================
 
 export const getCompanyConfig = async () => {
-  const response = await axios.get(
-    `${API_BASE_URL}/api/config/company`
+  const response = await api.get(
+    "/api/config/company"
   );
+
   return response.data;
 };
 
 export const updateCompany = async (data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/company`,
+  const response = await api.put(
+    "/api/config/company",
     data
   );
+
   return response.data;
 };
 
@@ -26,17 +26,19 @@ export const updateCompany = async (data) => {
 // ======================================================
 
 export const getMineConfig = async () => {
-  const response = await axios.get(
-    `${API_BASE_URL}/api/config/mine`
+  const response = await api.get(
+    "/api/config/mine"
   );
+
   return response.data;
 };
 
 export const updateMine = async (data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/mine`,
+  const response = await api.put(
+    "/api/config/mine",
     data
   );
+
   return response.data;
 };
 
@@ -45,17 +47,22 @@ export const updateMine = async (data) => {
 // ======================================================
 
 export const getKpiTargets = async () => {
-  const response = await axios.get(
-    `${API_BASE_URL}/api/config/kpi-targets`
+  const response = await api.get(
+    "/api/config/kpi-targets"
   );
+
   return response.data;
 };
 
-export const updateKpiTarget = async (kpiId, data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/kpi-targets/${kpiId}`,
+export const updateKpiTarget = async (
+  kpiId,
+  data
+) => {
+  const response = await api.put(
+    `/api/config/kpi-targets/${kpiId}`,
     data
   );
+
   return response.data;
 };
 
@@ -64,15 +71,19 @@ export const updateKpiTarget = async (kpiId, data) => {
 // ======================================================
 
 export const getAlertThresholds = async () => {
-  const response = await axios.get(
-    `${API_BASE_URL}/api/config/alert-thresholds`
+  const response = await api.get(
+    "/api/config/alert-thresholds"
   );
+
   return response.data;
 };
 
-export const updateAlertThreshold = async (alertId, data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/alert-thresholds/${alertId}`,
+export const updateAlertThreshold = async (
+  alertId,
+  data
+) => {
+  const response = await api.put(
+    `/api/config/alert-thresholds/${alertId}`,
     data
   );
 
@@ -84,17 +95,22 @@ export const updateAlertThreshold = async (alertId, data) => {
 // ======================================================
 
 export const getShiftPatterns = async () => {
-  const response = await axios.get(
-    `${API_BASE_URL}/api/config/shift-patterns`
+  const response = await api.get(
+    "/api/config/shift-patterns"
   );
+
   return response.data;
 };
 
-export const updateShiftPattern = async (shiftId, data) => {
-  const response = await axios.put(
-    `${API_BASE_URL}/api/config/shift-patterns/${shiftId}`,
+export const updateShiftPattern = async (
+  shiftId,
+  data
+) => {
+  const response = await api.put(
+    `/api/config/shift-patterns/${shiftId}`,
     data
   );
+
   return response.data;
 };
 
@@ -103,9 +119,10 @@ export const updateShiftPattern = async (shiftId, data) => {
 // ======================================================
 
 export const getFullConfig = async () => {
-  const response = await axios.get(
-    `${API_BASE_URL}/api/config/full`
+  const response = await api.get(
+    "/api/config/full"
   );
+
   return response.data;
 };
 
@@ -115,14 +132,16 @@ export const getFullConfig = async () => {
 
 export const uploadLogo = async (file) => {
   if (!file) {
-    throw new Error("Please select a logo file.");
+    throw new Error(
+      "Please select a logo file."
+    );
   }
 
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await axios.post(
-    `${API_BASE_URL}/api/config/upload-logo`,
+  const response = await api.post(
+    "/api/config/upload-logo",
     formData,
     {
       headers: {
