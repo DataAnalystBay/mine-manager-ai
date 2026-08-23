@@ -1,14 +1,13 @@
-import os
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.database import SessionLocal
+from app.models.user import User
 
+from app.services.tenant_service import resolve_authenticated_tenant
 from app.services.analytics_engine_service import get_shared_analytics
-
 
 from app.schemas.kpi_detail import KpiDetailResponse
 from app.services.kpi_detail_service import get_kpi_detail
@@ -33,10 +32,6 @@ router = APIRouter(
 )
 
 
-ACTIVE_COMPANY_ID = int(os.getenv("ACTIVE_COMPANY_ID", "1"))
-ACTIVE_MINE_ID = int(os.getenv("ACTIVE_MINE_ID", "1"))
-
-
 # ============================================================
 # DATABASE DEPENDENCY
 # ============================================================
@@ -55,61 +50,34 @@ def get_db():
 
 
 # ============================================================
-# ACTIVE TENANT RESOLUTION
+# AUTHENTICATED TENANT RESOLUTION
 # ============================================================
 
 def resolve_active_tenant(
     db: Session,
+    current_user: User,
     requested_mine_name: str | None = None,
 ):
     """
-    Resolve the active tenant from backend environment settings.
+    Resolve the operational tenant from the authenticated user.
 
-    ACTIVE_COMPANY_ID and ACTIVE_MINE_ID are authoritative for the
-    current V1.0 deployment/demo profile. A caller-supplied mine name
-    is never used as the security boundary.
+    Security boundary:
+        authenticated user
+            -> auth company
+            -> operational company
+            -> operational mine
 
-    This prevents a request from selecting another customer's data by
-    changing only the mine_name query parameter.
+    requested_mine_name is retained only for frontend compatibility.
+    It must never be used to select another customer's tenant.
     """
 
-    tenant = db.execute(
-        text(
-            """
-            SELECT
-                m.id AS mine_id,
-                m.company_id AS company_id,
-                m.mine_name AS mine_name,
-                c.company_name AS company_name
-            FROM public.mine_settings AS m
-            JOIN public.company_settings AS c
-                ON c.id = m.company_id
-            WHERE m.id = :mine_id
-              AND m.company_id = :company_id
-            """
-        ),
-        {
-            "company_id": ACTIVE_COMPANY_ID,
-            "mine_id": ACTIVE_MINE_ID,
-        },
-    ).mappings().first()
+    tenant = resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
-    if tenant is None:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                f"Active tenant company={ACTIVE_COMPANY_ID}, "
-                f"mine={ACTIVE_MINE_ID} was not found."
-            ),
-        )
-
-    # requested_mine_name is accepted for frontend compatibility only.
-    # The active IDs remain authoritative.
     return {
-        "company_id": int(tenant["company_id"]),
-        "mine_id": int(tenant["mine_id"]),
-        "company_name": tenant["company_name"],
-        "mine_name": tenant["mine_name"],
+        **tenant,
         "requested_mine_name": requested_mine_name,
     }
 
@@ -160,16 +128,21 @@ def empty_summary(mine_name: str):
 def get_executive_summary(
     mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Return the latest operational KPI summary for the active tenant.
+    Return the latest operational KPI summary for the
+    authenticated tenant.
 
-    company_id + mine_id are the authoritative tenant boundary.
+    company_id + mine_id are the authoritative operational
+    tenant boundary.
+
     mine_name is retained only for frontend compatibility/display.
     """
 
     tenant = resolve_active_tenant(
         db=db,
+        current_user=current_user,
         requested_mine_name=mine_name,
     )
 
@@ -177,17 +150,33 @@ def get_executive_summary(
     mine_id = tenant["mine_id"]
     mine_name = tenant["mine_name"]
 
-    is_sxew_operation = (
-        mine_name == "Achit-Ikht Copper Cathode Operation"
+    operation_profile = tenant.get(
+        "operation_profile",
+        "standard_mine",
     )
 
-    waste_applicable = not is_sxew_operation
-    fleet_applicable = not is_sxew_operation
+    is_sxew_operation = (
+        operation_profile == "sxew_copper"
+    )
+
+    waste_applicable = tenant.get(
+        "waste_applicable",
+        not is_sxew_operation,
+    )
+
+    fleet_applicable = tenant.get(
+        "fleet_applicable",
+        not is_sxew_operation,
+    )
 
     tenant_params = {
         "company_id": company_id,
         "mine_id": mine_id,
     }
+
+    # --------------------------------------------------------
+    # Production
+    # --------------------------------------------------------
 
     production = db.execute(
         text(
@@ -235,16 +224,18 @@ def get_executive_summary(
     ).mappings().first()
 
     if fleet_result:
-        availability = float(fleet_result["availability"] or 0)
-        utilization = float(fleet_result["utilization"] or 0)
+        availability = float(
+            fleet_result["availability"] or 0
+        )
+        utilization = float(
+            fleet_result["utilization"] or 0
+        )
 
         fleet = calculate_fleet_score(
             availability,
             utilization,
         )
     else:
-        # Keep the existing V1.0 numeric response contract.
-        # A later UI improvement can display this as N/A/No Data.
         availability = 0
         utilization = 0
         fleet = 0
@@ -297,10 +288,18 @@ def get_executive_summary(
     ).mappings().first()
 
     if safety_result:
-        incidents = int(safety_result["incidents"] or 0)
-        near_misses = int(safety_result["near_misses"] or 0)
-        critical_risks = int(safety_result["critical_risks"] or 0)
-        safety_score = float(safety_result["safety_score"] or 0)
+        incidents = int(
+            safety_result["incidents"] or 0
+        )
+        near_misses = int(
+            safety_result["near_misses"] or 0
+        )
+        critical_risks = int(
+            safety_result["critical_risks"] or 0
+        )
+        safety_score = float(
+            safety_result["safety_score"] or 0
+        )
     else:
         incidents = 0
         near_misses = 0
@@ -310,12 +309,6 @@ def get_executive_summary(
     # --------------------------------------------------------
     # Mine Health
     # --------------------------------------------------------
-
-    operation_profile = (
-        "sxew_copper"
-        if is_sxew_operation
-        else "standard_mine"
-    )
 
     health = calculate_health_score(
         ore=ore,
@@ -365,6 +358,7 @@ def get_executive_summary(
 def get_ai_briefing(
     mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Generate an executive briefing from the latest operational KPIs.
@@ -373,15 +367,18 @@ def get_ai_briefing(
     summary = get_executive_summary(
         mine_name=mine_name,
         db=db,
+        current_user=current_user,
     )
 
-
     mine_name = summary.get("mine_name") or mine_name
+
     if summary.get("status") != "Connected to PostgreSQL":
         return {
             "mine_name": mine_name,
             "report_date": summary.get("report_date"),
-            "briefing": "No operational data available for briefing.",
+            "briefing": (
+                "No operational data available for briefing."
+            ),
             "priority_actions": [],
             "risks": [],
             "status": "No data",
@@ -420,7 +417,9 @@ def get_ai_briefing(
     )
 
     if summary["health"] < 85:
-        risks.append("Overall mine health is below target.")
+        risks.append(
+            "Overall mine health is below target."
+        )
         actions.append(
             health_action
         )
@@ -437,7 +436,9 @@ def get_ai_briefing(
         summary["applicability"]["waste"]
         and summary["waste"] < 95
     ):
-        risks.append("Waste movement is below plan.")
+        risks.append(
+            "Waste movement is below plan."
+        )
         actions.append(
             "Check truck allocation, haul road delays, and waste "
             "dump constraints."
@@ -447,14 +448,18 @@ def get_ai_briefing(
         summary["applicability"]["fleet"]
         and summary["fleet"] < 90
     ):
-        risks.append("Fleet performance is below target.")
+        risks.append(
+            "Fleet performance is below target."
+        )
         actions.append(
             "Review truck availability, utilization, maintenance "
             "delays, and dispatch efficiency."
         )
 
     if summary["plant"] < 95:
-        risks.append("Plant performance is below target.")
+        risks.append(
+            "Plant performance is below target."
+        )
         actions.append(
             "Review throughput bottlenecks, recovery performance, "
             "and plant downtime causes."
@@ -465,7 +470,9 @@ def get_ai_briefing(
         or summary["safety"] > 0
         or summary["critical_risks"] > 0
     ):
-        risks.append("Safety performance requires management attention.")
+        risks.append(
+            "Safety performance requires management attention."
+        )
         actions.append(
             "Review incidents, near misses, and critical risk controls "
             "before the next shift."
@@ -473,7 +480,8 @@ def get_ai_briefing(
 
     if not risks:
         risks.append(
-            "No major operational risks detected from current KPI thresholds."
+            "No major operational risks detected from current "
+            "KPI thresholds."
         )
         actions.append(
             "Maintain the current operating rhythm and continue "
@@ -508,7 +516,9 @@ def get_ai_briefing(
         "briefing": briefing,
         "priority_actions": actions[:5],
         "risks": risks[:5],
-        "status": "AI briefing generated from PostgreSQL KPIs",
+        "status": (
+            "AI briefing generated from PostgreSQL KPIs"
+        ),
     }
 
 
@@ -520,6 +530,7 @@ def get_ai_briefing(
 def get_priority_actions(
     mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Generate prioritized operational actions from the latest KPIs.
@@ -528,10 +539,11 @@ def get_priority_actions(
     summary = get_executive_summary(
         mine_name=mine_name,
         db=db,
+        current_user=current_user,
     )
 
-
     mine_name = summary.get("mine_name") or mine_name
+
     if summary.get("status") != "Connected to PostgreSQL":
         return {
             "mine_name": mine_name,
@@ -700,7 +712,10 @@ def get_priority_actions(
         reverse=True,
     )
 
-    for index, action in enumerate(actions, start=1):
+    for index, action in enumerate(
+        actions,
+        start=1,
+    ):
         action["priority"] = index
 
     return {
@@ -708,7 +723,9 @@ def get_priority_actions(
         "report_date": summary["report_date"],
         "priority_level": actions[0]["severity"],
         "actions": actions,
-        "status": "Priority actions generated from live KPIs",
+        "status": (
+            "Priority actions generated from live KPIs"
+        ),
     }
 
 
@@ -720,6 +737,7 @@ def get_priority_actions(
 def get_risk_register(
     mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Generate an operational risk register from the latest KPIs.
@@ -728,10 +746,11 @@ def get_risk_register(
     summary = get_executive_summary(
         mine_name=mine_name,
         db=db,
+        current_user=current_user,
     )
 
-
     mine_name = summary.get("mine_name") or mine_name
+
     if summary.get("status") != "Connected to PostgreSQL":
         return {
             "mine_name": mine_name,
@@ -907,7 +926,9 @@ def get_risk_register(
         "overall_risk": overall_risk,
         "risk_score": max_score,
         "risks": risks,
-        "status": "Risk register generated from live KPIs",
+        "status": (
+            "Risk register generated from live KPIs"
+        ),
     }
 
 
@@ -919,6 +940,7 @@ def get_risk_register(
 def get_health_history(
     mine_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return historical Mine Health and component KPI values.
@@ -926,12 +948,16 @@ def get_health_history(
 
     tenant = resolve_active_tenant(
         db=db,
+        current_user=current_user,
         requested_mine_name=mine_name,
     )
 
     return get_health_history_service(
         mine_name=tenant["mine_name"],
         db=db,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
+        operation_profile=tenant["operation_profile"],
     )
 
 
@@ -944,6 +970,7 @@ def get_trend_analysis(
     mine_name: str | None = Query(default=None),
     language: str = Query(default="en"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return Mine Health direction, drivers, and recommendations
@@ -952,6 +979,7 @@ def get_trend_analysis(
 
     tenant = resolve_active_tenant(
         db=db,
+        current_user=current_user,
         requested_mine_name=mine_name,
     )
 
@@ -959,6 +987,9 @@ def get_trend_analysis(
         mine_name=tenant["mine_name"],
         db=db,
         language=language,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
+        operation_profile=tenant["operation_profile"],
     )
 
 
@@ -973,10 +1004,13 @@ def shared_analytics(
         default=7,
         ge=1,
         le=365,
-        description="Number of recent reporting days to return.",
+        description=(
+            "Number of recent reporting days to return."
+        ),
     ),
     language: str = Query(default="en"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return the unified analytics response used by:
@@ -986,13 +1020,14 @@ def shared_analytics(
     - Executive Briefing
     - Future Board Packs
 
-    The optional language parameter is propagated to the shared analytics
-    service so dynamic trend insights and recommendations can be returned
-    in the selected UI language.
+    The optional language parameter is propagated to the shared
+    analytics service so dynamic trend insights and recommendations
+    can be returned in the selected UI language.
     """
 
     tenant = resolve_active_tenant(
         db=db,
+        current_user=current_user,
         requested_mine_name=mine_name,
     )
 
@@ -1001,7 +1036,15 @@ def shared_analytics(
         mine_name=tenant["mine_name"],
         days=days,
         language=language,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
+        operation_profile=tenant["operation_profile"],
     )
+
+
+# ============================================================
+# KPI DETAIL
+# ============================================================
 
 @router.get(
     "/kpi-detail",
@@ -1012,10 +1055,12 @@ def read_kpi_detail(
     kpi_name: str = Query(...),
     days: int = Query(7, ge=2, le=30),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     try:
         tenant = resolve_active_tenant(
             db=db,
+            current_user=current_user,
             requested_mine_name=mine_name,
         )
 
@@ -1025,11 +1070,17 @@ def read_kpi_detail(
             kpi_name=kpi_name,
             days=days,
         )
+
     except ValueError as error:
         raise HTTPException(
             status_code=400,
             detail=str(error),
         ) from error
+
+    except HTTPException:
+        # Preserve authentication / tenant errors.
+        raise
+
     except Exception as error:
         raise HTTPException(
             status_code=500,
