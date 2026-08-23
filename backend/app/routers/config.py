@@ -7,6 +7,8 @@ import os
 import uuid
 
 from app.database import get_db
+from app.auth.dependencies import get_current_user
+from app.models.user import User
 from app.models.company import CompanySettings
 from app.models.mine import MineSettings
 from app.models.kpi_target import KpiTarget
@@ -21,49 +23,62 @@ router = APIRouter(
 
 
 # ============================================================
-# ACTIVE CUSTOMER / MINE CONFIGURATION
+# TENANT / CUSTOMER CONFIGURATION
 # ============================================================
 
-ACTIVE_COMPANY_ID = int(os.getenv("ACTIVE_COMPANY_ID", "1"))
-ACTIVE_MINE_ID = int(os.getenv("ACTIVE_MINE_ID", "1"))
-
-
-def get_active_company(db: Session) -> CompanySettings:
+def get_user_company(
+    db: Session,
+    current_user: User,
+) -> CompanySettings:
     """
-    Return the company configured as active in backend/.env.
+    Return the company belonging to the authenticated user.
 
-    Example:
-        ACTIVE_COMPANY_ID=2
+    This replaces the old global ACTIVE_COMPANY_ID approach
+    and provides tenant-aware company configuration.
     """
+
+    if current_user.company_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="User is not assigned to a company",
+        )
 
     company = (
         db.query(CompanySettings)
-        .filter(CompanySettings.id == ACTIVE_COMPANY_ID)
+        .filter(CompanySettings.id == current_user.company_id)
         .first()
     )
 
     if not company:
         raise HTTPException(
             status_code=404,
-            detail=f"Active company {ACTIVE_COMPANY_ID} not found",
+            detail=f"Company {current_user.company_id} not found",
         )
 
     return company
 
 
-def get_active_mine(db: Session) -> MineSettings:
+def get_user_mine(
+    db: Session,
+    current_user: User,
+) -> MineSettings:
     """
-    Return the mine / operation configured as active.
+    Return the mine belonging to the authenticated user's company.
 
-    The mine must also belong to the active company.
+    Version 1.0 currently assumes one active/default mine
+    per customer/company.
     """
+
+    if current_user.company_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="User is not assigned to a company",
+        )
 
     mine = (
         db.query(MineSettings)
-        .filter(
-            MineSettings.id == ACTIVE_MINE_ID,
-            MineSettings.company_id == ACTIVE_COMPANY_ID,
-        )
+        .filter(MineSettings.company_id == current_user.company_id)
+        .order_by(MineSettings.id.asc())
         .first()
     )
 
@@ -71,8 +86,8 @@ def get_active_mine(db: Session) -> MineSettings:
         raise HTTPException(
             status_code=404,
             detail=(
-                f"Active mine {ACTIVE_MINE_ID} not found "
-                f"for company {ACTIVE_COMPANY_ID}"
+                f"No mine configured for company "
+                f"{current_user.company_id}"
             ),
         )
 
@@ -136,16 +151,24 @@ class AlertThresholdUpdateRequest(BaseModel):
 @router.get("/company")
 def get_company_settings(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return get_active_company(db)
+    return get_user_company(
+        db=db,
+        current_user=current_user,
+    )
 
 
 @router.put("/company")
 def update_company_settings(
     request: CompanyUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    company = get_active_company(db)
+    company = get_user_company(
+        db=db,
+        current_user=current_user,
+    )
 
     update_data = request.dict(exclude_unset=True)
 
@@ -166,6 +189,7 @@ def update_company_settings(
 def upload_company_logo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     allowed_types = [
         "image/png",
@@ -179,9 +203,6 @@ def upload_company_logo(
             status_code=400,
             detail="Only PNG, JPG, JPEG, and WEBP logo files are allowed",
         )
-
-    upload_dir = "app/static/logos"
-    os.makedirs(upload_dir, exist_ok=True)
 
     filename = file.filename or "logo.png"
 
@@ -206,7 +227,11 @@ def upload_company_logo(
             detail="Unsupported logo file extension",
         )
 
+    upload_dir = "app/static/logos"
+    os.makedirs(upload_dir, exist_ok=True)
+
     safe_filename = f"{uuid.uuid4()}.{original_extension}"
+
     file_path = os.path.join(
         upload_dir,
         safe_filename,
@@ -217,7 +242,10 @@ def upload_company_logo(
 
     logo_url = f"/static/logos/{safe_filename}"
 
-    company = get_active_company(db)
+    company = get_user_company(
+        db=db,
+        current_user=current_user,
+    )
 
     company.logo_url = logo_url
 
@@ -238,16 +266,24 @@ def upload_company_logo(
 @router.get("/mine")
 def get_mine_settings(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return get_active_mine(db)
+    return get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
 
 @router.put("/mine")
 def update_mine_settings(
     request: MineUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    mine = get_active_mine(db)
+    mine = get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
     update_data = request.dict(exclude_unset=True)
 
@@ -267,8 +303,12 @@ def update_mine_settings(
 @router.get("/kpi-targets")
 def get_kpi_targets(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    mine = get_active_mine(db)
+    mine = get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
     return (
         db.query(KpiTarget)
@@ -283,8 +323,12 @@ def update_kpi_target(
     kpi_id: int,
     request: KpiTargetUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    mine = get_active_mine(db)
+    mine = get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
     kpi = (
         db.query(KpiTarget)
@@ -319,8 +363,12 @@ def update_kpi_target(
 @router.get("/alert-thresholds")
 def get_alert_thresholds(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    mine = get_active_mine(db)
+    mine = get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
     return (
         db.query(AlertThreshold)
@@ -335,8 +383,12 @@ def update_alert_threshold(
     alert_id: int,
     request: AlertThresholdUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    mine = get_active_mine(db)
+    mine = get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
     alert = (
         db.query(AlertThreshold)
@@ -371,7 +423,14 @@ def update_alert_threshold(
 @router.get("/shift-patterns")
 def get_shift_patterns(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    # Authentication required.
+    get_user_company(
+        db=db,
+        current_user=current_user,
+    )
+
     return (
         db.query(ShiftPattern)
         .order_by(ShiftPattern.id.asc())
@@ -384,7 +443,14 @@ def update_shift_pattern(
     shift_id: int,
     request: ShiftUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    # Authentication / company membership required.
+    get_user_company(
+        db=db,
+        current_user=current_user,
+    )
+
     shift = (
         db.query(ShiftPattern)
         .filter(ShiftPattern.id == shift_id)
@@ -415,9 +481,17 @@ def update_shift_pattern(
 @router.get("/full")
 def get_full_configuration(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    company = get_active_company(db)
-    mine = get_active_mine(db)
+    company = get_user_company(
+        db=db,
+        current_user=current_user,
+    )
+
+    mine = get_user_mine(
+        db=db,
+        current_user=current_user,
+    )
 
     kpi_targets = (
         db.query(KpiTarget)
