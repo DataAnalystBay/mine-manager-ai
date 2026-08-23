@@ -8,7 +8,9 @@ import uuid
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user
+
 from app.models.user import User
+from app.models.auth_company import Company
 from app.models.company import CompanySettings
 from app.models.mine import MineSettings
 from app.models.kpi_target import KpiTarget
@@ -26,15 +28,14 @@ router = APIRouter(
 # TENANT / CUSTOMER CONFIGURATION
 # ============================================================
 
-def get_user_company(
+def get_auth_company(
     db: Session,
     current_user: User,
-) -> CompanySettings:
+) -> Company:
     """
-    Return the company belonging to the authenticated user.
+    Return the authenticated tenant from public.companies.
 
-    This replaces the old global ACTIVE_COMPANY_ID approach
-    and provides tenant-aware company configuration.
+    User.company_id references public.companies.id.
     """
 
     if current_user.company_id is None:
@@ -43,16 +44,64 @@ def get_user_company(
             detail="User is not assigned to a company",
         )
 
+    auth_company = (
+        db.query(Company)
+        .filter(Company.id == current_user.company_id)
+        .first()
+    )
+
+    if not auth_company:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Auth company {current_user.company_id} not found",
+        )
+
+    if auth_company.is_active is False:
+        raise HTTPException(
+            status_code=403,
+            detail="Company account is inactive",
+        )
+
+    return auth_company
+
+
+def get_user_company(
+    db: Session,
+    current_user: User,
+) -> CompanySettings:
+    """
+    Resolve operational company configuration using the
+    authenticated tenant's company name.
+
+    Authentication:
+        users.company_id
+            -> public.companies.id
+
+    Configuration:
+        public.companies.company_name
+            -> company_settings.company_name
+    """
+
+    auth_company = get_auth_company(
+        db=db,
+        current_user=current_user,
+    )
+
     company = (
         db.query(CompanySettings)
-        .filter(CompanySettings.id == current_user.company_id)
+        .filter(
+            CompanySettings.company_name == auth_company.company_name
+        )
         .first()
     )
 
     if not company:
         raise HTTPException(
             status_code=404,
-            detail=f"Company {current_user.company_id} not found",
+            detail=(
+                f"Configuration not found for company "
+                f"'{auth_company.company_name}'"
+            ),
         )
 
     return company
@@ -63,22 +112,26 @@ def get_user_mine(
     current_user: User,
 ) -> MineSettings:
     """
-    Return the mine belonging to the authenticated user's company.
-
-    Version 1.0 currently assumes one active/default mine
-    per customer/company.
+    Resolve operational mine configuration using the
+    authenticated tenant's company and mine names.
     """
 
-    if current_user.company_id is None:
-        raise HTTPException(
-            status_code=403,
-            detail="User is not assigned to a company",
-        )
+    auth_company = get_auth_company(
+        db=db,
+        current_user=current_user,
+    )
+
+    company = get_user_company(
+        db=db,
+        current_user=current_user,
+    )
 
     mine = (
         db.query(MineSettings)
-        .filter(MineSettings.company_id == current_user.company_id)
-        .order_by(MineSettings.id.asc())
+        .filter(
+            MineSettings.company_id == company.id,
+            MineSettings.mine_name == auth_company.mine_name,
+        )
         .first()
     )
 
@@ -86,8 +139,10 @@ def get_user_mine(
         raise HTTPException(
             status_code=404,
             detail=(
-                f"No mine configured for company "
-                f"{current_user.company_id}"
+                f"Mine configuration "
+                f"'{auth_company.mine_name}' "
+                f"not found for company "
+                f"'{auth_company.company_name}'"
             ),
         )
 
@@ -170,10 +225,16 @@ def update_company_settings(
         current_user=current_user,
     )
 
-    update_data = request.dict(exclude_unset=True)
+    update_data = request.dict(
+        exclude_unset=True,
+    )
 
     for key, value in update_data.items():
-        setattr(company, key, value)
+        setattr(
+            company,
+            key,
+            value,
+        )
 
     db.commit()
     db.refresh(company)
@@ -201,7 +262,10 @@ def upload_company_logo(
     if file.content_type not in allowed_types:
         raise HTTPException(
             status_code=400,
-            detail="Only PNG, JPG, JPEG, and WEBP logo files are allowed",
+            detail=(
+                "Only PNG, JPG, JPEG, and WEBP "
+                "logo files are allowed"
+            ),
         )
 
     filename = file.filename or "logo.png"
@@ -209,10 +273,17 @@ def upload_company_logo(
     if "." not in filename:
         raise HTTPException(
             status_code=400,
-            detail="Uploaded logo must include a valid file extension",
+            detail=(
+                "Uploaded logo must include "
+                "a valid file extension"
+            ),
         )
 
-    original_extension = filename.rsplit(".", 1)[-1].lower()
+    original_extension = (
+        filename
+        .rsplit(".", 1)[-1]
+        .lower()
+    )
 
     allowed_extensions = {
         "png",
@@ -228,19 +299,34 @@ def upload_company_logo(
         )
 
     upload_dir = "app/static/logos"
-    os.makedirs(upload_dir, exist_ok=True)
 
-    safe_filename = f"{uuid.uuid4()}.{original_extension}"
+    os.makedirs(
+        upload_dir,
+        exist_ok=True,
+    )
+
+    safe_filename = (
+        f"{uuid.uuid4()}."
+        f"{original_extension}"
+    )
 
     file_path = os.path.join(
         upload_dir,
         safe_filename,
     )
 
-    with open(file_path, "wb") as buffer:
-        buffer.write(file.file.read())
+    with open(
+        file_path,
+        "wb",
+    ) as buffer:
+        buffer.write(
+            file.file.read()
+        )
 
-    logo_url = f"/static/logos/{safe_filename}"
+    logo_url = (
+        f"/static/logos/"
+        f"{safe_filename}"
+    )
 
     company = get_user_company(
         db=db,
@@ -285,10 +371,16 @@ def update_mine_settings(
         current_user=current_user,
     )
 
-    update_data = request.dict(exclude_unset=True)
+    update_data = request.dict(
+        exclude_unset=True,
+    )
 
     for key, value in update_data.items():
-        setattr(mine, key, value)
+        setattr(
+            mine,
+            key,
+            value,
+        )
 
     db.commit()
     db.refresh(mine)
@@ -312,8 +404,12 @@ def get_kpi_targets(
 
     return (
         db.query(KpiTarget)
-        .filter(KpiTarget.mine_id == mine.id)
-        .order_by(KpiTarget.id.asc())
+        .filter(
+            KpiTarget.mine_id == mine.id
+        )
+        .order_by(
+            KpiTarget.id.asc()
+        )
         .all()
     )
 
@@ -345,10 +441,16 @@ def update_kpi_target(
             detail="KPI target not found",
         )
 
-    update_data = request.dict(exclude_unset=True)
+    update_data = request.dict(
+        exclude_unset=True,
+    )
 
     for key, value in update_data.items():
-        setattr(kpi, key, value)
+        setattr(
+            kpi,
+            key,
+            value,
+        )
 
     db.commit()
     db.refresh(kpi)
@@ -372,8 +474,12 @@ def get_alert_thresholds(
 
     return (
         db.query(AlertThreshold)
-        .filter(AlertThreshold.mine_id == mine.id)
-        .order_by(AlertThreshold.id.asc())
+        .filter(
+            AlertThreshold.mine_id == mine.id
+        )
+        .order_by(
+            AlertThreshold.id.asc()
+        )
         .all()
     )
 
@@ -405,10 +511,16 @@ def update_alert_threshold(
             detail="Alert threshold not found",
         )
 
-    update_data = request.dict(exclude_unset=True)
+    update_data = request.dict(
+        exclude_unset=True,
+    )
 
     for key, value in update_data.items():
-        setattr(alert, key, value)
+        setattr(
+            alert,
+            key,
+            value,
+        )
 
     db.commit()
     db.refresh(alert)
@@ -425,15 +537,19 @@ def get_shift_patterns(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Authentication required.
-    get_user_company(
+    mine = get_user_mine(
         db=db,
         current_user=current_user,
     )
 
     return (
         db.query(ShiftPattern)
-        .order_by(ShiftPattern.id.asc())
+        .filter(
+            ShiftPattern.mine_id == mine.id
+        )
+        .order_by(
+            ShiftPattern.id.asc()
+        )
         .all()
     )
 
@@ -445,15 +561,17 @@ def update_shift_pattern(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Authentication / company membership required.
-    get_user_company(
+    mine = get_user_mine(
         db=db,
         current_user=current_user,
     )
 
     shift = (
         db.query(ShiftPattern)
-        .filter(ShiftPattern.id == shift_id)
+        .filter(
+            ShiftPattern.id == shift_id,
+            ShiftPattern.mine_id == mine.id,
+        )
         .first()
     )
 
@@ -463,10 +581,16 @@ def update_shift_pattern(
             detail="Shift pattern not found",
         )
 
-    update_data = request.dict(exclude_unset=True)
+    update_data = request.dict(
+        exclude_unset=True,
+    )
 
     for key, value in update_data.items():
-        setattr(shift, key, value)
+        setattr(
+            shift,
+            key,
+            value,
+        )
 
     db.commit()
     db.refresh(shift)
@@ -495,21 +619,34 @@ def get_full_configuration(
 
     kpi_targets = (
         db.query(KpiTarget)
-        .filter(KpiTarget.mine_id == mine.id)
-        .order_by(KpiTarget.id.asc())
+        .filter(
+            KpiTarget.mine_id == mine.id
+        )
+        .order_by(
+            KpiTarget.id.asc()
+        )
         .all()
     )
 
     alert_thresholds = (
         db.query(AlertThreshold)
-        .filter(AlertThreshold.mine_id == mine.id)
-        .order_by(AlertThreshold.id.asc())
+        .filter(
+            AlertThreshold.mine_id == mine.id
+        )
+        .order_by(
+            AlertThreshold.id.asc()
+        )
         .all()
     )
 
     shift_patterns = (
         db.query(ShiftPattern)
-        .order_by(ShiftPattern.id.asc())
+        .filter(
+            ShiftPattern.mine_id == mine.id
+        )
+        .order_by(
+            ShiftPattern.id.asc()
+        )
         .all()
     )
 
