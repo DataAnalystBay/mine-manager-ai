@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 # ============================================================
 
 DEFAULT_SCENARIO = "High Performing Mine"
-DEFAULT_MINE_NAME = "Achit Ikht LLC"
+DEFAULT_MINE_NAME = "Achit-Ikht LLC"
 
 HISTORICAL_START_DATE = date(2021, 1, 1)
 MAX_HISTORY_DAYS = 3650

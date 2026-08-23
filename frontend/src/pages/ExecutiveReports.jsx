@@ -1,71 +1,54 @@
-﻿import React, {
-  useState,
-} from "react";
+﻿import React, { useState } from "react";
 
 import axios from "axios";
 
-import {
-  API_BASE_URL,
-} from "../config/apiConfig";
+import { API_BASE_URL } from "../config/apiConfig";
 
 import {
   Alert,
   Box,
   Grid,
   Snackbar,
+  Typography,
 } from "@mui/material";
 
 import DescriptionIcon from "@mui/icons-material/Description";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import InsightsIcon from "@mui/icons-material/Insights";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
+import DateRangeRoundedIcon from "@mui/icons-material/DateRangeRounded";
+import EventNoteRoundedIcon from "@mui/icons-material/EventNoteRounded";
 
-import ReportHeader
-  from "../components/reports/ReportHeader";
+import ReportHeader from "../components/reports/ReportHeader";
+import ReportCard from "../components/reports/ReportCard";
+import ExportCard from "../components/reports/ExportCard";
+import ReportHistoryTable from "../components/reports/ReportHistoryTable";
 
-import ReportCard
-  from "../components/reports/ReportCard";
-
-import ExportCard
-  from "../components/reports/ExportCard";
-
-import ReportHistoryTable
-  from "../components/reports/ReportHistoryTable";
 import { useLanguage } from "../context/LanguageContext";
-
 
 /* ============================================================
    Authenticated Report Download Client
    ============================================================ */
 
-const reportDownloadClient =
-  axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 60000,
-  });
-
+const reportDownloadClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 60000,
+});
 
 reportDownloadClient.interceptors.request.use(
   (config) => {
     const token =
-      localStorage.getItem(
-        "access_token"
-      ) ||
-      localStorage.getItem(
-        "token"
-      );
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("token");
 
     if (token) {
-      config.headers.Authorization =
-        `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
   },
-  (error) =>
-    Promise.reject(error)
+  (error) => Promise.reject(error)
 );
-
 
 /* ============================================================
    Executive Reports Page
@@ -73,30 +56,20 @@ reportDownloadClient.interceptors.request.use(
 
 function ExecutiveReports() {
   const { t } = useLanguage();
-  const [
-    loadingReport,
-    setLoadingReport,
-  ] = useState(null);
 
+  const [loadingReport, setLoadingReport] = useState(null);
 
-  const [
-    notification,
-    setNotification,
-  ] = useState({
+  const [notification, setNotification] = useState({
     open: false,
     severity: "success",
     message: "",
   });
 
-
   /* ==========================================================
      Notifications
      ========================================================== */
 
-  const showNotification = (
-    severity,
-    message
-  ) => {
+  const showNotification = (severity, message) => {
     setNotification({
       open: true,
       severity,
@@ -104,25 +77,16 @@ function ExecutiveReports() {
     });
   };
 
-
-  const closeNotification = (
-    _,
-    reason
-  ) => {
-    if (
-      reason === "clickaway"
-    ) {
+  const closeNotification = (_, reason) => {
+    if (reason === "clickaway") {
       return;
     }
 
-    setNotification(
-      (current) => ({
-        ...current,
-        open: false,
-      })
-    );
+    setNotification((current) => ({
+      ...current,
+      open: false,
+    }));
   };
-
 
   /* ==========================================================
      Download Filename Helper
@@ -132,313 +96,215 @@ function ExecutiveReports() {
     contentDisposition,
     fallbackFilename
   ) => {
-    if (
-      !contentDisposition
-    ) {
+    if (!contentDisposition) {
       return fallbackFilename;
     }
 
-    const utf8Match =
-      contentDisposition.match(
-        /filename\*=UTF-8''([^;]+)/i
-      );
+    const utf8Match = contentDisposition.match(
+      /filename\*=UTF-8''([^;]+)/i
+    );
 
-    if (
-      utf8Match?.[1]
-    ) {
+    if (utf8Match?.[1]) {
       return decodeURIComponent(
-        utf8Match[1].replace(
-          /["']/g,
-          ""
-        )
+        utf8Match[1].replace(/["']/g, "")
       );
     }
 
-    const standardMatch =
-      contentDisposition.match(
-        /filename="?([^"]+)"?/i
-      );
+    const standardMatch = contentDisposition.match(
+      /filename="?([^"]+)"?/i
+    );
 
-    if (
-      standardMatch?.[1]
-    ) {
-      return standardMatch[
-        1
-      ].trim();
+    if (standardMatch?.[1]) {
+      return standardMatch[1].trim();
     }
 
     return fallbackFilename;
   };
 
-
   /* ==========================================================
      Shared Authenticated Download Function
      ========================================================== */
 
-  const downloadFile =
-    async ({
-      reportKey,
-      endpoint,
-      fallbackFilename,
-      mimeType,
-      successMessage,
-    }) => {
-      if (loadingReport) {
-        return;
-      }
+  const downloadFile = async ({
+    reportKey,
+    endpoint,
+    fallbackFilename,
+    mimeType,
+    successMessage,
+  }) => {
+    if (loadingReport) {
+      return;
+    }
 
-      setLoadingReport(
-        reportKey
+    setLoadingReport(reportKey);
+
+    try {
+      const response = await reportDownloadClient.get(endpoint, {
+        responseType: "blob",
+      });
+
+      const contentType =
+        response.headers["content-type"] || mimeType;
+
+      const fileBlob = new Blob([response.data], {
+        type: contentType,
+      });
+
+      const contentDisposition =
+        response.headers["content-disposition"];
+
+      const filename = extractFilename(
+        contentDisposition,
+        fallbackFilename
       );
 
-      try {
-        const response =
-          await reportDownloadClient.get(
-            endpoint,
-            {
-              responseType:
-                "blob",
-            }
-          );
+      const fileUrl =
+        window.URL.createObjectURL(fileBlob);
 
+      const link = document.createElement("a");
 
-        const contentType =
-          response.headers[
-            "content-type"
-          ] ||
-          mimeType;
+      link.href = fileUrl;
+      link.setAttribute("download", filename);
 
+      document.body.appendChild(link);
 
-        const fileBlob =
-          new Blob(
-            [
-              response.data,
-            ],
-            {
-              type:
-                contentType,
-            }
-          );
+      link.click();
+      link.remove();
 
+      window.URL.revokeObjectURL(fileUrl);
 
-        const contentDisposition =
-          response.headers[
-            "content-disposition"
-          ];
+      showNotification("success", successMessage);
+    } catch (error) {
+      console.error(
+        `${reportKey} download failed:`,
+        error
+      );
 
+      let errorMessage =
+        t("reports.reportGenerateError");
 
-        const filename =
-          extractFilename(
-            contentDisposition,
-            fallbackFilename
-          );
-
-
-        const fileUrl =
-          window.URL.createObjectURL(
-            fileBlob
-          );
-
-
-        const link =
-          document.createElement(
-            "a"
-          );
-
-        link.href =
-          fileUrl;
-
-        link.setAttribute(
-          "download",
-          filename
-        );
-
-
-        document.body.appendChild(
-          link
-        );
-
-        link.click();
-
-        link.remove();
-
-
-        window.URL.revokeObjectURL(
-          fileUrl
-        );
-
-
-        showNotification(
-          "success",
-          successMessage
-        );
-      } catch (error) {
-        console.error(
-          `${reportKey} download failed:`,
-          error
-        );
-
-
-        let errorMessage =
-          t("reports.reportGenerateError");
-
-
-        if (
-          error.response?.status ===
-          401
-        ) {
-          errorMessage =
-            t("reports.sessionExpired");
-        } else if (
-          error.response?.status ===
-          403
-        ) {
-          errorMessage =
-            t("reports.noReportPermission");
-        } else if (
-          error.response?.status >=
-          500
-        ) {
-          errorMessage =
-            t("reports.reportServiceError");
-        }
-
-
-        showNotification(
-          "error",
-          errorMessage
-        );
-      } finally {
-        setLoadingReport(
-          null
-        );
+      if (error.response?.status === 401) {
+        errorMessage =
+          t("reports.sessionExpired");
+      } else if (error.response?.status === 403) {
+        errorMessage =
+          t("reports.noReportPermission");
+      } else if (error.response?.status >= 500) {
+        errorMessage =
+          t("reports.reportServiceError");
       }
-    };
 
+      showNotification(
+        "error",
+        errorMessage
+      );
+    } finally {
+      setLoadingReport(null);
+    }
+  };
 
   /* ==========================================================
      PowerPoint
      ========================================================== */
 
-  const downloadExecutivePowerPoint =
-    () =>
-      downloadFile({
-        reportKey:
-          "powerpoint",
+  const downloadExecutivePowerPoint = () =>
+    downloadFile({
+      reportKey: "powerpoint",
 
-        endpoint:
-          "/reports/powerpoint",
+      endpoint: "/reports/powerpoint",
 
-        fallbackFilename:
-          "Mine_Manager_AI_Executive_Board_Pack.pptx",
+      fallbackFilename:
+        "Mine_Manager_AI_Executive_Board_Pack.pptx",
 
-        mimeType:
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 
-        successMessage:
-          t("reports.powerPointSuccess"),
-      });
-
+      successMessage:
+        t("reports.powerPointSuccess"),
+    });
 
   /* ==========================================================
      Daily PDF
      ========================================================== */
 
-  const downloadDailyPdf =
-    () =>
-      downloadFile({
-        reportKey:
-          "daily",
+  const downloadDailyPdf = () =>
+    downloadFile({
+      reportKey: "daily",
 
-        endpoint:
-          "/reports/daily/pdf",
+      endpoint: "/reports/daily/pdf",
 
-        fallbackFilename:
-          "Daily_Executive_Report.pdf",
+      fallbackFilename:
+        "Daily_Executive_Report.pdf",
 
-        mimeType:
-          "application/pdf",
+      mimeType:
+        "application/pdf",
 
-        successMessage:
-          t("reports.dailySuccess"),
-      });
-
+      successMessage:
+        t("reports.dailySuccess"),
+    });
 
   /* ==========================================================
      Weekly PDF
      ========================================================== */
 
-  const downloadWeeklyPdf =
-    () =>
-      downloadFile({
-        reportKey:
-          "weekly",
+  const downloadWeeklyPdf = () =>
+    downloadFile({
+      reportKey: "weekly",
 
-        endpoint:
-          "/reports/weekly/pdf",
+      endpoint: "/reports/weekly/pdf",
 
-        fallbackFilename:
-          "Weekly_Operations_Report.pdf",
+      fallbackFilename:
+        "Weekly_Operations_Report.pdf",
 
-        mimeType:
-          "application/pdf",
+      mimeType:
+        "application/pdf",
 
-        successMessage:
-          t("reports.weeklySuccess"),
-      });
-
+      successMessage:
+        t("reports.weeklySuccess"),
+    });
 
   /* ==========================================================
      Monthly PDF
      ========================================================== */
 
-  const downloadMonthlyPdf =
-    () =>
-      downloadFile({
-        reportKey:
-          "monthly",
+  const downloadMonthlyPdf = () =>
+    downloadFile({
+      reportKey: "monthly",
 
-        endpoint:
-          "/reports/monthly/pdf",
+      endpoint: "/reports/monthly/pdf",
 
-        fallbackFilename:
-          "Monthly_KPI_Pack.pdf",
+      fallbackFilename:
+        "Monthly_KPI_Pack.pdf",
 
-        mimeType:
-          "application/pdf",
+      mimeType:
+        "application/pdf",
 
-        successMessage:
-          t("reports.monthlySuccess"),
-      });
-
+      successMessage:
+        t("reports.monthlySuccess"),
+    });
 
   /* ==========================================================
      Excel
      ========================================================== */
 
-  const downloadExecutiveExcel =
-    () =>
-      downloadFile({
-        reportKey:
-          "excel",
+  const downloadExecutiveExcel = () =>
+    downloadFile({
+      reportKey: "excel",
 
-        endpoint:
-          "/reports/excel",
+      endpoint: "/reports/excel",
 
-        fallbackFilename:
-          "Mine_Manager_AI_Executive_Export.xlsx",
+      fallbackFilename:
+        "Mine_Manager_AI_Executive_Export.xlsx",
 
-        mimeType:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 
-        successMessage:
-          t("reports.excelSuccess"),
-      });
-
+      successMessage:
+        t("reports.excelSuccess"),
+    });
 
   const isGenerating =
     loadingReport !== null;
-
 
   /* ==========================================================
      UI
@@ -453,326 +319,519 @@ function ExecutiveReports() {
           lg: 4,
         },
 
-        minHeight:
-          "100vh",
+        minHeight: "100vh",
 
-        bgcolor:
-          "#f8fafc",
+        bgcolor: "#f8fafc",
       }}
     >
+      {/* ======================================================
+          PAGE HEADER
+          ====================================================== */}
+
       <ReportHeader />
 
+      {/* ======================================================
+          REPORT GENERATOR
+          ====================================================== */}
 
-      <Grid
-        container
-        spacing={3}
+      <Box
+        sx={{
+          mt: 2,
+
+          p: {
+            xs: 1.75,
+            md: 2,
+          },
+
+          border:
+            "1px solid #e2e8f0",
+
+          borderRadius:
+            "14px",
+
+          bgcolor:
+            "#ffffff",
+
+          boxShadow:
+            "0 2px 8px rgba(15, 23, 42, 0.035)",
+        }}
       >
+        {/* ====================================================
+            Section Header
+            ==================================================== */}
 
-        {/* ==================================================
-            Executive Board Pack
-            ================================================== */}
+        <Box
+          sx={{
+            mb: 1.75,
 
-        <Grid
-          size={{
-            xs: 12,
-            md: 6,
+            display: "flex",
+
+            alignItems: {
+              xs: "flex-start",
+              sm: "center",
+            },
+
+            justifyContent:
+              "space-between",
+
+            flexDirection: {
+              xs: "column",
+              sm: "row",
+            },
+
+            gap: 1.5,
           }}
         >
-          <ReportCard
-            title={t("reports.executiveBoardPack")}
+          <Box>
+            <Typography
+              sx={{
+                color:
+                  "#0f172a",
 
-            subtitle={t("reports.executiveBoardPackSubtitle")}
+                fontSize:
+                  15,
 
-            frequency={t("reports.onDemand")}
+                fontWeight:
+                  800,
 
-            format=
-              "PPTX"
+                lineHeight:
+                  1.2,
 
-            badge={t("reports.newLabel")}
+                letterSpacing:
+                  "-0.01em",
+              }}
+            >
+              ТАЙЛАН ҮҮСГЭХ
+            </Typography>
 
-            featured
+            <Typography
+              sx={{
+                mt: 0.35,
 
-            loading={
-              loadingReport ===
-              "powerpoint"
-            }
+                color:
+                  "#64748b",
 
-            icon={
-              <SlideshowIcon />
-            }
+                fontSize:
+                  10.8,
 
-            sections={[
-              t("reports.executiveKpiSummary"),
-              t("reports.productionTrend"),
-              t("reports.fleetPlantSafety"),
-              t("reports.keyOperationalRisks"),
-              t("reports.managementActions"),
-              t("reports.executiveRecommendations"),
-            ]}
+                fontWeight:
+                  500,
 
-            buttonText={
-              loadingReport ===
-              "powerpoint"
-                ? t("reports.generatingPowerPoint")
-                : t("reports.generatePowerPoint")
-            }
+                lineHeight:
+                  1.45,
+              }}
+            >
+              Удирдлагын тайлангийн төрөл болон
+              хугацааг сонгоно уу.
+            </Typography>
+          </Box>
 
-            disabled={
-              isGenerating
-            }
+          <Box
+            sx={{
+              px: 1,
 
-            onClick={
-              downloadExecutivePowerPoint
-            }
-          />
-        </Grid>
+              py: 0.5,
 
+              borderRadius:
+                "7px",
 
-        {/* ==================================================
-            Daily Executive Report
-            ================================================== */}
+              bgcolor:
+                "#f8fafc",
 
-        <Grid
-          size={{
-            xs: 12,
-            md: 6,
-          }}
-        >
-          <ReportCard
-            title={t("reports.dailyExecutiveReport")}
+              border:
+                "1px solid #e2e8f0",
+            }}
+          >
+            <Typography
+              sx={{
+                color:
+                  "#64748b",
 
-            subtitle={t("reports.dailyExecutiveReportSubtitle")}
+                fontSize:
+                  9.5,
 
-            frequency={t("reports.daily")}
+                fontWeight:
+                  800,
 
-            format=
-              "PDF"
+                letterSpacing:
+                  "0.05em",
 
-            loading={
-              loadingReport ===
-              "daily"
-            }
+                whiteSpace:
+                  "nowrap",
+              }}
+            >
+              6 REPORT TYPES
+            </Typography>
+          </Box>
+        </Box>
 
-            icon={
-              <DescriptionIcon />
-            }
-
-            sections={[
-              t("reports.executiveSummary"),
-              t("reports.productionPerformance"),
-              t("reports.fleetPlantStatus"),
-              t("reports.safetyRiskOverview"),
-              t("reports.priorityActions"),
-            ]}
-
-            buttonText={
-              loadingReport ===
-              "daily"
-                ? t("reports.generatingPdf")
-                : t("reports.generatePdf")
-            }
-
-            disabled={
-              isGenerating
-            }
-
-            onClick={
-              downloadDailyPdf
-            }
-          />
-        </Grid>
-
-
-        {/* ==================================================
-            Weekly Operations Report
-            ================================================== */}
+        {/* ====================================================
+            REPORT CARDS
+            ==================================================== */}
 
         <Grid
-          size={{
-            xs: 12,
-            md: 6,
-          }}
+          container
+          spacing={1.5}
         >
-          <ReportCard
-            title={t("reports.weeklyOperationsReport")}
+          {/* ==================================================
+              ROW 1 — DAILY
+              ================================================== */}
 
-            subtitle={t("reports.weeklyOperationsReportSubtitle")}
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 4,
+            }}
+          >
+            <ReportCard
+              title={
+                t(
+                  "reports.dailyExecutiveReport"
+                )
+              }
+              subtitle={
+                t(
+                  "reports.dailyExecutiveReportSubtitle"
+                )
+              }
+              frequency={
+                t("reports.daily")
+              }
+              format="PDF"
+              loading={
+                loadingReport ===
+                "daily"
+              }
+              icon={
+                <DescriptionIcon />
+              }
+              sections={[
+                t(
+                  "reports.executiveSummary"
+                ),
+                t(
+                  "reports.productionPerformance"
+                ),
+                t(
+                  "reports.priorityActions"
+                ),
+              ]}
+              buttonText={
+                loadingReport ===
+                "daily"
+                  ? t(
+                      "reports.generatingPdf"
+                    )
+                  : t(
+                      "reports.generatePdf"
+                    )
+              }
+              disabled={
+                isGenerating
+              }
+              onClick={
+                downloadDailyPdf
+              }
+            />
+          </Grid>
 
-            frequency={t("reports.weekly")}
+          {/* ==================================================
+              ROW 1 — WEEKLY
+              ================================================== */}
 
-            format=
-              "PDF"
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 4,
+            }}
+          >
+            <ReportCard
+              title={
+                t(
+                  "reports.weeklyOperationsReport"
+                )
+              }
+              subtitle={
+                t(
+                  "reports.weeklyOperationsReportSubtitle"
+                )
+              }
+              frequency={
+                t("reports.weekly")
+              }
+              format="PDF"
+              loading={
+                loadingReport ===
+                "weekly"
+              }
+              icon={
+                <CalendarMonthIcon />
+              }
+              sections={[
+                t(
+                  "reports.weeklyKpiTrends"
+                ),
+                t(
+                  "reports.departmentPerformance"
+                ),
+                t(
+                  "reports.riskMovement"
+                ),
+              ]}
+              buttonText={
+                loadingReport ===
+                "weekly"
+                  ? t(
+                      "reports.generatingPdf"
+                    )
+                  : t(
+                      "reports.generatePdf"
+                    )
+              }
+              disabled={
+                isGenerating
+              }
+              onClick={
+                downloadWeeklyPdf
+              }
+            />
+          </Grid>
 
-            loading={
-              loadingReport ===
-              "weekly"
-            }
+          {/* ==================================================
+              ROW 1 — MONTHLY
+              ================================================== */}
 
-            icon={
-              <CalendarMonthIcon />
-            }
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 4,
+            }}
+          >
+            <ReportCard
+              title={
+                t(
+                  "reports.monthlyKpiPack"
+                )
+              }
+              subtitle={
+                t(
+                  "reports.monthlyKpiPackSubtitle"
+                )
+              }
+              frequency={
+                t("reports.monthly")
+              }
+              format="PDF"
+              loading={
+                loadingReport ===
+                "monthly"
+              }
+              icon={
+                <InsightsIcon />
+              }
+              sections={[
+                t(
+                  "reports.mineHealthScore"
+                ),
+                t(
+                  "reports.monthlyKpiSummary"
+                ),
+                t(
+                  "reports.productionVariance"
+                ),
+              ]}
+              buttonText={
+                loadingReport ===
+                "monthly"
+                  ? t(
+                      "reports.generatingPdf"
+                    )
+                  : t(
+                      "reports.generatePdf"
+                    )
+              }
+              disabled={
+                isGenerating
+              }
+              onClick={
+                downloadMonthlyPdf
+              }
+            />
+          </Grid>
 
-            sections={[
-              t("reports.weeklyKpiTrends"),
-              t("reports.departmentPerformance"),
-              t("reports.riskMovement"),
-              t("reports.aiRecommendations"),
-              t("reports.actionFollowUp"),
-            ]}
+          {/* ==================================================
+              ROW 2 — QUARTERLY
+              ================================================== */}
 
-            buttonText={
-              loadingReport ===
-              "weekly"
-                ? t("reports.generatingPdf")
-                : t("reports.generatePdf")
-            }
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 4,
+            }}
+          >
+            <ReportCard
+              title="Улирлын гүйцэтгэлийн тайлан"
+              subtitle="Quarterly Performance Report"
+              frequency="Улирал бүр"
+              format="PDF"
+              icon={
+                <DateRangeRoundedIcon />
+              }
+              sections={[
+                "Quarterly KPI Performance",
+                "Trend & Variance",
+                "Risk & Outlook",
+              ]}
+              buttonText="Тун удахгүй"
+              disabled
+            />
+          </Grid>
 
-            disabled={
-              isGenerating
-            }
+          {/* ==================================================
+              ROW 2 — ANNUAL
+              ================================================== */}
 
-            onClick={
-              downloadWeeklyPdf
-            }
-          />
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 4,
+            }}
+          >
+            <ReportCard
+              title="Жилийн гүйцэтгэлийн тайлан"
+              subtitle="Annual Performance Report"
+              frequency="Жил бүр"
+              format="PDF"
+              icon={
+                <EventNoteRoundedIcon />
+              }
+              sections={[
+                "Annual KPI Performance",
+                "Year-over-Year Trend",
+                "Executive Review",
+              ]}
+              buttonText="Тун удахгүй"
+              disabled
+            />
+          </Grid>
+
+          {/* ==================================================
+              ROW 2 — EXECUTIVE BOARD PACK
+              ================================================== */}
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 4,
+            }}
+          >
+            <ReportCard
+              title={
+                t(
+                  "reports.executiveBoardPack"
+                )
+              }
+              subtitle={
+                t(
+                  "reports.executiveBoardPackSubtitle"
+                )
+              }
+              frequency={
+                t(
+                  "reports.onDemand"
+                )
+              }
+              format="PPTX"
+              badge={
+                t(
+                  "reports.newLabel"
+                )
+              }
+              featured
+              loading={
+                loadingReport ===
+                "powerpoint"
+              }
+              icon={
+                <SlideshowIcon />
+              }
+              sections={[
+                t(
+                  "reports.executiveKpiSummary"
+                ),
+                t(
+                  "reports.productionTrend"
+                ),
+                t(
+                  "reports.keyOperationalRisks"
+                ),
+              ]}
+              buttonText={
+                loadingReport ===
+                "powerpoint"
+                  ? t(
+                      "reports.generatingPowerPoint"
+                    )
+                  : t(
+                      "reports.generatePowerPoint"
+                    )
+              }
+              disabled={
+                isGenerating
+              }
+              onClick={
+                downloadExecutivePowerPoint
+              }
+            />
+          </Grid>
         </Grid>
+      </Box>
 
+      {/* ======================================================
+          EXCEL DATA EXPORT
+          ====================================================== */}
 
-        {/* ==================================================
-            Monthly KPI Pack
-            ================================================== */}
+      <Box
+        sx={{
+          mt: 1.5,
+        }}
+      >
+        <ExportCard
+          onClick={
+            downloadExecutiveExcel
+          }
+          disabled={
+            isGenerating
+          }
+        />
+      </Box>
 
-        <Grid
-          size={{
-            xs: 12,
-            md: 6,
-          }}
-        >
-          <ReportCard
-            title={t("reports.monthlyKpiPack")}
-
-            subtitle={t("reports.monthlyKpiPackSubtitle")}
-
-            frequency={t("reports.monthly")}
-
-            format=
-              "PDF"
-
-            loading={
-              loadingReport ===
-              "monthly"
-            }
-
-            icon={
-              <InsightsIcon />
-            }
-
-            sections={[
-              t("reports.mineHealthScore"),
-              t("reports.monthlyKpiSummary"),
-              t("reports.productionVariance"),
-              t("reports.riskRegister"),
-              t("reports.managementCommentary"),
-            ]}
-
-            buttonText={
-              loadingReport ===
-              "monthly"
-                ? t("reports.generatingPdf")
-                : t("reports.generatePdf")
-            }
-
-            disabled={
-              isGenerating
-            }
-
-            onClick={
-              downloadMonthlyPdf
-            }
-          />
-        </Grid>
-
-
-        {/* ==================================================
-            Excel Export
-            ================================================== */}
-
-        <Grid
-          size={{
-            xs: 12,
-            md: 6,
-          }}
-        >
-          <ExportCard
-            title=
-              "Excel Export"
-
-            subtitle=
-              "Export operational datasets for analysis, sharing, and Power BI."
-
-            frequency={t("reports.onDemand")}
-
-            format=
-              "XLSX"
-
-            loading={
-              loadingReport ===
-              "excel"
-            }
-
-            sections={[
-              t("reports.executiveSummary"),
-              "Production Dataset",
-              "Fleet Dataset",
-              "Plant Dataset",
-              "Safety Dataset",
-              "KPI Definitions",
-            ]}
-
-            buttonText={
-              loadingReport ===
-              "excel"
-                ? t("reports.generatingExcel")
-                : t("reports.exportExcel")
-            }
-
-            disabled={
-              isGenerating
-            }
-
-            onClick={
-              downloadExecutiveExcel
-            }
-          />
-        </Grid>
-
-      </Grid>
-
-
-      {/* ====================================================
-          Report History
-          ==================================================== */}
+      {/* ======================================================
+          REPORT HISTORY
+          ====================================================== */}
 
       <ReportHistoryTable />
 
-
-      {/* ====================================================
-          Notifications
-          ==================================================== */}
+      {/* ======================================================
+          NOTIFICATIONS
+          ====================================================== */}
 
       <Snackbar
         open={
           notification.open
         }
-
         autoHideDuration={
           5000
         }
-
         onClose={
           closeNotification
         }
-
         anchorOrigin={{
           vertical:
             "top",
@@ -785,20 +844,16 @@ function ExecutiveReports() {
           onClose={
             closeNotification
           }
-
           severity={
             notification.severity
           }
-
-          variant=
-            "filled"
-
+          variant="filled"
           sx={{
             width:
               "100%",
 
             borderRadius:
-              "12px",
+              "10px",
 
             fontWeight:
               700,
@@ -809,11 +864,8 @@ function ExecutiveReports() {
           }
         </Alert>
       </Snackbar>
-
     </Box>
   );
 }
 
-
 export default ExecutiveReports;
-

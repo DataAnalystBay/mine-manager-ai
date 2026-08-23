@@ -1,195 +1,253 @@
 import {
   Box,
-  Chip,
+  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
 
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
-import TableViewOutlinedIcon from "@mui/icons-material/TableViewOutlined";
+import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import AssessmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
+
 import { useLanguage } from "../../context/LanguageContext";
 
 function ReportHeader() {
   const { t } = useLanguage();
 
+  const reportingDate = new Date();
+
+  const formattedDate = reportingDate.toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    }
+  );
+
   return (
     <Box
       sx={{
-        mb: 3,
-        p: {
-          xs: 2.5,
-          md: 3.5,
-        },
-        borderRadius: "24px",
-        border: "1px solid #e5e7eb",
-        background:
-          "linear-gradient(135deg, #ffffff 0%, #fff7ed 55%, #f8fafc 100%)",
-        boxShadow: "0 18px 45px rgba(15, 23, 42, 0.07)",
-        position: "relative",
-        overflow: "hidden",
+        mb: 2,
       }}
     >
       <Box
         sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: 7,
-          height: "100%",
-          bgcolor: "#f97316",
+          display: "flex",
+          flexDirection: {
+            xs: "column",
+            lg: "row",
+          },
+          alignItems: {
+            xs: "stretch",
+            lg: "flex-end",
+          },
+          justifyContent: "space-between",
+          gap: {
+            xs: 2,
+            lg: 3,
+          },
         }}
-      />
-
-      <Stack
-        direction={{
-          xs: "column",
-          md: "row",
-        }}
-        justifyContent="space-between"
-        alignItems={{
-          xs: "flex-start",
-          md: "center",
-        }}
-        spacing={3}
       >
-        <Box sx={{ pl: 1 }}>
+        {/* =====================================================
+            LEFT — TITLE AREA
+            ===================================================== */}
+
+        <Box
+          sx={{
+            minWidth: 0,
+          }}
+        >
+          {/* Eyebrow */}
+          <Stack
+            direction="row"
+            spacing={0.7}
+            alignItems="center"
+            sx={{
+              mb: 0.7,
+            }}
+          >
+            <AssessmentRoundedIcon
+              sx={{
+                fontSize: 14,
+                color: "#2563eb",
+              }}
+            />
+
+            <Typography
+              sx={{
+                fontSize: 9.5,
+                fontWeight: 900,
+                color: "#2563eb",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                lineHeight: 1.2,
+              }}
+            >
+              EXECUTIVE INTELLIGENCE
+            </Typography>
+
+            <Box
+              sx={{
+                width: 4,
+                height: 4,
+                borderRadius: "50%",
+                bgcolor: "#94a3b8",
+              }}
+            />
+
+            <Typography
+              sx={{
+                fontSize: 9.5,
+                fontWeight: 800,
+                color: "#15803d",
+                letterSpacing: "0.07em",
+                textTransform: "uppercase",
+                lineHeight: 1.2,
+              }}
+            >
+              REPORTING CENTER
+            </Typography>
+          </Stack>
+
+          {/* Main Title */}
           <Typography
             sx={{
               fontSize: {
-                xs: 28,
-                md: 34,
+                xs: 26,
+                md: 30,
               },
               fontWeight: 900,
               color: "#0f172a",
-              letterSpacing: "-0.03em",
-              lineHeight: 1.1,
+              lineHeight: 1.08,
+              letterSpacing: "-0.025em",
             }}
           >
             {t("reports.title")}
           </Typography>
 
+          {/* Description */}
           <Typography
             sx={{
-              mt: 1.2,
+              mt: 0.7,
               maxWidth: 720,
-              color: "#64748b",
               fontSize: {
-                xs: 14,
-                md: 15,
+                xs: 11.5,
+                md: 12,
               },
-              lineHeight: 1.7,
+              fontWeight: 500,
+              color: "#64748b",
+              lineHeight: 1.55,
             }}
           >
             {t("reports.headerDescription")}
           </Typography>
-
-          <Stack
-            direction="row"
-            spacing={1}
-            useFlexGap
-            flexWrap="wrap"
-            sx={{ mt: 2.2 }}
-          >
-            <Chip
-              icon={<DescriptionOutlinedIcon />}
-              label={t("reports.pdfReports")}
-              size="small"
-              sx={{
-                bgcolor: "#ffffff",
-                border: "1px solid #fed7aa",
-                color: "#9a3412",
-                fontWeight: 800,
-                "& .MuiChip-icon": {
-                  color: "#f97316",
-                },
-              }}
-            />
-
-            <Chip
-              icon={<SlideshowOutlinedIcon />}
-              label={t("reports.powerPointBoardPack")}
-              size="small"
-              sx={{
-                bgcolor: "#ffffff",
-                border: "1px solid #fed7aa",
-                color: "#9a3412",
-                fontWeight: 800,
-                "& .MuiChip-icon": {
-                  color: "#f97316",
-                },
-              }}
-            />
-
-            <Chip
-              icon={<TableViewOutlinedIcon />}
-              label={t("reports.excelExport")}
-              size="small"
-              sx={{
-                bgcolor: "#ffffff",
-                border: "1px solid #bfdbfe",
-                color: "#1d4ed8",
-                fontWeight: 800,
-                "& .MuiChip-icon": {
-                  color: "#2563eb",
-                },
-              }}
-            />
-          </Stack>
         </Box>
 
-        <Box
+        {/* =====================================================
+            RIGHT — REPORTING CONTROLS
+            ===================================================== */}
+
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="stretch"
           sx={{
-            minWidth: {
-              xs: "100%",
-              md: 210,
-            },
-            p: 2.2,
-            borderRadius: "18px",
-            bgcolor: "rgba(255, 255, 255, 0.88)",
-            border: "1px solid #fed7aa",
-            textAlign: {
-              xs: "left",
-              md: "right",
-            },
+            flexShrink: 0,
           }}
         >
-          <Typography
+          {/* Reporting Date */}
+          <Box
             sx={{
-              fontSize: 12,
-              fontWeight: 900,
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
+              minWidth: 150,
+              px: 1.5,
+              py: 1.15,
+              borderRadius: "10px",
+              border: "1px solid #dbe3ee",
+              bgcolor: "#ffffff",
+              boxShadow:
+                "0 2px 6px rgba(15, 23, 42, 0.035)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
             }}
           >
-            {t("reports.availableOutputs")}
-          </Typography>
+            <Box
+              sx={{
+                width: 30,
+                height: 30,
+                borderRadius: "8px",
+                bgcolor: "#eff6ff",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <CalendarMonthRoundedIcon
+                sx={{
+                  fontSize: 17,
+                }}
+              />
+            </Box>
 
-          <Typography
-            sx={{
-              mt: 0.4,
-              fontSize: 30,
-              fontWeight: 900,
-              color: "#f97316",
-              lineHeight: 1,
-            }}
-          >
-            5
-          </Typography>
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: 8,
+                  fontWeight: 900,
+                  color: "#94a3b8",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  lineHeight: 1.2,
+                }}
+              >
+                REPORTING DATE
+              </Typography>
 
-          <Typography
+              <Typography
+                sx={{
+                  mt: 0.25,
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1.25,
+                }}
+              >
+                {formattedDate}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Refresh */}
+          <IconButton
+            aria-label="Refresh executive reports"
             sx={{
-              mt: 0.8,
-              fontSize: 13,
-              color: "#64748b",
-              lineHeight: 1.5,
+              width: 42,
+              height: 42,
+              alignSelf: "center",
+              borderRadius: "10px",
+              border: "1px solid #dbe3ee",
+              bgcolor: "#ffffff",
+              color: "#475569",
+              boxShadow:
+                "0 2px 6px rgba(15, 23, 42, 0.035)",
+
+              "&:hover": {
+                bgcolor: "#f8fafc",
+                color: "#2563eb",
+              },
             }}
           >
-            {t("reports.availableOutputsDescription")}
-          </Typography>
-        </Box>
-      </Stack>
+            <RefreshRoundedIcon
+              sx={{
+                fontSize: 19,
+              }}
+            />
+          </IconButton>
+        </Stack>
+      </Box>
     </Box>
   );
 }

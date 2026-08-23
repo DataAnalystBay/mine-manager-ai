@@ -1,10 +1,16 @@
 from collections import defaultdict
 from datetime import date
+from io import StringIO
+from time import perf_counter
 from typing import Any, Dict, List
+import csv
 
 from sqlalchemy import text
 
-from app.database import SessionLocal
+from app.database import (
+    SessionLocal,
+    engine,
+)
 
 
 # ============================================================
@@ -16,18 +22,12 @@ def resolve_demo_tenant(
     mine_name: str,
 ) -> Dict[str, Any]:
     """
-    Resolve the requested Demo Mode mine/company to the
-    tenant identifiers used by operational tables.
+    Resolve a configured mine or company into the immutable
+    tenant IDs used by public operational tables.
 
-    Primary lookup:
+    Supports:
         public.mine_settings.mine_name
-
-    Fallback:
         public.company_settings.company_name
-
-    This allows a request such as "Achit Ikht LLC" to work
-    even when the configured mine/operation has a different
-    display name.
     """
 
     normalized_name = str(
@@ -105,7 +105,7 @@ def _to_date(
     value: Any,
 ) -> date:
     """
-    Convert ISO date strings to Python date objects.
+    Convert ISO date strings to Python date values.
     """
 
     if isinstance(
@@ -125,6 +125,7 @@ def _safe_float(
 ) -> float:
     try:
         return float(value)
+
     except (
         TypeError,
         ValueError,
@@ -138,11 +139,47 @@ def _safe_int(
 ) -> int:
     try:
         return int(value)
+
     except (
         TypeError,
         ValueError,
     ):
         return default
+
+
+def _create_csv_buffer(
+    rows: List[List[Any]],
+) -> StringIO:
+    """
+    Convert rows into an in-memory CSV file that psycopg2
+    COPY can stream directly into PostgreSQL.
+    """
+
+    buffer = StringIO()
+
+    writer = csv.writer(
+        buffer,
+        lineterminator="\n",
+    )
+
+    for row in rows:
+        writer.writerow(
+            [
+                (
+                    value.isoformat()
+                    if isinstance(
+                        value,
+                        date,
+                    )
+                    else value
+                )
+                for value in row
+            ]
+        )
+
+    buffer.seek(0)
+
+    return buffer
 
 
 # ============================================================
@@ -155,23 +192,23 @@ def aggregate_fleet_by_date(
     ],
 ) -> List[Dict[str, Any]]:
     """
-    The synthetic generator contains multiple equipment
-    records per day.
+    Convert truck/equipment-level synthetic records into
+    one daily Fleet record.
 
-    public.fleet_daily supports one row per:
+    public.fleet_daily supports one row for:
 
         company_id + mine_id + report_date
-
-    Therefore equipment-level records are aggregated into
-    one daily fleet KPI row using average availability and
-    utilization.
     """
 
-    grouped = defaultdict(list)
+    grouped = defaultdict(
+        list
+    )
 
     for record in fleet_records:
         report_date = _to_date(
-            record["report_date"]
+            record[
+                "report_date"
+            ]
         )
 
         grouped[
@@ -252,7 +289,7 @@ def aggregate_fleet_by_date(
 
 
 # ============================================================
-# Safety Conversion
+# Safety Score
 # ============================================================
 
 def _calculate_safety_score(
@@ -261,14 +298,9 @@ def _calculate_safety_score(
     critical_risks: int,
 ) -> float:
     """
-    Produce a simple synthetic composite safety score.
+    Synthetic Demo Mode safety score.
 
-    This is Demo Mode logic only.
-
-    The score is intentionally conservative when:
-        - an incident occurs
-        - critical risks are open
-        - near misses increase
+    This logic is for demonstration only.
     """
 
     score = 100.0
@@ -302,281 +334,207 @@ def _calculate_safety_score(
 
 
 # ============================================================
-# Production Persistence
+# Stage Production
 # ============================================================
 
-def _persist_production(
-    db,
-    tenant: Dict[str, Any],
-    records: List[Dict[str, Any]],
-) -> Dict[str, int]:
+def _copy_production(
+    cursor,
+    records: List[
+        Dict[str, Any]
+    ],
+) -> Dict[str, Any]:
+    """
+    COPY Production records into a temporary staging table.
+    """
 
-    inserted = 0
-    updated = 0
+    started = perf_counter()
 
-    statement = text(
+    cursor.execute(
         """
-        INSERT INTO public.production_daily
+        CREATE TEMP TABLE
+            demo_stage_production
         (
-            company_id,
-            mine_id,
-            mine_name,
+            report_date DATE NOT NULL,
+            ore_plan NUMERIC,
+            ore_actual NUMERIC,
+            waste_plan NUMERIC,
+            waste_actual NUMERIC
+        )
+        ON COMMIT DROP
+        """
+    )
+
+    rows = [
+        [
+            _to_date(
+                record[
+                    "report_date"
+                ]
+            ),
+            _safe_float(
+                record.get(
+                    "ore_plan"
+                )
+            ),
+            _safe_float(
+                record.get(
+                    "ore_actual"
+                )
+            ),
+            _safe_float(
+                record.get(
+                    "waste_plan"
+                )
+            ),
+            _safe_float(
+                record.get(
+                    "waste_actual"
+                )
+            ),
+        ]
+        for record in records
+    ]
+
+    buffer = _create_csv_buffer(
+        rows
+    )
+
+    cursor.copy_expert(
+        """
+        COPY demo_stage_production
+        (
             report_date,
             ore_plan,
             ore_actual,
             waste_plan,
             waste_actual
         )
-        VALUES
+        FROM STDIN
+        WITH
         (
-            :company_id,
-            :mine_id,
-            :mine_name,
-            :report_date,
-            :ore_plan,
-            :ore_actual,
-            :waste_plan,
-            :waste_actual
+            FORMAT CSV
         )
-        ON CONFLICT
-            (
-                company_id,
-                mine_id,
-                report_date
-            )
-        DO UPDATE SET
-            mine_name =
-                EXCLUDED.mine_name,
-
-            ore_plan =
-                EXCLUDED.ore_plan,
-
-            ore_actual =
-                EXCLUDED.ore_actual,
-
-            waste_plan =
-                EXCLUDED.waste_plan,
-
-            waste_actual =
-                EXCLUDED.waste_actual,
-
-            created_at =
-                CURRENT_TIMESTAMP
-
-        RETURNING
-            (xmax = 0)
-            AS inserted
-        """
+        """,
+        buffer,
     )
 
-    for record in records:
-        result = db.execute(
-            statement,
-            {
-                "company_id":
-                    tenant[
-                        "company_id"
-                    ],
-
-                "mine_id":
-                    tenant[
-                        "mine_id"
-                    ],
-
-                "mine_name":
-                    tenant[
-                        "mine_name"
-                    ],
-
-                "report_date":
-                    _to_date(
-                        record[
-                            "report_date"
-                        ]
-                    ),
-
-                "ore_plan":
-                    _safe_float(
-                        record.get(
-                            "ore_plan"
-                        )
-                    ),
-
-                "ore_actual":
-                    _safe_float(
-                        record.get(
-                            "ore_actual"
-                        )
-                    ),
-
-                "waste_plan":
-                    _safe_float(
-                        record.get(
-                            "waste_plan"
-                        )
-                    ),
-
-                "waste_actual":
-                    _safe_float(
-                        record.get(
-                            "waste_actual"
-                        )
-                    ),
-            },
-        ).scalar_one()
-
-        if result:
-            inserted += 1
-        else:
-            updated += 1
-
     return {
-        "inserted":
-            inserted,
+        "staged":
+            len(
+                rows
+            ),
 
-        "updated":
-            updated,
+        "copy_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
     }
 
 
 # ============================================================
-# Plant Persistence
+# Stage Plant
 # ============================================================
 
-def _persist_plant(
-    db,
-    tenant: Dict[str, Any],
-    records: List[Dict[str, Any]],
-) -> Dict[str, int]:
+def _copy_plant(
+    cursor,
+    records: List[
+        Dict[str, Any]
+    ],
+) -> Dict[str, Any]:
 
-    inserted = 0
-    updated = 0
+    started = perf_counter()
 
-    statement = text(
+    cursor.execute(
         """
-        INSERT INTO public.plant_daily
+        CREATE TEMP TABLE
+            demo_stage_plant
         (
-            company_id,
-            mine_id,
-            mine_name,
+            report_date DATE NOT NULL,
+            throughput_plan NUMERIC,
+            throughput_actual NUMERIC,
+            recovery NUMERIC
+        )
+        ON COMMIT DROP
+        """
+    )
+
+    rows = [
+        [
+            _to_date(
+                record[
+                    "report_date"
+                ]
+            ),
+            _safe_float(
+                record.get(
+                    "throughput_plan"
+                )
+            ),
+            _safe_float(
+                record.get(
+                    "throughput_actual"
+                )
+            ),
+            _safe_float(
+                record.get(
+                    "recovery"
+                )
+            ),
+        ]
+        for record in records
+    ]
+
+    buffer = _create_csv_buffer(
+        rows
+    )
+
+    cursor.copy_expert(
+        """
+        COPY demo_stage_plant
+        (
             report_date,
             throughput_plan,
             throughput_actual,
             recovery
         )
-        VALUES
+        FROM STDIN
+        WITH
         (
-            :company_id,
-            :mine_id,
-            :mine_name,
-            :report_date,
-            :throughput_plan,
-            :throughput_actual,
-            :recovery
+            FORMAT CSV
         )
-        ON CONFLICT
-            (
-                company_id,
-                mine_id,
-                report_date
-            )
-        DO UPDATE SET
-            mine_name =
-                EXCLUDED.mine_name,
-
-            throughput_plan =
-                EXCLUDED.throughput_plan,
-
-            throughput_actual =
-                EXCLUDED.throughput_actual,
-
-            recovery =
-                EXCLUDED.recovery,
-
-            created_at =
-                CURRENT_TIMESTAMP
-
-        RETURNING
-            (xmax = 0)
-            AS inserted
-        """
+        """,
+        buffer,
     )
 
-    for record in records:
-        result = db.execute(
-            statement,
-            {
-                "company_id":
-                    tenant[
-                        "company_id"
-                    ],
-
-                "mine_id":
-                    tenant[
-                        "mine_id"
-                    ],
-
-                "mine_name":
-                    tenant[
-                        "mine_name"
-                    ],
-
-                "report_date":
-                    _to_date(
-                        record[
-                            "report_date"
-                        ]
-                    ),
-
-                "throughput_plan":
-                    _safe_float(
-                        record.get(
-                            "throughput_plan"
-                        )
-                    ),
-
-                "throughput_actual":
-                    _safe_float(
-                        record.get(
-                            "throughput_actual"
-                        )
-                    ),
-
-                "recovery":
-                    _safe_float(
-                        record.get(
-                            "recovery"
-                        )
-                    ),
-            },
-        ).scalar_one()
-
-        if result:
-            inserted += 1
-        else:
-            updated += 1
-
     return {
-        "inserted":
-            inserted,
+        "staged":
+            len(
+                rows
+            ),
 
-        "updated":
-            updated,
+        "copy_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
     }
 
 
 # ============================================================
-# Fleet Persistence
+# Stage Fleet
 # ============================================================
 
-def _persist_fleet(
-    db,
-    tenant: Dict[str, Any],
-    records: List[Dict[str, Any]],
-) -> Dict[str, int]:
+def _copy_fleet(
+    cursor,
+    records: List[
+        Dict[str, Any]
+    ],
+) -> Dict[str, Any]:
 
-    inserted = 0
-    updated = 0
+    started = perf_counter()
 
     daily_records = (
         aggregate_fleet_by_date(
@@ -584,182 +542,108 @@ def _persist_fleet(
         )
     )
 
-    statement = text(
+    cursor.execute(
         """
-        INSERT INTO public.fleet_daily
+        CREATE TEMP TABLE
+            demo_stage_fleet
         (
-            company_id,
-            mine_id,
-            mine_name,
+            report_date DATE NOT NULL,
+            availability NUMERIC,
+            utilization NUMERIC
+        )
+        ON COMMIT DROP
+        """
+    )
+
+    rows = [
+        [
+            record[
+                "report_date"
+            ],
+            _safe_float(
+                record.get(
+                    "availability"
+                )
+            ),
+            _safe_float(
+                record.get(
+                    "utilization"
+                )
+            ),
+        ]
+        for record in daily_records
+    ]
+
+    buffer = _create_csv_buffer(
+        rows
+    )
+
+    cursor.copy_expert(
+        """
+        COPY demo_stage_fleet
+        (
             report_date,
             availability,
             utilization
         )
-        VALUES
+        FROM STDIN
+        WITH
         (
-            :company_id,
-            :mine_id,
-            :mine_name,
-            :report_date,
-            :availability,
-            :utilization
+            FORMAT CSV
         )
-        ON CONFLICT
-            (
-                company_id,
-                mine_id,
-                report_date
-            )
-        DO UPDATE SET
-            mine_name =
-                EXCLUDED.mine_name,
-
-            availability =
-                EXCLUDED.availability,
-
-            utilization =
-                EXCLUDED.utilization,
-
-            created_at =
-                CURRENT_TIMESTAMP
-
-        RETURNING
-            (xmax = 0)
-            AS inserted
-        """
+        """,
+        buffer,
     )
 
-    for record in daily_records:
-        result = db.execute(
-            statement,
-            {
-                "company_id":
-                    tenant[
-                        "company_id"
-                    ],
-
-                "mine_id":
-                    tenant[
-                        "mine_id"
-                    ],
-
-                "mine_name":
-                    tenant[
-                        "mine_name"
-                    ],
-
-                "report_date":
-                    record[
-                        "report_date"
-                    ],
-
-                "availability":
-                    _safe_float(
-                        record.get(
-                            "availability"
-                        )
-                    ),
-
-                "utilization":
-                    _safe_float(
-                        record.get(
-                            "utilization"
-                        )
-                    ),
-            },
-        ).scalar_one()
-
-        if result:
-            inserted += 1
-        else:
-            updated += 1
-
     return {
-        "inserted":
-            inserted,
-
-        "updated":
-            updated,
-
         "source_records":
             len(
                 records
             ),
 
-        "daily_records":
+        "staged":
             len(
-                daily_records
+                rows
+            ),
+
+        "copy_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
             ),
     }
 
 
 # ============================================================
-# Safety Persistence
+# Stage Safety
 # ============================================================
 
-def _persist_safety(
-    db,
-    tenant: Dict[str, Any],
-    records: List[Dict[str, Any]],
-) -> Dict[str, int]:
+def _copy_safety(
+    cursor,
+    records: List[
+        Dict[str, Any]
+    ],
+) -> Dict[str, Any]:
 
-    inserted = 0
-    updated = 0
+    started = perf_counter()
 
-    statement = text(
+    cursor.execute(
         """
-        INSERT INTO public.safety_daily
+        CREATE TEMP TABLE
+            demo_stage_safety
         (
-            company_id,
-            mine_id,
-            mine_name,
-            report_date,
-            incidents,
-            near_misses,
-            critical_risks,
-            safety_score
+            report_date DATE NOT NULL,
+            incidents INTEGER,
+            near_misses INTEGER,
+            critical_risks INTEGER,
+            safety_score NUMERIC
         )
-        VALUES
-        (
-            :company_id,
-            :mine_id,
-            :mine_name,
-            :report_date,
-            :incidents,
-            :near_misses,
-            :critical_risks,
-            :safety_score
-        )
-        ON CONFLICT
-            (
-                company_id,
-                mine_id,
-                report_date
-            )
-        DO UPDATE SET
-            mine_name =
-                EXCLUDED.mine_name,
-
-            incidents =
-                EXCLUDED.incidents,
-
-            near_misses =
-                EXCLUDED.near_misses,
-
-            critical_risks =
-                EXCLUDED.critical_risks,
-
-            safety_score =
-                EXCLUDED.safety_score,
-
-            created_at =
-                CURRENT_TIMESTAMP
-
-        RETURNING
-            (xmax = 0)
-            AS inserted
+        ON COMMIT DROP
         """
     )
+
+    rows = []
 
     for record in records:
         incidents = _safe_int(
@@ -788,67 +672,400 @@ def _persist_safety(
 
         safety_score = (
             _calculate_safety_score(
-                incidents=incidents,
-                near_misses=near_misses,
-                critical_risks=critical_risks,
+                incidents=
+                    incidents,
+
+                near_misses=
+                    near_misses,
+
+                critical_risks=
+                    critical_risks,
             )
         )
 
-        result = db.execute(
-            statement,
-            {
-                "company_id":
-                    tenant[
-                        "company_id"
-                    ],
+        rows.append(
+            [
+                _to_date(
+                    record[
+                        "report_date"
+                    ]
+                ),
+                incidents,
+                near_misses,
+                critical_risks,
+                safety_score,
+            ]
+        )
 
-                "mine_id":
-                    tenant[
-                        "mine_id"
-                    ],
+    buffer = _create_csv_buffer(
+        rows
+    )
 
-                "mine_name":
-                    tenant[
-                        "mine_name"
-                    ],
-
-                "report_date":
-                    _to_date(
-                        record[
-                            "report_date"
-                        ]
-                    ),
-
-                "incidents":
-                    incidents,
-
-                "near_misses":
-                    near_misses,
-
-                "critical_risks":
-                    critical_risks,
-
-                "safety_score":
-                    safety_score,
-            },
-        ).scalar_one()
-
-        if result:
-            inserted += 1
-        else:
-            updated += 1
+    cursor.copy_expert(
+        """
+        COPY demo_stage_safety
+        (
+            report_date,
+            incidents,
+            near_misses,
+            critical_risks,
+            safety_score
+        )
+        FROM STDIN
+        WITH
+        (
+            FORMAT CSV
+        )
+        """,
+        buffer,
+    )
 
     return {
-        "inserted":
-            inserted,
+        "staged":
+            len(
+                rows
+            ),
 
-        "updated":
-            updated,
+        "copy_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
     }
 
 
 # ============================================================
-# Public Persistence Function
+# Server-Side Production UPSERT
+# ============================================================
+
+def _upsert_production(
+    cursor,
+    tenant: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    started = perf_counter()
+
+    cursor.execute(
+        """
+        INSERT INTO public.production_daily
+        (
+            company_id,
+            mine_id,
+            mine_name,
+            report_date,
+            ore_plan,
+            ore_actual,
+            waste_plan,
+            waste_actual
+        )
+        SELECT
+            %s,
+            %s,
+            %s,
+            report_date,
+            ore_plan,
+            ore_actual,
+            waste_plan,
+            waste_actual
+        FROM demo_stage_production
+
+        ON CONFLICT
+        (
+            company_id,
+            mine_id,
+            report_date
+        )
+        DO UPDATE SET
+            mine_name =
+                EXCLUDED.mine_name,
+
+            ore_plan =
+                EXCLUDED.ore_plan,
+
+            ore_actual =
+                EXCLUDED.ore_actual,
+
+            waste_plan =
+                EXCLUDED.waste_plan,
+
+            waste_actual =
+                EXCLUDED.waste_actual,
+
+            created_at =
+                CURRENT_TIMESTAMP
+        """,
+        (
+            tenant[
+                "company_id"
+            ],
+            tenant[
+                "mine_id"
+            ],
+            tenant[
+                "mine_name"
+            ],
+        ),
+    )
+
+    return {
+        "upserted":
+            cursor.rowcount,
+
+        "upsert_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
+    }
+
+
+# ============================================================
+# Server-Side Plant UPSERT
+# ============================================================
+
+def _upsert_plant(
+    cursor,
+    tenant: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    started = perf_counter()
+
+    cursor.execute(
+        """
+        INSERT INTO public.plant_daily
+        (
+            company_id,
+            mine_id,
+            mine_name,
+            report_date,
+            throughput_plan,
+            throughput_actual,
+            recovery
+        )
+        SELECT
+            %s,
+            %s,
+            %s,
+            report_date,
+            throughput_plan,
+            throughput_actual,
+            recovery
+        FROM demo_stage_plant
+
+        ON CONFLICT
+        (
+            company_id,
+            mine_id,
+            report_date
+        )
+        DO UPDATE SET
+            mine_name =
+                EXCLUDED.mine_name,
+
+            throughput_plan =
+                EXCLUDED.throughput_plan,
+
+            throughput_actual =
+                EXCLUDED.throughput_actual,
+
+            recovery =
+                EXCLUDED.recovery,
+
+            created_at =
+                CURRENT_TIMESTAMP
+        """,
+        (
+            tenant[
+                "company_id"
+            ],
+            tenant[
+                "mine_id"
+            ],
+            tenant[
+                "mine_name"
+            ],
+        ),
+    )
+
+    return {
+        "upserted":
+            cursor.rowcount,
+
+        "upsert_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
+    }
+
+
+# ============================================================
+# Server-Side Fleet UPSERT
+# ============================================================
+
+def _upsert_fleet(
+    cursor,
+    tenant: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    started = perf_counter()
+
+    cursor.execute(
+        """
+        INSERT INTO public.fleet_daily
+        (
+            company_id,
+            mine_id,
+            mine_name,
+            report_date,
+            availability,
+            utilization
+        )
+        SELECT
+            %s,
+            %s,
+            %s,
+            report_date,
+            availability,
+            utilization
+        FROM demo_stage_fleet
+
+        ON CONFLICT
+        (
+            company_id,
+            mine_id,
+            report_date
+        )
+        DO UPDATE SET
+            mine_name =
+                EXCLUDED.mine_name,
+
+            availability =
+                EXCLUDED.availability,
+
+            utilization =
+                EXCLUDED.utilization,
+
+            created_at =
+                CURRENT_TIMESTAMP
+        """,
+        (
+            tenant[
+                "company_id"
+            ],
+            tenant[
+                "mine_id"
+            ],
+            tenant[
+                "mine_name"
+            ],
+        ),
+    )
+
+    return {
+        "upserted":
+            cursor.rowcount,
+
+        "upsert_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
+    }
+
+
+# ============================================================
+# Server-Side Safety UPSERT
+# ============================================================
+
+def _upsert_safety(
+    cursor,
+    tenant: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    started = perf_counter()
+
+    cursor.execute(
+        """
+        INSERT INTO public.safety_daily
+        (
+            company_id,
+            mine_id,
+            mine_name,
+            report_date,
+            incidents,
+            near_misses,
+            critical_risks,
+            safety_score
+        )
+        SELECT
+            %s,
+            %s,
+            %s,
+            report_date,
+            incidents,
+            near_misses,
+            critical_risks,
+            safety_score
+        FROM demo_stage_safety
+
+        ON CONFLICT
+        (
+            company_id,
+            mine_id,
+            report_date
+        )
+        DO UPDATE SET
+            mine_name =
+                EXCLUDED.mine_name,
+
+            incidents =
+                EXCLUDED.incidents,
+
+            near_misses =
+                EXCLUDED.near_misses,
+
+            critical_risks =
+                EXCLUDED.critical_risks,
+
+            safety_score =
+                EXCLUDED.safety_score,
+
+            created_at =
+                CURRENT_TIMESTAMP
+        """,
+        (
+            tenant[
+                "company_id"
+            ],
+            tenant[
+                "mine_id"
+            ],
+            tenant[
+                "mine_name"
+            ],
+        ),
+    )
+
+    return {
+        "upserted":
+            cursor.rowcount,
+
+        "upsert_seconds":
+            round(
+                perf_counter()
+                - started,
+                3,
+            ),
+    }
+
+
+# ============================================================
+# Main Persistence Function
 # ============================================================
 
 def persist_demo_data(
@@ -856,11 +1073,20 @@ def persist_demo_data(
     mine_name: str,
 ) -> Dict[str, Any]:
     """
-    Persist generated Demo Mode history into the current
-    tenant-aware operational tables.
+    Persist the complete synthetic operating history using
+    PostgreSQL native COPY and temporary staging tables.
 
-    The operation is transactional:
-    either all four datasets are committed or none are.
+    Flow:
+
+        Generate data
+             ↓
+        COPY into TEMP tables
+             ↓
+        INSERT ... SELECT
+             ↓
+        ON CONFLICT DO UPDATE
+             ↓
+        COMMIT once
 
     Current persisted domains:
         Production
@@ -868,10 +1094,22 @@ def persist_demo_data(
         Fleet
         Safety
 
-    Maintenance and Workforce remain generated in memory
-    because no corresponding tenant-aware public operational
-    tables currently exist.
+    Maintenance and Workforce remain in memory because
+    tenant-aware public tables do not currently exist.
     """
+
+    total_started = (
+        perf_counter()
+    )
+
+
+    # --------------------------------------------------------
+    # Resolve tenant using existing SQLAlchemy session
+    # --------------------------------------------------------
+
+    tenant_started = (
+        perf_counter()
+    )
 
     db = SessionLocal()
 
@@ -883,55 +1121,137 @@ def persist_demo_data(
             )
         )
 
-        production_result = (
-            _persist_production(
-                db=db,
-                tenant=tenant,
-                records=demo_data.get(
+    finally:
+        db.close()
+
+    tenant_seconds = (
+        perf_counter()
+        - tenant_started
+    )
+
+
+    # --------------------------------------------------------
+    # Native psycopg2 connection
+    # --------------------------------------------------------
+
+    raw_connection = (
+        engine.raw_connection()
+    )
+
+    cursor = None
+
+    try:
+        cursor = (
+            raw_connection.cursor()
+        )
+
+
+        # ----------------------------------------------------
+        # COPY → staging tables
+        # ----------------------------------------------------
+
+        production_copy = (
+            _copy_production(
+                cursor,
+                demo_data.get(
                     "production",
                     [],
                 ),
             )
         )
 
-        plant_result = (
-            _persist_plant(
-                db=db,
-                tenant=tenant,
-                records=demo_data.get(
+        plant_copy = (
+            _copy_plant(
+                cursor,
+                demo_data.get(
                     "plant",
                     [],
                 ),
             )
         )
 
-        fleet_result = (
-            _persist_fleet(
-                db=db,
-                tenant=tenant,
-                records=demo_data.get(
+        fleet_copy = (
+            _copy_fleet(
+                cursor,
+                demo_data.get(
                     "fleet",
                     [],
                 ),
             )
         )
 
-        safety_result = (
-            _persist_safety(
-                db=db,
-                tenant=tenant,
-                records=demo_data.get(
+        safety_copy = (
+            _copy_safety(
+                cursor,
+                demo_data.get(
                     "safety",
                     [],
                 ),
             )
         )
 
-        db.commit()
+
+        # ----------------------------------------------------
+        # Server-side UPSERT
+        # ----------------------------------------------------
+
+        production_upsert = (
+            _upsert_production(
+                cursor,
+                tenant,
+            )
+        )
+
+        plant_upsert = (
+            _upsert_plant(
+                cursor,
+                tenant,
+            )
+        )
+
+        fleet_upsert = (
+            _upsert_fleet(
+                cursor,
+                tenant,
+            )
+        )
+
+        safety_upsert = (
+            _upsert_safety(
+                cursor,
+                tenant,
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # Commit once
+        # ----------------------------------------------------
+
+        commit_started = (
+            perf_counter()
+        )
+
+        raw_connection.commit()
+
+        commit_seconds = (
+            perf_counter()
+            - commit_started
+        )
+
+
+        total_seconds = (
+            perf_counter()
+            - total_started
+        )
+
 
         return {
             "success":
                 True,
+
+            "mode":
+                "postgresql_copy_upsert",
 
             "tenant": {
                 "company_id":
@@ -955,28 +1275,61 @@ def persist_demo_data(
                     ],
             },
 
-            "production":
-                production_result,
+            "production": {
+                **production_copy,
+                **production_upsert,
+            },
 
-            "plant":
-                plant_result,
+            "plant": {
+                **plant_copy,
+                **plant_upsert,
+            },
 
-            "fleet":
-                fleet_result,
+            "fleet": {
+                **fleet_copy,
+                **fleet_upsert,
+            },
 
-            "safety":
-                safety_result,
+            "safety": {
+                **safety_copy,
+                **safety_upsert,
+            },
 
             "maintenance_persisted":
                 False,
 
             "workforce_persisted":
                 False,
+
+            "timing": {
+                "tenant_resolution_seconds":
+                    round(
+                        tenant_seconds,
+                        3,
+                    ),
+
+                "commit_seconds":
+                    round(
+                        commit_seconds,
+                        3,
+                    ),
+
+                "total_seconds":
+                    round(
+                        total_seconds,
+                        3,
+                    ),
+            },
         }
 
+
     except Exception:
-        db.rollback()
+        raw_connection.rollback()
         raise
 
+
     finally:
-        db.close()
+        if cursor is not None:
+            cursor.close()
+
+        raw_connection.close()

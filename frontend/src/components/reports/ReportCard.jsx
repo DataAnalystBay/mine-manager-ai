@@ -10,7 +10,40 @@ import {
 } from "@mui/material";
 
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
+import SlideshowRoundedIcon from "@mui/icons-material/SlideshowRounded";
+
 import { useLanguage } from "../../context/LanguageContext";
+
+function getFormatTheme(format = "PDF") {
+  const normalizedFormat = String(format).toUpperCase();
+
+  if (
+    normalizedFormat === "PPTX" ||
+    normalizedFormat === "PPT" ||
+    normalizedFormat === "POWERPOINT"
+  ) {
+    return {
+      label: "PPTX",
+      color: "#d24726",
+      dark: "#b83a1f",
+      soft: "#fff4f0",
+      border: "#f4c9bd",
+      shadow: "0 5px 14px rgba(210, 71, 38, 0.14)",
+      Icon: SlideshowRoundedIcon,
+    };
+  }
+
+  return {
+    label: "PDF",
+    color: "#dc2626",
+    dark: "#b91c1c",
+    soft: "#fef2f2",
+    border: "#fecaca",
+    shadow: "0 5px 14px rgba(220, 38, 38, 0.12)",
+    Icon: PictureAsPdfRoundedIcon,
+  };
+}
 
 function ReportCard({
   title,
@@ -27,279 +60,366 @@ function ReportCard({
   badge,
 }) {
   const { t } = useLanguage();
-  const accentColor = featured ? "#f97316" : "#16a34a";
-  const accentDark = featured ? "#ea580c" : "#15803d";
-  const accentLight = featured ? "#fff7ed" : "#ecfdf5";
-  const accentBorder = featured ? "#fed7aa" : "#d1fae5";
+
+  const theme = getFormatTheme(format);
+  const FormatIcon = theme.Icon;
+
+  const visibleSections = sections.slice(0, 3);
 
   return (
     <Card
+      elevation={0}
       sx={{
         height: "100%",
-        minHeight: 410,
-        borderRadius: "24px",
+        minHeight: 238,
+        borderRadius: "14px",
         border: featured
-          ? "1px solid #fdba74"
-          : "1px solid #e5e7eb",
+          ? `1px solid ${theme.border}`
+          : "1px solid #e2e8f0",
+        background: "#ffffff",
         boxShadow: featured
-          ? "0 24px 55px rgba(249, 115, 22, 0.16)"
-          : "0 18px 45px rgba(15, 23, 42, 0.08)",
-        transition: "0.22s ease",
-        background: featured
-          ? "linear-gradient(155deg, #ffffff 0%, #fff7ed 100%)"
-          : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+          ? theme.shadow
+          : "0 2px 8px rgba(15, 23, 42, 0.035)",
         position: "relative",
         overflow: "hidden",
+        transition:
+          "border-color 160ms ease, box-shadow 160ms ease",
+
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          bgcolor: theme.color,
+          opacity: featured ? 1 : 0.85,
+        },
+
         "&:hover": {
-          transform: "translateY(-5px)",
-          boxShadow: featured
-            ? "0 30px 70px rgba(249, 115, 22, 0.22)"
-            : "0 24px 60px rgba(15, 23, 42, 0.13)",
+          borderColor: theme.border,
+          boxShadow:
+            "0 5px 16px rgba(15, 23, 42, 0.07)",
         },
       }}
     >
-      {featured && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: 5,
-            bgcolor: accentColor,
-          }}
-        />
-      )}
-
       <CardContent
         sx={{
           p: {
-            xs: 2.5,
-            md: 3,
+            xs: 2,
+            md: 2.15,
           },
           height: "100%",
+
           "&:last-child": {
             pb: {
-              xs: 2.5,
-              md: 3,
+              xs: 2,
+              md: 2.15,
             },
           },
         }}
       >
         <Stack
-          spacing={2.1}
+          spacing={1.35}
           sx={{
             height: "100%",
           }}
         >
+          {/* =====================================================
+              TOP ROW
+              ===================================================== */}
+
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              gap: 2,
+              gap: 1.25,
             }}
           >
-            <Box sx={{ minWidth: 0 }}>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                useFlexGap
-                flexWrap="wrap"
-              >
-                <Typography
-                  sx={{
-                    fontSize: {
-                      xs: 19,
-                      md: featured ? 23 : 20,
-                    },
-                    fontWeight: 900,
-                    color: "#0f172a",
-                    lineHeight: 1.2,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {title}
-                </Typography>
-
-                {badge && (
-                  <Chip
-                    label={badge}
-                    size="small"
+            <Stack
+              direction="row"
+              spacing={0.7}
+              alignItems="center"
+              useFlexGap
+              flexWrap="wrap"
+            >
+              <Chip
+                icon={
+                  <FormatIcon
                     sx={{
-                      height: 23,
-                      bgcolor: "#ffedd5",
-                      color: "#c2410c",
-                      border: "1px solid #fed7aa",
-                      fontSize: 10,
-                      fontWeight: 900,
-                      letterSpacing: "0.06em",
+                      fontSize:
+                        "14px !important",
+                      color:
+                        `${theme.color} !important`,
                     }}
                   />
-                )}
-              </Stack>
-
-              <Typography
+                }
+                label={theme.label}
+                size="small"
                 sx={{
-                  mt: 0.85,
-                  maxWidth: 520,
-                  fontSize: 14,
-                  color: "#64748b",
-                  lineHeight: 1.55,
+                  height: 23,
+                  borderRadius: "6px",
+                  bgcolor: theme.soft,
+                  color: theme.color,
+                  border:
+                    `1px solid ${theme.border}`,
+                  fontSize: 9.5,
+                  fontWeight: 900,
+                  letterSpacing: "0.04em",
+
+                  "& .MuiChip-label": {
+                    px: 0.7,
+                  },
+
+                  "& .MuiChip-icon": {
+                    ml: 0.6,
+                  },
                 }}
-              >
-                {subtitle}
-              </Typography>
-            </Box>
+              />
+
+              {badge && (
+                <Chip
+                  label={badge}
+                  size="small"
+                  sx={{
+                    height: 23,
+                    borderRadius: "6px",
+                    bgcolor: "#fff7ed",
+                    color: "#c2410c",
+                    border:
+                      "1px solid #fed7aa",
+                    fontSize: 9.2,
+                    fontWeight: 900,
+
+                    "& .MuiChip-label": {
+                      px: 0.75,
+                    },
+                  }}
+                />
+              )}
+            </Stack>
 
             <Box
               sx={{
-                width: featured ? 52 : 46,
-                height: featured ? 52 : 46,
-                borderRadius: featured ? "18px" : "16px",
-                bgcolor: accentLight,
-                color: accentColor,
-                border: `1px solid ${accentBorder}`,
+                width: 36,
+                height: 36,
+                borderRadius: "10px",
+                bgcolor: theme.soft,
+                color: theme.color,
+                border:
+                  `1px solid ${theme.border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+
                 "& svg": {
-                  fontSize: featured ? 28 : 25,
+                  fontSize: 20,
                 },
               }}
             >
-              {icon}
+              {icon || <FormatIcon />}
             </Box>
           </Box>
 
-          <Stack
-            direction="row"
-            spacing={1}
-            useFlexGap
-            flexWrap="wrap"
-          >
-            <Chip
-              label={frequency}
-              size="small"
-              sx={{
-                bgcolor: "#f1f5f9",
-                color: "#334155",
-                fontWeight: 800,
-                borderRadius: "999px",
-              }}
-            />
+          {/* =====================================================
+              TITLE
+              ===================================================== */}
 
-            <Chip
-              label={format}
-              size="small"
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
               sx={{
-                bgcolor: featured ? "#ffedd5" : "#f0fdf4",
-                color: featured ? "#c2410c" : "#15803d",
-                border: `1px solid ${accentBorder}`,
-                fontWeight: 900,
-                borderRadius: "999px",
+                fontSize: {
+                  xs: 15,
+                  md: 16,
+                },
+                fontWeight: 800,
+                color: "#0f172a",
+                lineHeight: 1.25,
+                letterSpacing: "-0.012em",
               }}
-            />
-          </Stack>
+            >
+              {title}
+            </Typography>
+
+            {subtitle && (
+              <Typography
+                sx={{
+                  mt: 0.35,
+                  fontSize: 11.2,
+                  color: "#64748b",
+                  lineHeight: 1.42,
+                  fontWeight: 500,
+                }}
+              >
+                {subtitle}
+              </Typography>
+            )}
+          </Box>
+
+          {/* =====================================================
+              INCLUDED ITEMS
+              ===================================================== */}
+
+          {visibleSections.length > 0 && (
+            <Box
+              sx={{
+                pt: 1.1,
+                borderTop:
+                  "1px solid #eef2f7",
+                flexGrow: 1,
+              }}
+            >
+              <Typography
+                sx={{
+                  mb: 0.8,
+                  color: "#94a3b8",
+                  fontSize: 8.8,
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {t("reports.includes")}
+              </Typography>
+
+              <Stack spacing={0.65}>
+                {visibleSections.map(
+                  (section) => (
+                    <Box
+                      key={section}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.55,
+                      }}
+                    >
+                      <CheckCircleRoundedIcon
+                        sx={{
+                          fontSize: 13.5,
+                          color:
+                            theme.color,
+                          flexShrink: 0,
+                        }}
+                      />
+
+                      <Typography
+                        sx={{
+                          fontSize: 10.4,
+                          color: "#475569",
+                          fontWeight: 650,
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {section}
+                      </Typography>
+                    </Box>
+                  )
+                )}
+              </Stack>
+            </Box>
+          )}
+
+          {/* =====================================================
+              FOOTER
+              ===================================================== */}
 
           <Box
             sx={{
-              borderTop: "1px solid #e5e7eb",
-              pt: 1.8,
-              flexGrow: 1,
+              pt: 1.1,
+              borderTop:
+                "1px solid #eef2f7",
+              display: "flex",
+              alignItems: "center",
+              justifyContent:
+                "space-between",
+              gap: 1,
+              mt: "auto",
             }}
           >
-            <Typography
+            {/* Frequency — simplified for cleaner UI */}
+            <Box
               sx={{
-                fontSize: 11,
-                fontWeight: 900,
-                color: "#94a3b8",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                mb: 1.25,
+                minWidth: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.65,
               }}
             >
-              {t("reports.includes")}
-            </Typography>
+              <Box
+                sx={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  bgcolor: "#94a3b8",
+                  flexShrink: 0,
+                }}
+              />
 
-            <Stack spacing={1.05}>
-              {sections.map((section) => (
-                <Box
-                  key={section}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    minHeight: 23,
-                  }}
-                >
-                  <CheckCircleRoundedIcon
+              <Typography
+                sx={{
+                  color: "#64748b",
+                  fontSize: 10.2,
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                }}
+              >
+                {frequency}
+              </Typography>
+            </Box>
+
+            <Button
+              variant="contained"
+              disabled={disabled}
+              onClick={onClick}
+              disableElevation
+              startIcon={
+                loading ? (
+                  <CircularProgress
+                    size={13}
+                    thickness={5}
                     sx={{
-                      fontSize: 16,
-                      color: accentColor,
-                      flexShrink: 0,
+                      color: "inherit",
                     }}
                   />
-
-                  <Typography
+                ) : (
+                  <FormatIcon
                     sx={{
-                      fontSize: 13.5,
-                      color: "#334155",
-                      fontWeight: 700,
-                      lineHeight: 1.35,
+                      fontSize:
+                        "15px !important",
                     }}
-                  >
-                    {section}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-
-          <Button
-            fullWidth
-            variant="contained"
-            disabled={disabled}
-            onClick={onClick}
-            startIcon={
-              loading ? (
-                <CircularProgress
-                  size={17}
-                  thickness={5}
-                  sx={{
-                    color: "inherit",
-                  }}
-                />
-              ) : null
-            }
-            sx={{
-              mt: "auto",
-              py: 1.35,
-              minHeight: 46,
-              borderRadius: "14px",
-              bgcolor: accentColor,
-              color: "#ffffff",
-              fontWeight: 900,
-              textTransform: "none",
-              boxShadow: featured
-                ? "0 14px 28px rgba(249, 115, 22, 0.3)"
-                : "0 12px 24px rgba(22, 163, 74, 0.25)",
-              "&:hover": {
-                bgcolor: accentDark,
-                boxShadow: featured
-                  ? "0 18px 34px rgba(249, 115, 22, 0.36)"
-                  : "0 16px 30px rgba(22, 163, 74, 0.32)",
-              },
-              "&.Mui-disabled": {
-                bgcolor: featured ? "#fdba74" : "#86efac",
+                  />
+                )
+              }
+              sx={{
+                minHeight: 34,
+                px: 1.4,
+                py: 0.65,
+                borderRadius: "8px",
+                bgcolor: theme.color,
                 color: "#ffffff",
-              },
-            }}
-          >
-            {buttonText}
-          </Button>
+                fontSize: 10.2,
+                fontWeight: 800,
+                textTransform: "none",
+                whiteSpace: "nowrap",
+                boxShadow: theme.shadow,
+
+                "&:hover": {
+                  bgcolor: theme.dark,
+                  boxShadow: theme.shadow,
+                },
+
+                "&.Mui-disabled": {
+                  bgcolor: "#e2e8f0",
+                  color: "#94a3b8",
+                  boxShadow: "none",
+                },
+              }}
+            >
+              {buttonText}
+            </Button>
+          </Box>
         </Stack>
       </CardContent>
     </Card>

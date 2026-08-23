@@ -1,21 +1,42 @@
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_current_user
-from app.database import SessionLocal
+from app.auth.dependencies import (
+    get_current_user,
+)
 
+from app.database import (
+    SessionLocal,
+)
+
+
+# ============================================================
+# Router
+# ============================================================
 
 router = APIRouter(
     prefix="/api/production",
     tags=["Production"],
     dependencies=[
-        Depends(get_current_user),
+        Depends(
+            get_current_user
+        ),
     ],
 )
 
+
+# ============================================================
+# Active Tenant
+# ============================================================
 
 ACTIVE_COMPANY_ID = int(
     os.getenv(
@@ -33,6 +54,19 @@ ACTIVE_MINE_ID = int(
 
 
 # ============================================================
+# Supported Historical Ranges
+# ============================================================
+
+SUPPORTED_TREND_RANGES = {
+    "30D",
+    "90D",
+    "1Y",
+    "3Y",
+    "5Y",
+}
+
+
+# ============================================================
 # DATABASE DEPENDENCY
 # ============================================================
 
@@ -45,6 +79,7 @@ def get_db():
 
     try:
         yield db
+
     finally:
         db.close()
 
@@ -82,14 +117,19 @@ def resolve_active_tenant(
             """
         ),
         {
-            "company_id": ACTIVE_COMPANY_ID,
-            "mine_id": ACTIVE_MINE_ID,
+            "company_id":
+                ACTIVE_COMPANY_ID,
+
+            "mine_id":
+                ACTIVE_MINE_ID,
         },
     ).mappings().first()
 
     if tenant is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
             detail=(
                 "Active tenant was not found: "
                 f"company_id={ACTIVE_COMPANY_ID}, "
@@ -98,7 +138,10 @@ def resolve_active_tenant(
         )
 
     mine_type = str(
-        tenant["mine_type"] or ""
+        tenant[
+            "mine_type"
+        ]
+        or ""
     ).strip().lower()
 
     is_sxew_operation = (
@@ -108,34 +151,56 @@ def resolve_active_tenant(
             "sx-ew",
             "hydrometallurgical copper processing",
         }
-        or tenant["mine_name"]
-        == "Achit-Ikht Copper Cathode Operation"
+        or tenant[
+            "mine_name"
+        ]
+        == (
+            "Achit-Ikht Copper "
+            "Cathode Operation"
+        )
     )
 
     return {
-        "company_id": int(
-            tenant["company_id"]
-        ),
-        "mine_id": int(
-            tenant["mine_id"]
-        ),
-        "company_name": tenant[
-            "company_name"
-        ],
-        "mine_name": tenant[
-            "mine_name"
-        ],
-        "mine_type": tenant[
-            "mine_type"
-        ],
-        "operation_profile": (
-            "sxew_copper"
-            if is_sxew_operation
-            else "standard_mine"
-        ),
-        "waste_applicable": (
-            not is_sxew_operation
-        ),
+        "company_id":
+            int(
+                tenant[
+                    "company_id"
+                ]
+            ),
+
+        "mine_id":
+            int(
+                tenant[
+                    "mine_id"
+                ]
+            ),
+
+        "company_name":
+            tenant[
+                "company_name"
+            ],
+
+        "mine_name":
+            tenant[
+                "mine_name"
+            ],
+
+        "mine_type":
+            tenant[
+                "mine_type"
+            ],
+
+        "operation_profile":
+            (
+                "sxew_copper"
+                if is_sxew_operation
+                else "standard_mine"
+            ),
+
+        "waste_applicable":
+            (
+                not is_sxew_operation
+            ),
     }
 
 
@@ -159,45 +224,82 @@ def build_production_metadata(
     """
 
     if (
-        tenant["operation_profile"]
+        tenant[
+            "operation_profile"
+        ]
         == "sxew_copper"
     ):
         return {
-            "production_label": (
-                "Cathode Production"
-            ),
-            "production_unit": "t",
-            "ore_label": (
-                "Cathode Production"
-            ),
-            "waste_label": (
-                "Not Applicable"
-            ),
-            "waste_applicable": False,
+            "production_label":
+                "Cathode Production",
+
+            "production_unit":
+                "t",
+
+            "ore_label":
+                "Cathode Production",
+
+            "waste_label":
+                "Not Applicable",
+
+            "waste_applicable":
+                False,
         }
 
     return {
-        "production_label": (
-            "Ore Production"
-        ),
-        "production_unit": "t",
-        "ore_label": (
-            "Ore Production"
-        ),
-        "waste_label": (
-            "Waste Movement"
-        ),
-        "waste_applicable": True,
+        "production_label":
+            "Ore Production",
+
+        "production_unit":
+            "t",
+
+        "ore_label":
+            "Ore Production",
+
+        "waste_label":
+            "Waste Movement",
+
+        "waste_applicable":
+            True,
     }
+
+
+# ============================================================
+# TREND RANGE NORMALIZATION
+# ============================================================
+
+def normalize_trend_range(
+    requested_range: str,
+) -> str:
+    """
+    Normalize and validate the Production trend range.
+    """
+
+    normalized = str(
+        requested_range
+        or "30D"
+    ).strip().upper()
+
+    if (
+        normalized
+        not in SUPPORTED_TREND_RANGES
+    ):
+        return "30D"
+
+    return normalized
 
 
 # ============================================================
 # TODAY
 # ============================================================
 
-@router.get("/today")
+@router.get(
+    "/today"
+)
 def get_today_production(
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
     """
     Return the latest available Production record for the
@@ -210,8 +312,10 @@ def get_today_production(
     """
 
     try:
-        tenant = resolve_active_tenant(
-            db=db,
+        tenant = (
+            resolve_active_tenant(
+                db=db,
+            )
         )
 
         metadata = (
@@ -242,57 +346,70 @@ def get_today_production(
         result = db.execute(
             query,
             {
-                "company_id": (
+                "company_id":
                     tenant[
                         "company_id"
-                    ]
-                ),
-                "mine_id": (
+                    ],
+
+                "mine_id":
                     tenant[
                         "mine_id"
-                    ]
-                ),
+                    ],
             },
         ).mappings().first()
 
         if not result:
             return {
-                "company_id": (
+                "company_id":
                     tenant[
                         "company_id"
-                    ]
-                ),
-                "mine_id": (
+                    ],
+
+                "mine_id":
                     tenant[
                         "mine_id"
-                    ]
-                ),
-                "company_name": (
+                    ],
+
+                "company_name":
                     tenant[
                         "company_name"
-                    ]
-                ),
-                "mine_name": (
+                    ],
+
+                "mine_name":
                     tenant[
                         "mine_name"
-                    ]
-                ),
-                "operation_profile": (
+                    ],
+
+                "operation_profile":
                     tenant[
                         "operation_profile"
-                    ]
-                ),
+                    ],
+
                 **metadata,
-                "message": (
-                    "No production data found"
-                ),
-                "report_date": None,
-                "ore_plan": 0,
-                "ore_actual": 0,
-                "ore_variance": 0,
-                "waste_plan": 0,
-                "waste_actual": 0,
-                "waste_variance": 0,
+
+                "message":
+                    "No production data found",
+
+                "report_date":
+                    None,
+
+                "ore_plan":
+                    0,
+
+                "ore_actual":
+                    0,
+
+                "ore_variance":
+                    0,
+
+                "waste_plan":
+                    0,
+
+                "waste_actual":
+                    0,
+
+                "waste_variance":
+                    0,
             }
 
         ore_plan = float(
@@ -336,64 +453,74 @@ def get_today_production(
         )
 
         return {
-            "company_id": (
+            "company_id":
                 tenant[
                     "company_id"
-                ]
-            ),
-            "mine_id": (
+                ],
+
+            "mine_id":
                 tenant[
                     "mine_id"
-                ]
-            ),
-            "company_name": (
+                ],
+
+            "company_name":
                 tenant[
                     "company_name"
-                ]
-            ),
-            "mine_name": (
+                ],
+
+            "mine_name":
                 tenant[
                     "mine_name"
-                ]
-            ),
-            "mine_type": (
+                ],
+
+            "mine_type":
                 tenant[
                     "mine_type"
-                ]
-            ),
-            "operation_profile": (
+                ],
+
+            "operation_profile":
                 tenant[
                     "operation_profile"
-                ]
-            ),
+                ],
+
             **metadata,
-            "report_date": str(
-                result[
-                    "report_date"
-                ]
-            ),
-            "ore_plan": round(
-                ore_plan,
-                2,
-            ),
-            "ore_actual": round(
-                ore_actual,
-                2,
-            ),
-            "ore_variance": (
-                ore_variance
-            ),
-            "waste_plan": round(
-                waste_plan,
-                2,
-            ),
-            "waste_actual": round(
-                waste_actual,
-                2,
-            ),
-            "waste_variance": (
-                waste_variance
-            ),
+
+            "report_date":
+                str(
+                    result[
+                        "report_date"
+                    ]
+                ),
+
+            "ore_plan":
+                round(
+                    ore_plan,
+                    2,
+                ),
+
+            "ore_actual":
+                round(
+                    ore_actual,
+                    2,
+                ),
+
+            "ore_variance":
+                ore_variance,
+
+            "waste_plan":
+                round(
+                    waste_plan,
+                    2,
+                ),
+
+            "waste_actual":
+                round(
+                    waste_actual,
+                    2,
+                ),
+
+            "waste_variance":
+                waste_variance,
         }
 
     except HTTPException:
@@ -416,20 +543,50 @@ def get_today_production(
 # TREND
 # ============================================================
 
-@router.get("/trend")
+@router.get(
+    "/trend"
+)
 def get_production_trend(
-    db: Session = Depends(get_db),
+    range: str = "30D",
+    db: Session = Depends(
+        get_db
+    ),
 ):
     """
-    Return up to 30 recent Production records for the active
-    tenant in chronological order.
+    Return Production trend data for the active tenant.
 
-    company_id + mine_id provide the tenant-security boundary.
+    Supported ranges:
+
+        30D
+            Latest 30 reporting periods.
+            Daily resolution.
+
+        90D
+            Latest 90 reporting periods.
+            Daily resolution.
+
+        1Y
+            Latest one year.
+            Weekly aggregation.
+
+        3Y
+            Latest three years.
+            Monthly aggregation.
+
+        5Y
+            Complete available historical dataset.
+            Monthly aggregation.
+
+    The historical selector affects only trend data.
+
+    Current KPI cards continue to use /today.
     """
 
     try:
-        tenant = resolve_active_tenant(
-            db=db,
+        tenant = (
+            resolve_active_tenant(
+                db=db,
+            )
         )
 
         metadata = (
@@ -438,46 +595,449 @@ def get_production_trend(
             )
         )
 
-        query = text(
-            """
-            SELECT
-                company_id,
-                mine_id,
-                mine_name,
-                report_date,
-                ore_plan,
-                ore_actual,
-                waste_plan,
-                waste_actual
-            FROM public.production_daily
-            WHERE company_id = :company_id
-              AND mine_id = :mine_id
-            ORDER BY report_date DESC
-            LIMIT 30
-            """
+        selected_range = (
+            normalize_trend_range(
+                range
+            )
         )
 
-        results = db.execute(
-            query,
-            {
-                "company_id": (
-                    tenant[
-                        "company_id"
-                    ]
-                ),
-                "mine_id": (
-                    tenant[
-                        "mine_id"
-                    ]
-                ),
-            },
-        ).mappings().all()
+
+        # ====================================================
+        # 30 DAYS
+        # ====================================================
+
+        if selected_range == "30D":
+
+            aggregation = "daily"
+
+            query = text(
+                """
+                SELECT
+                    company_id,
+                    mine_id,
+                    mine_name,
+                    report_date,
+                    ore_plan,
+                    ore_actual,
+                    waste_plan,
+                    waste_actual
+                FROM public.production_daily
+                WHERE company_id = :company_id
+                  AND mine_id = :mine_id
+                ORDER BY report_date DESC
+                LIMIT 30
+                """
+            )
+
+            results = db.execute(
+                query,
+                {
+                    "company_id":
+                        tenant[
+                            "company_id"
+                        ],
+
+                    "mine_id":
+                        tenant[
+                            "mine_id"
+                        ],
+                },
+            ).mappings().all()
+
+            results = list(
+                reversed(
+                    results
+                )
+            )
+
+
+        # ====================================================
+        # 90 DAYS
+        # ====================================================
+
+        elif selected_range == "90D":
+
+            aggregation = "daily"
+
+            query = text(
+                """
+                SELECT
+                    company_id,
+                    mine_id,
+                    mine_name,
+                    report_date,
+                    ore_plan,
+                    ore_actual,
+                    waste_plan,
+                    waste_actual
+                FROM public.production_daily
+                WHERE company_id = :company_id
+                  AND mine_id = :mine_id
+                ORDER BY report_date DESC
+                LIMIT 90
+                """
+            )
+
+            results = db.execute(
+                query,
+                {
+                    "company_id":
+                        tenant[
+                            "company_id"
+                        ],
+
+                    "mine_id":
+                        tenant[
+                            "mine_id"
+                        ],
+                },
+            ).mappings().all()
+
+            results = list(
+                reversed(
+                    results
+                )
+            )
+
+
+        # ====================================================
+        # 1 YEAR
+        # ====================================================
+
+        elif selected_range == "1Y":
+
+            aggregation = "weekly"
+
+            query = text(
+                """
+                WITH latest_date AS
+                (
+                    SELECT
+                        MAX(report_date)
+                            AS max_date
+                    FROM public.production_daily
+                    WHERE company_id = :company_id
+                      AND mine_id = :mine_id
+                )
+
+                SELECT
+                    :company_id
+                        AS company_id,
+
+                    :mine_id
+                        AS mine_id,
+
+                    MAX(
+                        p.mine_name
+                    )
+                        AS mine_name,
+
+                    DATE_TRUNC(
+                        'week',
+                        p.report_date
+                    )::date
+                        AS report_date,
+
+                    SUM(
+                        COALESCE(
+                            p.ore_plan,
+                            0
+                        )
+                    )
+                        AS ore_plan,
+
+                    SUM(
+                        COALESCE(
+                            p.ore_actual,
+                            0
+                        )
+                    )
+                        AS ore_actual,
+
+                    SUM(
+                        COALESCE(
+                            p.waste_plan,
+                            0
+                        )
+                    )
+                        AS waste_plan,
+
+                    SUM(
+                        COALESCE(
+                            p.waste_actual,
+                            0
+                        )
+                    )
+                        AS waste_actual
+
+                FROM
+                    public.production_daily
+                    AS p
+
+                CROSS JOIN
+                    latest_date
+                    AS ld
+
+                WHERE
+                    p.company_id =
+                        :company_id
+
+                    AND p.mine_id =
+                        :mine_id
+
+                    AND p.report_date >
+                        ld.max_date
+                        - INTERVAL '1 year'
+
+                GROUP BY
+                    DATE_TRUNC(
+                        'week',
+                        p.report_date
+                    )
+
+                ORDER BY
+                    report_date ASC
+                """
+            )
+
+            results = db.execute(
+                query,
+                {
+                    "company_id":
+                        tenant[
+                            "company_id"
+                        ],
+
+                    "mine_id":
+                        tenant[
+                            "mine_id"
+                        ],
+                },
+            ).mappings().all()
+
+
+        # ====================================================
+        # 3 YEARS
+        # ====================================================
+
+        elif selected_range == "3Y":
+
+            aggregation = "monthly"
+
+            query = text(
+                """
+                WITH latest_date AS
+                (
+                    SELECT
+                        MAX(report_date)
+                            AS max_date
+                    FROM public.production_daily
+                    WHERE company_id = :company_id
+                      AND mine_id = :mine_id
+                )
+
+                SELECT
+                    :company_id
+                        AS company_id,
+
+                    :mine_id
+                        AS mine_id,
+
+                    MAX(
+                        p.mine_name
+                    )
+                        AS mine_name,
+
+                    DATE_TRUNC(
+                        'month',
+                        p.report_date
+                    )::date
+                        AS report_date,
+
+                    SUM(
+                        COALESCE(
+                            p.ore_plan,
+                            0
+                        )
+                    )
+                        AS ore_plan,
+
+                    SUM(
+                        COALESCE(
+                            p.ore_actual,
+                            0
+                        )
+                    )
+                        AS ore_actual,
+
+                    SUM(
+                        COALESCE(
+                            p.waste_plan,
+                            0
+                        )
+                    )
+                        AS waste_plan,
+
+                    SUM(
+                        COALESCE(
+                            p.waste_actual,
+                            0
+                        )
+                    )
+                        AS waste_actual
+
+                FROM
+                    public.production_daily
+                    AS p
+
+                CROSS JOIN
+                    latest_date
+                    AS ld
+
+                WHERE
+                    p.company_id =
+                        :company_id
+
+                    AND p.mine_id =
+                        :mine_id
+
+                    AND p.report_date >
+                        ld.max_date
+                        - INTERVAL '3 years'
+
+                GROUP BY
+                    DATE_TRUNC(
+                        'month',
+                        p.report_date
+                    )
+
+                ORDER BY
+                    report_date ASC
+                """
+            )
+
+            results = db.execute(
+                query,
+                {
+                    "company_id":
+                        tenant[
+                            "company_id"
+                        ],
+
+                    "mine_id":
+                        tenant[
+                            "mine_id"
+                        ],
+                },
+            ).mappings().all()
+
+
+        # ====================================================
+        # 5 YEARS / COMPLETE HISTORY
+        # ====================================================
+
+        else:
+
+            aggregation = "monthly"
+
+            query = text(
+                """
+                SELECT
+                    :company_id
+                        AS company_id,
+
+                    :mine_id
+                        AS mine_id,
+
+                    MAX(
+                        p.mine_name
+                    )
+                        AS mine_name,
+
+                    DATE_TRUNC(
+                        'month',
+                        p.report_date
+                    )::date
+                        AS report_date,
+
+                    SUM(
+                        COALESCE(
+                            p.ore_plan,
+                            0
+                        )
+                    )
+                        AS ore_plan,
+
+                    SUM(
+                        COALESCE(
+                            p.ore_actual,
+                            0
+                        )
+                    )
+                        AS ore_actual,
+
+                    SUM(
+                        COALESCE(
+                            p.waste_plan,
+                            0
+                        )
+                    )
+                        AS waste_plan,
+
+                    SUM(
+                        COALESCE(
+                            p.waste_actual,
+                            0
+                        )
+                    )
+                        AS waste_actual
+
+                FROM
+                    public.production_daily
+                    AS p
+
+                WHERE
+                    p.company_id =
+                        :company_id
+
+                    AND p.mine_id =
+                        :mine_id
+
+                GROUP BY
+                    DATE_TRUNC(
+                        'month',
+                        p.report_date
+                    )
+
+                ORDER BY
+                    report_date ASC
+                """
+            )
+
+            results = db.execute(
+                query,
+                {
+                    "company_id":
+                        tenant[
+                            "company_id"
+                        ],
+
+                    "mine_id":
+                        tenant[
+                            "mine_id"
+                        ],
+                },
+            ).mappings().all()
+
+
+        # ====================================================
+        # Normalize Response
+        # ====================================================
 
         data = []
 
-        for row in reversed(
-            results
-        ):
+        for row in results:
+
             ore_plan = float(
                 row[
                     "ore_plan"
@@ -506,72 +1066,135 @@ def get_production_trend(
                 or 0
             )
 
+            ore_variance = round(
+                ore_actual
+                - ore_plan,
+                2,
+            )
+
+            waste_variance = round(
+                waste_actual
+                - waste_plan,
+                2,
+            )
+
+            ore_attainment = (
+                round(
+                    (
+                        ore_actual
+                        / ore_plan
+                    )
+                    * 100,
+                    1,
+                )
+                if ore_plan > 0
+                else None
+            )
+
+            waste_attainment = (
+                round(
+                    (
+                        waste_actual
+                        / waste_plan
+                    )
+                    * 100,
+                    1,
+                )
+                if waste_plan > 0
+                else None
+            )
+
             data.append(
                 {
-                    "company_id": (
+                    "company_id":
                         tenant[
                             "company_id"
-                        ]
-                    ),
-                    "mine_id": (
+                        ],
+
+                    "mine_id":
                         tenant[
                             "mine_id"
-                        ]
-                    ),
-                    "company_name": (
+                        ],
+
+                    "company_name":
                         tenant[
                             "company_name"
-                        ]
-                    ),
-                    "mine_name": (
+                        ],
+
+                    "mine_name":
                         tenant[
                             "mine_name"
-                        ]
-                    ),
-                    "operation_profile": (
+                        ],
+
+                    "mine_type":
+                        tenant[
+                            "mine_type"
+                        ],
+
+                    "operation_profile":
                         tenant[
                             "operation_profile"
-                        ]
-                    ),
+                        ],
+
                     **metadata,
-                    "report_date": str(
-                        row[
-                            "report_date"
-                        ]
-                    ),
-                    "ore_plan": round(
-                        ore_plan,
-                        2,
-                    ),
-                    "ore_actual": round(
-                        ore_actual,
-                        2,
-                    ),
-                    "ore_variance": round(
-                        ore_actual
-                        - ore_plan,
-                        2,
-                    ),
-                    "waste_plan": round(
-                        waste_plan,
-                        2,
-                    ),
-                    "waste_actual": round(
-                        waste_actual,
-                        2,
-                    ),
-                    "waste_variance": round(
-                        waste_actual
-                        - waste_plan,
-                        2,
-                    ),
+
+                    "range":
+                        selected_range,
+
+                    "aggregation":
+                        aggregation,
+
+                    "report_date":
+                        str(
+                            row[
+                                "report_date"
+                            ]
+                        ),
+
+                    "ore_plan":
+                        round(
+                            ore_plan,
+                            2,
+                        ),
+
+                    "ore_actual":
+                        round(
+                            ore_actual,
+                            2,
+                        ),
+
+                    "ore_variance":
+                        ore_variance,
+
+                    "ore_attainment":
+                        ore_attainment,
+
+                    "waste_plan":
+                        round(
+                            waste_plan,
+                            2,
+                        ),
+
+                    "waste_actual":
+                        round(
+                            waste_actual,
+                            2,
+                        ),
+
+                    "waste_variance":
+                        waste_variance,
+
+                    "waste_attainment":
+                        waste_attainment,
                 }
             )
 
         return data
 
+
     except HTTPException:
         raise
+
 
     except Exception as exc:
         raise HTTPException(

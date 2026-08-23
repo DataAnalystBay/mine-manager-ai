@@ -50,7 +50,7 @@ DEFAULT_DEMO_SCENARIO = (
 )
 
 DEFAULT_DEMO_MINE_NAME = (
-    "Achit Ikht LLC"
+    "Achit-Ikht LLC"
 )
 
 

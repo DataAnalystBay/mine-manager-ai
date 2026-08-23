@@ -43,6 +43,19 @@ import "./Production.css";
 
 
 /* ============================================================
+   Constants
+   ============================================================ */
+
+const PRODUCTION_RANGES = [
+  "30D",
+  "90D",
+  "1Y",
+  "3Y",
+  "5Y",
+];
+
+
+/* ============================================================
    Formatting helpers
    ============================================================ */
 
@@ -104,7 +117,8 @@ function formatSignedProductionValue(
   language,
   unit
 ) {
-  const number = Number(value || 0);
+  const number =
+    Number(value || 0);
 
   const resolvedUnit =
     resolveDisplayUnit(
@@ -125,7 +139,8 @@ function formatSignedProductionValue(
 
 
 function formatSignedPercent(value) {
-  const number = Number(value || 0);
+  const number =
+    Number(value || 0);
 
   if (number > 0) {
     return `+${number.toFixed(1)}%`;
@@ -145,13 +160,21 @@ function formatReportingDate(
   t
 ) {
   if (!value) {
-    return t("common.notAvailable");
+    return t(
+      "common.notAvailable"
+    );
   }
 
   const date =
-    new Date(`${value}T00:00:00`);
+    new Date(
+      `${value}T00:00:00`
+    );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return value;
   }
 
@@ -170,7 +193,8 @@ function formatReportingDate(
 
 function formatShortDate(
   value,
-  language
+  language,
+  aggregation = "daily"
 ) {
   if (!value) {
     return "—";
@@ -186,8 +210,26 @@ function formatShortDate(
         : text
     );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return text;
+  }
+
+  if (
+    aggregation === "monthly"
+  ) {
+    return date.toLocaleDateString(
+      language === "MN"
+        ? "mn-MN"
+        : "en-US",
+      {
+        month: "short",
+        year: "numeric",
+      }
+    );
   }
 
   return date.toLocaleDateString(
@@ -272,18 +314,26 @@ function getPerformanceStatus(
   t
 ) {
   if (performance >= 100) {
-    return t("production.abovePlan");
+    return t(
+      "production.abovePlan"
+    );
   }
 
   if (performance >= 95) {
-    return t("production.nearPlan");
+    return t(
+      "production.nearPlan"
+    );
   }
 
-  return t("production.belowPlan");
+  return t(
+    "production.belowPlan"
+  );
 }
 
 
-function getVarianceIcon(variance) {
+function getVarianceIcon(
+  variance
+) {
   if (variance > 0) {
     return <FiArrowUpRight />;
   }
@@ -306,9 +356,15 @@ function firstFiniteNumber(
 ) {
   for (const key of keys) {
     const value =
-      Number(row?.[key]);
+      Number(
+        row?.[key]
+      );
 
-    if (Number.isFinite(value)) {
+    if (
+      Number.isFinite(
+        value
+      )
+    ) {
       return value;
     }
   }
@@ -360,19 +416,35 @@ function getOrePlan(row) {
 function normalizeTrendRows(
   trend
 ) {
-  if (Array.isArray(trend)) {
+  if (
+    Array.isArray(
+      trend
+    )
+  ) {
     return trend;
   }
 
-  if (Array.isArray(trend?.data)) {
+  if (
+    Array.isArray(
+      trend?.data
+    )
+  ) {
     return trend.data;
   }
 
-  if (Array.isArray(trend?.items)) {
+  if (
+    Array.isArray(
+      trend?.items
+    )
+  ) {
     return trend.items;
   }
 
-  if (Array.isArray(trend?.results)) {
+  if (
+    Array.isArray(
+      trend?.results
+    )
+  ) {
     return trend.results;
   }
 
@@ -380,84 +452,190 @@ function normalizeTrendRows(
 }
 
 
+function getTrendAggregation(
+  trend,
+  selectedRange
+) {
+  const rows =
+    normalizeTrendRows(
+      trend
+    );
+
+  const aggregation =
+    rows?.[0]
+      ?.aggregation;
+
+  if (
+    aggregation === "daily" ||
+    aggregation === "weekly" ||
+    aggregation === "monthly"
+  ) {
+    return aggregation;
+  }
+
+  if (
+    selectedRange === "30D" ||
+    selectedRange === "90D"
+  ) {
+    return "daily";
+  }
+
+  if (
+    selectedRange === "1Y"
+  ) {
+    return "weekly";
+  }
+
+  return "monthly";
+}
+
+
 function calculateTrendSummary(
   trend,
-  language
+  language,
+  aggregation
 ) {
   const validRows =
-    normalizeTrendRows(trend)
-      .map((row) => ({
-        actual:
-          getOreActual(row),
+    normalizeTrendRows(
+      trend
+    )
+      .map(
+        (row) => ({
+          actual:
+            getOreActual(
+              row
+            ),
 
-        plan:
-          getOrePlan(row),
+          plan:
+            getOrePlan(
+              row
+            ),
 
-        date:
-          getTrendDate(row),
-      }))
+          date:
+            getTrendDate(
+              row
+            ),
+        })
+      )
       .filter(
         (item) =>
-          Number.isFinite(item.actual) &&
-          Number.isFinite(item.plan) &&
+          Number.isFinite(
+            item.actual
+          ) &&
+          Number.isFinite(
+            item.plan
+          ) &&
           item.plan > 0
       );
 
-  if (!validRows.length) {
+  if (
+    !validRows.length
+  ) {
     return {
-      totalDays: 0,
-      abovePlanDays: 0,
-      belowPlanDays: 0,
+      totalPeriods: 0,
+      abovePlanPeriods: 0,
+      belowPlanPeriods: 0,
       averageActual: null,
       averagePlan: null,
       averagePerformance: null,
       highest: null,
       lowest: null,
       recentTrendPercent: null,
-      recentTrendTone: "neutral",
+      recentTrendTone:
+        "neutral",
     };
   }
 
-  const totalDays =
+  const totalPeriods =
     validRows.length;
 
-  const abovePlanDays =
+  const abovePlanPeriods =
     validRows.filter(
       (item) =>
-        item.actual >= item.plan
+        item.actual >=
+        item.plan
     ).length;
 
-  const belowPlanDays =
-    totalDays -
-    abovePlanDays;
+  const belowPlanPeriods =
+    totalPeriods -
+    abovePlanPeriods;
+
+  /*
+   * For aggregated historical periods, ore_actual and
+   * ore_plan are totals for each returned period.
+   *
+   * Average actual/plan is still useful as the average
+   * production total per displayed reporting period.
+   */
 
   const averageActual =
     validRows.reduce(
-      (sum, item) =>
-        sum + item.actual,
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.actual,
       0
-    ) / totalDays;
+    ) /
+    totalPeriods;
 
   const averagePlan =
     validRows.reduce(
-      (sum, item) =>
-        sum + item.plan,
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.plan,
       0
-    ) / totalDays;
+    ) /
+    totalPeriods;
+
+  /*
+   * Performance should be calculated from total actual /
+   * total plan rather than averaging percentages.
+   */
+
+  const totalActual =
+    validRows.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.actual,
+      0
+    );
+
+  const totalPlan =
+    validRows.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.plan,
+      0
+    );
 
   const averagePerformance =
-    averagePlan > 0
+    totalPlan > 0
       ? (
-          averageActual /
-          averagePlan
+          totalActual /
+          totalPlan
         ) * 100
       : null;
 
   const highest =
     validRows.reduce(
-      (best, item) =>
+      (
+        best,
+        item
+      ) =>
         !best ||
-        item.actual > best.actual
+        item.actual >
+          best.actual
           ? item
           : best,
       null
@@ -465,52 +643,86 @@ function calculateTrendSummary(
 
   const lowest =
     validRows.reduce(
-      (best, item) =>
+      (
+        best,
+        item
+      ) =>
         !best ||
-        item.actual < best.actual
+        item.actual <
+          best.actual
           ? item
           : best,
       null
     );
 
+
+  /*
+   * Recent trend:
+   *
+   * Daily   -> latest 7 days vs previous 7
+   * Weekly  -> latest 4 weeks vs previous 4
+   * Monthly -> latest 3 months vs previous 3
+   */
+
+  const comparisonSize =
+    aggregation === "daily"
+      ? 7
+      : aggregation === "weekly"
+        ? 4
+        : 3;
+
   const averageActualFor =
     (items) => {
-      if (!items.length) {
+      if (
+        !items.length
+      ) {
         return null;
       }
 
       return (
         items.reduce(
-          (sum, item) =>
-            sum + item.actual,
+          (
+            sum,
+            item
+          ) =>
+            sum +
+            item.actual,
           0
-        ) / items.length
+        ) /
+        items.length
       );
     };
 
-  const recentSeven =
-    validRows.slice(-7);
+  const recentPeriods =
+    validRows.slice(
+      -comparisonSize
+    );
 
-  const previousSeven =
+  const previousPeriods =
     validRows.slice(
       Math.max(
         0,
-        totalDays - 14
+        totalPeriods -
+          (
+            comparisonSize *
+            2
+          )
       ),
       Math.max(
         0,
-        totalDays - 7
+        totalPeriods -
+          comparisonSize
       )
     );
 
   const recentAverage =
     averageActualFor(
-      recentSeven
+      recentPeriods
     );
 
   const previousAverage =
     averageActualFor(
-      previousSeven
+      previousPeriods
     );
 
   const recentTrendPercent =
@@ -527,46 +739,304 @@ function calculateTrendSummary(
       : null;
 
   const recentTrendTone =
-    recentTrendPercent === null
+    recentTrendPercent ===
+    null
       ? "neutral"
-      : recentTrendPercent > 0.25
+      : recentTrendPercent >
+        0.25
         ? "positive"
-        : recentTrendPercent < -0.25
+        : recentTrendPercent <
+          -0.25
           ? "negative"
           : "neutral";
 
   return {
-    totalDays,
-    abovePlanDays,
-    belowPlanDays,
+    totalPeriods,
+    abovePlanPeriods,
+    belowPlanPeriods,
     averageActual,
     averagePlan,
     averagePerformance,
 
-    highest: highest
-      ? {
-          ...highest,
-          formattedDate:
-            formatShortDate(
-              highest.date,
-              language
-            ),
-        }
-      : null,
+    highest:
+      highest
+        ? {
+            ...highest,
 
-    lowest: lowest
-      ? {
-          ...lowest,
-          formattedDate:
-            formatShortDate(
-              lowest.date,
-              language
-            ),
-        }
-      : null,
+            formattedDate:
+              formatShortDate(
+                highest.date,
+                language,
+                aggregation
+              ),
+          }
+        : null,
+
+    lowest:
+      lowest
+        ? {
+            ...lowest,
+
+            formattedDate:
+              formatShortDate(
+                lowest.date,
+                language,
+                aggregation
+              ),
+          }
+        : null,
 
     recentTrendPercent,
     recentTrendTone,
+  };
+}
+
+
+/* ============================================================
+   Range helpers
+   ============================================================ */
+
+function getRangeLabel(
+  range,
+  language
+) {
+  if (
+    language !== "MN"
+  ) {
+    return range;
+  }
+
+  const labels = {
+    "30D": "30Х",
+    "90D": "90Х",
+    "1Y": "1Ж",
+    "3Y": "3Ж",
+    "5Y": "5Ж",
+  };
+
+  return (
+    labels[range] ||
+    range
+  );
+}
+
+
+function getRangeTitle(
+  range,
+  language
+) {
+  const en = {
+    "30D":
+      "30-Day Summary",
+
+    "90D":
+      "90-Day Summary",
+
+    "1Y":
+      "1-Year Summary",
+
+    "3Y":
+      "3-Year Summary",
+
+    "5Y":
+      "5-Year Summary",
+  };
+
+  const mn = {
+    "30D":
+      "30 хоногийн дүгнэлт",
+
+    "90D":
+      "90 хоногийн дүгнэлт",
+
+    "1Y":
+      "1 жилийн дүгнэлт",
+
+    "3Y":
+      "3 жилийн дүгнэлт",
+
+    "5Y":
+      "5 жилийн дүгнэлт",
+  };
+
+  return (
+    language === "MN"
+      ? mn[range]
+      : en[range]
+  ) || range;
+}
+
+
+function getRangeAverageLabel(
+  range,
+  language
+) {
+  const en = {
+    "30D":
+      "30-Day Average",
+
+    "90D":
+      "90-Day Average",
+
+    "1Y":
+      "1-Year Average",
+
+    "3Y":
+      "3-Year Average",
+
+    "5Y":
+      "5-Year Average",
+  };
+
+  const mn = {
+    "30D":
+      "30 хоногийн дундаж",
+
+    "90D":
+      "90 хоногийн дундаж",
+
+    "1Y":
+      "1 жилийн дундаж",
+
+    "3Y":
+      "3 жилийн дундаж",
+
+    "5Y":
+      "5 жилийн дундаж",
+  };
+
+  return (
+    language === "MN"
+      ? mn[range]
+      : en[range]
+  ) || range;
+}
+
+
+function getPeriodUnitLabel(
+  aggregation,
+  language
+) {
+  if (
+    aggregation === "weekly"
+  ) {
+    return language === "MN"
+      ? "7 хоног"
+      : "weeks";
+  }
+
+  if (
+    aggregation === "monthly"
+  ) {
+    return language === "MN"
+      ? "сар"
+      : "months";
+  }
+
+  return language === "MN"
+    ? "өдөр"
+    : "days";
+}
+
+
+function getPeriodsAboveLabel(
+  aggregation,
+  language
+) {
+  if (
+    aggregation === "weekly"
+  ) {
+    return language === "MN"
+      ? "Төлөвлөгөө биелүүлсэн 7 хоног"
+      : "Weeks at or above plan";
+  }
+
+  if (
+    aggregation === "monthly"
+  ) {
+    return language === "MN"
+      ? "Төлөвлөгөө биелүүлсэн сар"
+      : "Months at or above plan";
+  }
+
+  return language === "MN"
+    ? "Төлөвлөгөө биелүүлсэн өдөр"
+    : "Days at or above plan";
+}
+
+
+function getPeriodsBelowLabel(
+  aggregation,
+  language
+) {
+  if (
+    aggregation === "weekly"
+  ) {
+    return language === "MN"
+      ? "Төлөвлөгөөнөөс доогуур 7 хоног"
+      : "Weeks below plan";
+  }
+
+  if (
+    aggregation === "monthly"
+  ) {
+    return language === "MN"
+      ? "Төлөвлөгөөнөөс доогуур сар"
+      : "Months below plan";
+  }
+
+  return language === "MN"
+    ? "Төлөвлөгөөнөөс доогуур өдөр"
+    : "Days below plan";
+}
+
+
+function getRecentTrendCopy(
+  aggregation,
+  language
+) {
+  if (
+    aggregation === "weekly"
+  ) {
+    return {
+      title:
+        language === "MN"
+          ? "Сүүлийн 4 долоо хоногийн чиг хандлага"
+          : "Last 4-Week Trend",
+
+      description:
+        language === "MN"
+          ? "Сүүлийн 4 долоо хоногийн дундаж үйлдвэрлэлийг өмнөх 4 долоо хоногтой харьцуулсан өөрчлөлт."
+          : "Change in average production across the latest four weeks versus the previous four.",
+    };
+  }
+
+  if (
+    aggregation === "monthly"
+  ) {
+    return {
+      title:
+        language === "MN"
+          ? "Сүүлийн 3 сарын чиг хандлага"
+          : "Last 3-Month Trend",
+
+      description:
+        language === "MN"
+          ? "Сүүлийн 3 сарын дундаж үйлдвэрлэлийг өмнөх 3 сартай харьцуулсан өөрчлөлт."
+          : "Change in average production across the latest three months versus the previous three.",
+    };
+  }
+
+  return {
+    title:
+      language === "MN"
+        ? "Сүүлийн 7 хоногийн чиг хандлага"
+        : "Last 7-Day Trend",
+
+    description:
+      language === "MN"
+        ? "Сүүлийн 7 хоногийн дундаж үйлдвэрлэлийг өмнөх 7 хоногтой харьцуулсан өөрчлөлт."
+        : "Change in average production across the latest seven days versus the previous seven.",
   };
 }
 
@@ -591,7 +1061,9 @@ function PerformanceBadge({
         `production-status-badge--${tone}`
       }
     >
-      <span className="production-status-dot" />
+      <span
+        className="production-status-dot"
+      />
 
       {getPerformanceStatus(
         performance,
@@ -681,7 +1153,9 @@ function DailyMetric({
       >
         <span>
           {getVarianceIcon(
-            Number(variance || 0)
+            Number(
+              variance || 0
+            )
           )}
 
           {formatSignedProductionValue(
@@ -734,12 +1208,16 @@ function CompletionMetric({
           </div>
 
           <div className="production-daily-value">
-            {performance.toFixed(1)}%
+            {performance.toFixed(
+              1
+            )}%
           </div>
 
           <div className="production-daily-plan">
             {targetLabel}:{" "}
-            <strong>100.0%</strong>
+            <strong>
+              100.0%
+            </strong>
           </div>
         </div>
       </div>
@@ -784,14 +1262,20 @@ function SummaryRow({
           />
         )}
 
-        <span>{label}</span>
+        <span>
+          {label}
+        </span>
       </div>
 
       <div className="production-summary-row-value">
-        <strong>{value}</strong>
+        <strong>
+          {value}
+        </strong>
 
         {secondary && (
-          <small>{secondary}</small>
+          <small>
+            {secondary}
+          </small>
         )}
       </div>
     </div>
@@ -809,37 +1293,153 @@ function Production() {
     t,
   } = useLanguage();
 
-  const [today, setToday] =
-    useState(null);
 
-  const [trend, setTrend] =
-    useState([]);
+  const [
+    today,
+    setToday,
+  ] = useState(
+    null
+  );
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    trend,
+    setTrend,
+  ] = useState(
+    []
+  );
 
-  const [error, setError] =
-    useState("");
+  const [
+    selectedRange,
+    setSelectedRange,
+  ] = useState(
+    "30D"
+  );
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(
+    true
+  );
+
+  const [
+    trendLoading,
+    setTrendLoading,
+  ] = useState(
+    false
+  );
+
+  const [
+    error,
+    setError,
+  ] = useState(
+    ""
+  );
+
+  const [
+    trendError,
+    setTrendError,
+  ] = useState(
+    ""
+  );
 
 
   const operationProfile =
     String(
-      today?.operation_profile ||
+      today
+        ?.operation_profile ||
       "standard_mine"
     )
       .trim()
       .toLowerCase();
 
+
   const isSxewOperation =
-    operationProfile === "sxew_copper";
+    operationProfile ===
+    "sxew_copper";
+
 
   const wasteApplicable =
-    today?.waste_applicable !== false;
+    today
+      ?.waste_applicable !==
+    false;
+
 
   const productionUnit =
-    today?.production_unit ||
+    today
+      ?.production_unit ||
     getDefaultProductionUnit(
       language
+    );
+
+
+  const trendAggregation =
+    useMemo(
+      () =>
+        getTrendAggregation(
+          trend,
+          selectedRange
+        ),
+      [
+        trend,
+        selectedRange,
+      ]
+    );
+
+
+  const periodUnitLabel =
+    useMemo(
+      () =>
+        getPeriodUnitLabel(
+          trendAggregation,
+          language
+        ),
+      [
+        trendAggregation,
+        language,
+      ]
+    );
+
+
+  const periodsAboveLabel =
+    useMemo(
+      () =>
+        getPeriodsAboveLabel(
+          trendAggregation,
+          language
+        ),
+      [
+        trendAggregation,
+        language,
+      ]
+    );
+
+
+  const periodsBelowLabel =
+    useMemo(
+      () =>
+        getPeriodsBelowLabel(
+          trendAggregation,
+          language
+        ),
+      [
+        trendAggregation,
+        language,
+      ]
+    );
+
+
+  const recentTrendCopy =
+    useMemo(
+      () =>
+        getRecentTrendCopy(
+          trendAggregation,
+          language
+        ),
+      [
+        trendAggregation,
+        language,
+      ]
     );
 
 
@@ -867,14 +1467,11 @@ function Production() {
                 target:
                   "Зорилт",
 
-                thirtyDaySummary:
-                  "30 хоногийн дүгнэлт",
-
                 abovePlanDays:
-                  "Төлөвлөгөө биелүүлсэн өдөр",
+                  "Төлөвлөгөө биелүүлсэн үе",
 
                 belowPlanDays:
-                  "Төлөвлөгөөнөөс доогуур өдөр",
+                  "Төлөвлөгөөнөөс доогуур үе",
 
                 averageAttainment:
                   "Дундаж биелэлт",
@@ -885,9 +1482,6 @@ function Production() {
                 lowestPerformance:
                   "Хамгийн бага гүйцэтгэл",
 
-                lastSevenTrend:
-                  "Сүүлийн 7 хоногийн чиг хандлага",
-
                 improving:
                   "Сайжирч байна",
 
@@ -897,17 +1491,8 @@ function Production() {
                 stable:
                   "Тогтвортой",
 
-                recentTrendDescription:
-                  "Сүүлийн 7 хоногийн дундаж гүйцэтгэлийг өмнөх 7 хоногтой харьцуулсан өөрчлөлт.",
-
-                thirtyDayAverage:
-                  "30 өдрийн дундаж",
-
                 dailyTarget:
                   "Өдрийн зорилт",
-
-                daysAbovePlan:
-                  "Төлөвлөгөө давсан өдөр",
 
                 dataSource:
                   "Өгөгдөл: Өдөр бүрийн тайлан",
@@ -918,9 +1503,6 @@ function Production() {
                 timezone:
                   "Бүс цаг: Asia/Ulaanbaatar",
 
-                day:
-                  "өдөр",
-
                 pageTitle:
                   "Үйлдвэрлэлийн гүйцэтгэл",
 
@@ -929,6 +1511,15 @@ function Production() {
 
                 deliveryEyebrow:
                   "Үйлдвэрлэлийн гүйцэтгэл",
+
+                trendTitle:
+                  "Үйлдвэрлэлийн чиг хандлага",
+
+                trendSubtitle:
+                  "Төлөвлөгөө болон бодит үйлдвэрлэлийн гүйцэтгэл",
+
+                loadingHistory:
+                  "Түүхэн мэдээлэл ачаалж байна...",
               }
             : {
                 dailyPerformance:
@@ -949,14 +1540,11 @@ function Production() {
                 target:
                   "Target",
 
-                thirtyDaySummary:
-                  "30-Day Summary",
-
                 abovePlanDays:
-                  "Days at or above plan",
+                  "Periods at or above plan",
 
                 belowPlanDays:
-                  "Days below plan",
+                  "Periods below plan",
 
                 averageAttainment:
                   "Average attainment",
@@ -967,9 +1555,6 @@ function Production() {
                 lowestPerformance:
                   "Lowest performance",
 
-                lastSevenTrend:
-                  "Last 7-Day Trend",
-
                 improving:
                   "Improving",
 
@@ -979,17 +1564,8 @@ function Production() {
                 stable:
                   "Stable",
 
-                recentTrendDescription:
-                  "Change in the latest 7-day average versus the previous 7 days.",
-
-                thirtyDayAverage:
-                  "30-Day Average",
-
                 dailyTarget:
                   "Daily Target",
-
-                daysAbovePlan:
-                  "Days Above Plan",
 
                 dataSource:
                   "Data: Daily production report",
@@ -1000,9 +1576,6 @@ function Production() {
                 timezone:
                   "Timezone: Asia/Ulaanbaatar",
 
-                day:
-                  "days",
-
                 pageTitle:
                   "Production Performance",
 
@@ -1011,11 +1584,24 @@ function Production() {
 
                 deliveryEyebrow:
                   "Production Delivery",
+
+                trendTitle:
+                  "Production Trend",
+
+                trendSubtitle:
+                  "Plan versus actual production performance",
+
+                loadingHistory:
+                  "Loading historical data...",
               };
 
-        if (!isSxewOperation) {
+
+        if (
+          !isSxewOperation
+        ) {
           return baseCopy;
         }
+
 
         return {
           ...baseCopy,
@@ -1026,8 +1612,10 @@ function Production() {
               : "Cathode Production Performance",
 
           oreDelivery:
-            today?.production_label ||
-            today?.ore_label ||
+            today
+              ?.production_label ||
+            today
+              ?.ore_label ||
             (
               language === "MN"
                 ? "Катодын зэсийн үйлдвэрлэл"
@@ -1049,21 +1637,6 @@ function Production() {
               ? "Төлөвлөгөөний биелэлт"
               : "Plan Attainment",
 
-          thirtyDaySummary:
-            language === "MN"
-              ? "Сүүлийн 30 тайлант үеийн дүгнэлт"
-              : "30-Period Production Summary",
-
-          abovePlanDays:
-            language === "MN"
-              ? "Төлөвлөгөө биелүүлсэн үе"
-              : "Periods at or above plan",
-
-          belowPlanDays:
-            language === "MN"
-              ? "Төлөвлөгөөнөөс доогуур үе"
-              : "Periods below plan",
-
           highestPerformance:
             language === "MN"
               ? "Хамгийн өндөр үйлдвэрлэл"
@@ -1074,40 +1647,15 @@ function Production() {
               ? "Хамгийн бага үйлдвэрлэл"
               : "Lowest production",
 
-          lastSevenTrend:
-            language === "MN"
-              ? "Сүүлийн 7 үеийн чиг хандлага"
-              : "Last 7-Period Trend",
-
-          recentTrendDescription:
-            language === "MN"
-              ? "Сүүлийн 7 тайлант үеийн дундаж үйлдвэрлэлийг өмнөх 7 үетэй харьцуулсан өөрчлөлт."
-              : "Change in average cathode production across the latest seven reporting periods versus the previous seven.",
-
-          thirtyDayAverage:
-            language === "MN"
-              ? "30 үеийн дундаж"
-              : "30-Period Average",
-
           dailyTarget:
             language === "MN"
               ? "Үйлдвэрлэлийн зорилт"
               : "Production Target",
 
-          daysAbovePlan:
-            language === "MN"
-              ? "Төлөвлөгөө давсан үе"
-              : "Periods Above Plan",
-
           dataSource:
             language === "MN"
               ? "Өгөгдөл: Катодын зэсийн үйлдвэрлэлийн тайлан"
               : "Data: Cathode production report",
-
-          day:
-            language === "MN"
-              ? "үе"
-              : "periods",
 
           pageTitle:
             language === "MN"
@@ -1117,79 +1665,292 @@ function Production() {
           pageSubtitle:
             language === "MN"
               ? "Катодын зэсийн үйлдвэрлэлийн төлөвлөгөө, бодит гүйцэтгэл, хэлбэлзэл болон чиг хандлагыг хянах."
-              : "Monitor cathode production plan, actual output, variance, and recent performance trend.",
+              : "Monitor cathode production plan, actual output, variance, and historical performance trend.",
 
           deliveryEyebrow:
             language === "MN"
               ? "Катодын зэсийн үйлдвэрлэл"
               : "Cathode Production",
+
+          trendTitle:
+            language === "MN"
+              ? "Катодын зэсийн үйлдвэрлэлийн чиг хандлага"
+              : "Cathode Production Trend",
+
+          trendSubtitle:
+            language === "MN"
+              ? "Төлөвлөгөө болон бодит катодын зэсийн үйлдвэрлэлийн гүйцэтгэл"
+              : "Plan versus actual cathode production performance",
         };
       },
       [
         language,
         isSxewOperation,
-        today?.production_label,
-        today?.ore_label,
+        today
+          ?.production_label,
+        today
+          ?.ore_label,
       ]
     );
 
 
+  /* ============================================================
+     Initial page load
+     ============================================================ */
+
   const loadProduction =
-    useCallback(async () => {
-      setLoading(true);
-      setError("");
-
-      try {
-        const [
-          todayData,
-          trendData,
-        ] = await Promise.all([
-          getTodayProduction(),
-          getProductionTrend(),
-        ]);
-
-        setToday(
-          todayData
-        );
-
-        setTrend(
-          normalizeTrendRows(
-            trendData
-          )
-        );
-      } catch (requestError) {
-        console.error(
-          "Production page load failed:",
-          requestError
+    useCallback(
+      async () => {
+        setLoading(
+          true
         );
 
         setError(
-          requestError?.message ||
+          ""
+        );
+
+        setTrendError(
+          ""
+        );
+
+        try {
+          const [
+            todayData,
+            trendData,
+          ] =
+            await Promise.all([
+              getTodayProduction(),
+
+              getProductionTrend(
+                selectedRange
+              ),
+            ]);
+
+          setToday(
+            todayData
+          );
+
+          setTrend(
+            normalizeTrendRows(
+              trendData
+            )
+          );
+        } catch (
+          requestError
+        ) {
+          console.error(
+            "Production page load failed:",
+            requestError
+          );
+
+          setError(
+            requestError
+              ?.message ||
             t(
               "production.unableToLoadAnalytics"
             )
+          );
+        } finally {
+          setLoading(
+            false
+          );
+        }
+      },
+      [
+        t,
+        selectedRange,
+      ]
+    );
+
+
+  /*
+   * Initial page load only.
+   *
+   * Range changes are handled separately so today's
+   * KPI cards are not reloaded.
+   */
+
+  useEffect(
+    () => {
+      loadProduction();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    []
+  );
+
+
+  /* ============================================================
+     Trend-only loader
+     ============================================================ */
+
+  const loadTrendRange =
+    useCallback(
+      async (
+        range
+      ) => {
+        setTrendLoading(
+          true
         );
-      } finally {
-        setLoading(false);
-      }
-    }, [t]);
+
+        setTrendError(
+          ""
+        );
+
+        try {
+          const trendData =
+            await getProductionTrend(
+              range
+            );
+
+          setTrend(
+            normalizeTrendRows(
+              trendData
+            )
+          );
+        } catch (
+          requestError
+        ) {
+          console.error(
+            "Production trend load failed:",
+            requestError
+          );
+
+          setTrendError(
+            requestError
+              ?.message ||
+            (
+              language === "MN"
+                ? "Үйлдвэрлэлийн түүхэн мэдээллийг ачаалж чадсангүй."
+                : "Unable to load production history."
+            )
+          );
+        } finally {
+          setTrendLoading(
+            false
+          );
+        }
+      },
+      [
+        language,
+      ]
+    );
 
 
-  useEffect(() => {
-    loadProduction();
-  }, [loadProduction]);
+  const handleRangeChange =
+    useCallback(
+      async (
+        range
+      ) => {
+        if (
+          !PRODUCTION_RANGES.includes(
+            range
+          ) ||
+          range ===
+            selectedRange ||
+          trendLoading
+        ) {
+          return;
+        }
 
+        setSelectedRange(
+          range
+        );
+
+        await loadTrendRange(
+          range
+        );
+      },
+      [
+        selectedRange,
+        trendLoading,
+        loadTrendRange,
+      ]
+    );
+
+
+  const handleRefresh =
+    useCallback(
+      async () => {
+        setLoading(
+          true
+        );
+
+        setError(
+          ""
+        );
+
+        setTrendError(
+          ""
+        );
+
+        try {
+          const [
+            todayData,
+            trendData,
+          ] =
+            await Promise.all([
+              getTodayProduction(),
+
+              getProductionTrend(
+                selectedRange
+              ),
+            ]);
+
+          setToday(
+            todayData
+          );
+
+          setTrend(
+            normalizeTrendRows(
+              trendData
+            )
+          );
+        } catch (
+          requestError
+        ) {
+          console.error(
+            "Production refresh failed:",
+            requestError
+          );
+
+          setError(
+            requestError
+              ?.message ||
+            t(
+              "production.unableToLoadAnalytics"
+            )
+          );
+        } finally {
+          setLoading(
+            false
+          );
+        }
+      },
+      [
+        selectedRange,
+        t,
+      ]
+    );
+
+
+  /* ============================================================
+     Current-day KPI calculations
+     ============================================================ */
 
   const orePerformance =
     useMemo(
       () =>
         calculatePerformance(
-          today?.ore_actual,
-          today?.ore_plan
+          today
+            ?.ore_actual,
+          today
+            ?.ore_plan
         ),
       [
-        today?.ore_actual,
-        today?.ore_plan,
+        today
+          ?.ore_actual,
+        today
+          ?.ore_plan,
       ]
     );
 
@@ -1198,12 +1959,16 @@ function Production() {
     useMemo(
       () =>
         calculatePerformance(
-          today?.waste_actual,
-          today?.waste_plan
+          today
+            ?.waste_actual,
+          today
+            ?.waste_plan
         ),
       [
-        today?.waste_actual,
-        today?.waste_plan,
+        today
+          ?.waste_actual,
+        today
+          ?.waste_plan,
       ]
     );
 
@@ -1211,31 +1976,45 @@ function Production() {
   const combinedPerformance =
     useMemo(
       () => {
-        if (!wasteApplicable) {
+        if (
+          !wasteApplicable
+        ) {
           return orePerformance;
         }
 
-        return calculateCombinedPerformance({
-          oreActual:
-            today?.ore_actual,
+        return (
+          calculateCombinedPerformance(
+            {
+              oreActual:
+                today
+                  ?.ore_actual,
 
-          orePlan:
-            today?.ore_plan,
+              orePlan:
+                today
+                  ?.ore_plan,
 
-          wasteActual:
-            today?.waste_actual,
+              wasteActual:
+                today
+                  ?.waste_actual,
 
-          wastePlan:
-            today?.waste_plan,
-        });
+              wastePlan:
+                today
+                  ?.waste_plan,
+            }
+          )
+        );
       },
       [
         wasteApplicable,
         orePerformance,
-        today?.ore_actual,
-        today?.ore_plan,
-        today?.waste_actual,
-        today?.waste_plan,
+        today
+          ?.ore_actual,
+        today
+          ?.ore_plan,
+        today
+          ?.waste_actual,
+        today
+          ?.waste_plan,
       ]
     );
 
@@ -1258,90 +2037,142 @@ function Production() {
     100;
 
 
+  /* ============================================================
+     Trend calculations
+     ============================================================ */
+
   const trendSummary =
     useMemo(
       () =>
         calculateTrendSummary(
           trend,
-          language
+          language,
+          trendAggregation
         ),
       [
         trend,
         language,
+        trendAggregation,
       ]
     );
 
 
-  const daysAbovePercent =
-    trendSummary.totalDays > 0
+  const abovePlanPercent =
+    trendSummary
+      .totalPeriods > 0
       ? (
-          trendSummary.abovePlanDays /
-          trendSummary.totalDays
-        ) * 100
+          trendSummary
+            .abovePlanPeriods /
+          trendSummary
+            .totalPeriods
+        ) *
+        100
       : 0;
 
 
   const recentTrendTitle =
-    trendSummary.recentTrendTone ===
+    trendSummary
+      .recentTrendTone ===
     "positive"
       ? copy.improving
-      : trendSummary.recentTrendTone ===
-          "negative"
+      : trendSummary
+          .recentTrendTone ===
+        "negative"
         ? copy.declining
         : copy.stable;
 
 
+  const summaryTitle =
+    getRangeTitle(
+      selectedRange,
+      language
+    );
+
+
+  const averageLabel =
+    getRangeAverageLabel(
+      selectedRange,
+      language
+    );
+
+
+  /* ============================================================
+     Status narrative
+     ============================================================ */
+
   const statusNarrative =
     isSxewOperation
       ? language === "MN"
-        ? combinedPerformance >= 100
+        ? combinedPerformance >=
+          100
           ? `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл төлөвлөгөөнөөс ${formatSignedPercent(
               combinedVariance
             )}-иар давсан байна.`
-          : combinedPerformance >= 95
+          : combinedPerformance >=
+              95
             ? `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл төлөвлөгөөний ${combinedPerformance.toFixed(
                 1
               )}%-д хүрсэн байна.`
             : `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл төлөвлөгөөнөөс ${Math.abs(
                 combinedVariance
-              ).toFixed(1)}%-иар доогуур байна.`
-        : combinedPerformance >= 100
+              ).toFixed(
+                1
+              )}%-иар доогуур байна.`
+        : combinedPerformance >=
+            100
           ? `Cathode production performance is ${formatSignedPercent(
               combinedVariance
             )} above plan.`
-          : combinedPerformance >= 95
+          : combinedPerformance >=
+              95
             ? `Cathode production performance is at ${combinedPerformance.toFixed(
                 1
               )}% of plan.`
             : `Cathode production performance is ${Math.abs(
                 combinedVariance
-              ).toFixed(1)}% below plan.`
+              ).toFixed(
+                1
+              )}% below plan.`
       : language === "MN"
-        ? combinedPerformance >= 100
+        ? combinedPerformance >=
+          100
           ? `Өнөөдрийн нийт олборлолтын гүйцэтгэл төлөвлөгөөнөөс ${formatSignedPercent(
               combinedVariance
             )}-иар давсан байна.`
-          : combinedPerformance >= 95
+          : combinedPerformance >=
+              95
             ? `Өнөөдрийн нийт олборлолтын гүйцэтгэл төлөвлөгөөний ${combinedPerformance.toFixed(
                 1
               )}%-д хүрсэн байна.`
             : `Өнөөдрийн нийт олборлолтын гүйцэтгэл төлөвлөгөөнөөс ${Math.abs(
                 combinedVariance
-              ).toFixed(1)}%-иар доогуур байна.`
-        : combinedPerformance >= 100
+              ).toFixed(
+                1
+              )}%-иар доогуур байна.`
+        : combinedPerformance >=
+            100
           ? `Today's total production performance is ${formatSignedPercent(
               combinedVariance
             )} above plan.`
-          : combinedPerformance >= 95
+          : combinedPerformance >=
+              95
             ? `Today's total production performance is at ${combinedPerformance.toFixed(
                 1
               )}% of plan.`
             : `Today's total production performance is ${Math.abs(
                 combinedVariance
-              ).toFixed(1)}% below plan.`;
+              ).toFixed(
+                1
+              )}% below plan.`;
 
 
-  if (loading) {
+  /* ============================================================
+     Initial loading state
+     ============================================================ */
+
+  if (
+    loading
+  ) {
     return (
       <Box className="production-loading">
         <Stack
@@ -1373,13 +2204,17 @@ function Production() {
 
       <Stack
         direction={{
-          xs: "column",
-          md: "row",
+          xs:
+            "column",
+          md:
+            "row",
         }}
         justifyContent="space-between"
         alignItems={{
-          xs: "flex-start",
-          md: "center",
+          xs:
+            "flex-start",
+          md:
+            "center",
         }}
         spacing={2}
         className="production-page-header"
@@ -1402,16 +2237,24 @@ function Production() {
             {isSxewOperation && (
               <span
                 style={{
-                  marginLeft: 8,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  color: "#0f766e",
+                  marginLeft:
+                    8,
+
+                  fontSize:
+                    10,
+
+                  fontWeight:
+                    800,
+
+                  color:
+                    "#0f766e",
                 }}
               >
                 SX-EW Copper Operation
               </span>
             )}
           </Stack>
+
 
           <Typography
             component="h1"
@@ -1423,6 +2266,7 @@ function Production() {
                   "production.productionPerformance"
                 )}
           </Typography>
+
 
           <Typography
             className="production-page-subtitle"
@@ -1453,7 +2297,8 @@ function Production() {
 
               <strong>
                 {formatReportingDate(
-                  today?.report_date,
+                  today
+                    ?.report_date,
                   language,
                   t
                 )}
@@ -1466,7 +2311,7 @@ function Production() {
             type="button"
             className="production-refresh-button"
             onClick={
-              loadProduction
+              handleRefresh
             }
             title={t(
               "production.refreshProductionData"
@@ -1488,7 +2333,9 @@ function Production() {
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 2,
+          }}
         >
           {error}
         </Alert>
@@ -1496,10 +2343,13 @@ function Production() {
 
 
       {!error &&
-        today?.message && (
+        today
+          ?.message && (
           <Alert
             severity="info"
-            sx={{ mb: 2 }}
+            sx={{
+              mb: 2,
+            }}
           >
             {today.message}
           </Alert>
@@ -1508,7 +2358,6 @@ function Production() {
 
       {/* ======================================================
           Combined Daily Production Performance
-          Target design: one status + KPI card
           ====================================================== */}
 
       {!error && (
@@ -1555,6 +2404,7 @@ function Production() {
 
 
           <div className="production-daily-grid">
+
             <DailyMetric
               eyebrow={
                 isSxewOperation
@@ -1567,13 +2417,16 @@ function Production() {
                 copy.oreDelivery
               }
               actual={
-                today?.ore_actual
+                today
+                  ?.ore_actual
               }
               plan={
-                today?.ore_plan
+                today
+                  ?.ore_plan
               }
               variance={
-                today?.ore_variance
+                today
+                  ?.ore_variance
               }
               performance={
                 orePerformance
@@ -1600,17 +2453,21 @@ function Production() {
                   "production.materialMovement"
                 )}
                 title={
-                  today?.waste_label ||
+                  today
+                    ?.waste_label ||
                   copy.wasteDelivery
                 }
                 actual={
-                  today?.waste_actual
+                  today
+                    ?.waste_actual
                 }
                 plan={
-                  today?.waste_plan
+                  today
+                    ?.waste_plan
                 }
                 variance={
-                  today?.waste_variance
+                  today
+                    ?.waste_variance
                 }
                 performance={
                   wastePerformance
@@ -1646,27 +2503,297 @@ function Production() {
                 copy.target
               }
             />
+
           </div>
         </section>
       )}
 
 
       {/* ======================================================
-          Trend + 30-day Summary
+          Historical Trend
           ====================================================== */}
 
       {!error && (
         <section className="production-trend-layout">
 
           <div className="production-trend-card">
+
+            {/* -----------------------------------------------
+                Trend toolbar + historical range selector
+                ----------------------------------------------- */}
+
+            <Box
+              sx={{
+                display:
+                  "flex",
+
+                flexDirection: {
+                  xs:
+                    "column",
+                  md:
+                    "row",
+                },
+
+                alignItems: {
+                  xs:
+                    "stretch",
+                  md:
+                    "center",
+                },
+
+                justifyContent:
+                  "space-between",
+
+                gap:
+                  2,
+
+                mb:
+                  2,
+              }}
+            >
+              <Box>
+                <Typography
+                  sx={{
+                    fontSize:
+                      "0.95rem",
+
+                    fontWeight:
+                      800,
+
+                    color:
+                      "#172033",
+                  }}
+                >
+                  {copy.trendTitle}
+                </Typography>
+
+                <Typography
+                  sx={{
+                    mt:
+                      0.25,
+
+                    fontSize:
+                      "0.78rem",
+
+                    fontWeight:
+                      500,
+
+                    color:
+                      "#7b8497",
+                  }}
+                >
+                  {copy.trendSubtitle}
+                </Typography>
+              </Box>
+
+
+              <Box
+                role="group"
+                aria-label={
+                  language === "MN"
+                    ? "Үйлдвэрлэлийн хугацааны сонголт"
+                    : "Production trend range"
+                }
+                sx={{
+                  display:
+                    "inline-flex",
+
+                  alignItems:
+                    "center",
+
+                  alignSelf: {
+                    xs:
+                      "flex-start",
+                    md:
+                      "center",
+                  },
+
+                  gap:
+                    "4px",
+
+                  p:
+                    "4px",
+
+                  border:
+                    "1px solid #e5e9f0",
+
+                  borderRadius:
+                    "10px",
+
+                  backgroundColor:
+                    "#f7f9fc",
+                }}
+              >
+                {PRODUCTION_RANGES.map(
+                  (
+                    range
+                  ) => {
+                    const active =
+                      selectedRange ===
+                      range;
+
+                    return (
+                      <button
+                        key={
+                          range
+                        }
+                        type="button"
+                        disabled={
+                          trendLoading
+                        }
+                        onClick={() =>
+                          handleRangeChange(
+                            range
+                          )
+                        }
+                        aria-pressed={
+                          active
+                        }
+                        style={{
+                          minWidth:
+                            46,
+
+                          height:
+                            30,
+
+                          padding:
+                            "0 10px",
+
+                          border:
+                            "none",
+
+                          borderRadius:
+                            7,
+
+                          cursor:
+                            trendLoading
+                              ? "wait"
+                              : "pointer",
+
+                          fontFamily:
+                            "inherit",
+
+                          fontSize:
+                            12,
+
+                          fontWeight:
+                            800,
+
+                          lineHeight:
+                            1,
+
+                          color:
+                            active
+                              ? "#ffffff"
+                              : "#667085",
+
+                          background:
+                            active
+                              ? "#16794a"
+                              : "transparent",
+
+                          boxShadow:
+                            active
+                              ? "0 2px 6px rgba(22, 121, 74, 0.20)"
+                              : "none",
+
+                          transition:
+                            "all 0.18s ease",
+
+                          opacity:
+                            trendLoading &&
+                            !active
+                              ? 0.65
+                              : 1,
+                        }}
+                      >
+                        {getRangeLabel(
+                          range,
+                          language
+                        )}
+                      </button>
+                    );
+                  }
+                )}
+              </Box>
+            </Box>
+
+
+            {trendError && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 2,
+                }}
+              >
+                {trendError}
+              </Alert>
+            )}
+
+
+            {/* -----------------------------------------------
+                Trend chart
+                ----------------------------------------------- */}
+
             <div className="production-trend-chart production-trend-chart--final">
 
-              <ProductionTrendChart
-                data={trend}
-              />
+              {trendLoading ? (
+                <Box
+                  sx={{
+                    minHeight:
+                      300,
+
+                    display:
+                      "flex",
+
+                    flexDirection:
+                      "column",
+
+                    alignItems:
+                      "center",
+
+                    justifyContent:
+                      "center",
+
+                    gap:
+                      1.5,
+                  }}
+                >
+                  <CircularProgress
+                    size={
+                      28
+                    }
+                  />
+
+                  <Typography
+                    sx={{
+                      fontSize:
+                        "0.82rem",
+
+                      fontWeight:
+                        700,
+
+                      color:
+                        "#7b8497",
+                    }}
+                  >
+                    {copy.loadingHistory}
+                  </Typography>
+                </Box>
+              ) : (
+                <ProductionTrendChart
+                  data={
+                    trend
+                  }
+                />
+              )}
 
             </div>
 
+
+            {/* -----------------------------------------------
+                Trend KPI mini cards
+                ----------------------------------------------- */}
 
             <div className="production-trend-mini-grid">
 
@@ -1677,15 +2804,17 @@ function Production() {
 
                 <div>
                   <span>
-                    {copy.thirtyDayAverage}
+                    {averageLabel}
                   </span>
 
                   <strong>
-                    {trendSummary.averageActual ===
+                    {trendSummary
+                      .averageActual ===
                     null
                       ? "—"
                       : formatProductionValue(
-                          trendSummary.averageActual,
+                          trendSummary
+                            .averageActual,
                           language,
                           productionUnit
                         )}
@@ -1693,20 +2822,24 @@ function Production() {
 
                   <small
                     className={
-                      trendSummary.averagePerformance ===
+                      trendSummary
+                        .averagePerformance ===
                       null
                         ? ""
-                        : trendSummary.averagePerformance >=
-                          100
+                        : trendSummary
+                              .averagePerformance >=
+                            100
                           ? "production-text--positive"
                           : "production-text--negative"
                     }
                   >
-                    {trendSummary.averagePerformance ===
+                    {trendSummary
+                      .averagePerformance ===
                     null
                       ? "—"
                       : `${formatSignedPercent(
-                          trendSummary.averagePerformance -
+                          trendSummary
+                            .averagePerformance -
                             100
                         )} (${copy.planAttainment.toLowerCase()})`}
                   </small>
@@ -1721,19 +2854,40 @@ function Production() {
 
                 <div>
                   <span>
-                    {copy.dailyTarget}
+                    {language === "MN"
+                      ? (
+                          trendAggregation ===
+                          "daily"
+                            ? copy.dailyTarget
+                            : trendAggregation ===
+                              "weekly"
+                              ? "7 хоногийн дундаж зорилт"
+                              : "Сарын дундаж зорилт"
+                        )
+                      : (
+                          trendAggregation ===
+                          "daily"
+                            ? copy.dailyTarget
+                            : trendAggregation ===
+                              "weekly"
+                              ? "Average Weekly Target"
+                              : "Average Monthly Target"
+                        )}
                   </span>
 
                   <strong>
-                    {trendSummary.averagePlan ===
+                    {trendSummary
+                      .averagePlan ===
                     null
                       ? formatProductionValue(
-                          today?.ore_plan,
+                          today
+                            ?.ore_plan,
                           language,
                           productionUnit
                         )
                       : formatProductionValue(
-                          trendSummary.averagePlan,
+                          trendSummary
+                            .averagePlan,
                           language,
                           productionUnit
                         )}
@@ -1753,19 +2907,25 @@ function Production() {
 
                 <div className="production-trend-mini-progress-copy">
                   <span>
-                    {copy.daysAbovePlan}
+                    {periodsAboveLabel}
                   </span>
 
                   <div className="production-trend-mini-progress-value">
                     <strong>
-                      {trendSummary.abovePlanDays}
+                      {trendSummary
+                        .abovePlanPeriods}
+
                       {" / "}
-                      {trendSummary.totalDays}
+
+                      {trendSummary
+                        .totalPeriods}
                     </strong>
 
                     <small>
-                      {trendSummary.totalDays > 0
-                        ? `${daysAbovePercent.toFixed(
+                      {trendSummary
+                        .totalPeriods >
+                      0
+                        ? `${abovePlanPercent.toFixed(
                             0
                           )}%`
                         : "—"}
@@ -1775,7 +2935,7 @@ function Production() {
                   <div
                     className="production-trend-progress-track"
                     aria-label={
-                      `${copy.daysAbovePlan}: ${daysAbovePercent.toFixed(
+                      `${periodsAboveLabel}: ${abovePlanPercent.toFixed(
                         0
                       )}%`
                     }
@@ -1785,7 +2945,7 @@ function Production() {
                         width:
                           `${Math.min(
                             Math.max(
-                              daysAbovePercent,
+                              abovePlanPercent,
                               0
                             ),
                             100
@@ -1800,48 +2960,59 @@ function Production() {
           </div>
 
 
+          {/* ==================================================
+              Range-aware Summary
+              ================================================== */}
+
           <aside className="production-summary-card">
 
             <div className="production-summary-title">
-              {copy.thirtyDaySummary}
+              {summaryTitle}
             </div>
 
 
             <div className="production-summary-primary">
+
               <SummaryRow
                 dotClass="production-summary-dot--green"
                 label={
-                  copy.abovePlanDays
+                  periodsAboveLabel
                 }
                 value={
-                  `${trendSummary.abovePlanDays} ${copy.day}`
+                  `${trendSummary.abovePlanPeriods} ${periodUnitLabel}`
                 }
                 secondary={
-                  trendSummary.totalDays > 0
-                    ? `${daysAbovePercent.toFixed(
+                  trendSummary.totalPeriods >
+                  0
+                    ? `${abovePlanPercent.toFixed(
                         0
                       )}%`
                     : null
                 }
               />
 
+
               <SummaryRow
                 dotClass="production-summary-dot--red"
                 label={
-                  copy.belowPlanDays
+                  periodsBelowLabel
                 }
                 value={
-                  `${trendSummary.belowPlanDays} ${copy.day}`
+                  `${trendSummary.belowPlanPeriods} ${periodUnitLabel}`
                 }
                 secondary={
-                  trendSummary.totalDays > 0
+                  trendSummary.totalPeriods >
+                  0
                     ? `${(
                         100 -
-                        daysAbovePercent
-                      ).toFixed(0)}%`
+                        abovePlanPercent
+                      ).toFixed(
+                        0
+                      )}%`
                     : null
                 }
               />
+
 
               <SummaryRow
                 dotClass="production-summary-dot--blue"
@@ -1849,7 +3020,8 @@ function Production() {
                   copy.averageAttainment
                 }
                 value={
-                  trendSummary.averagePerformance ===
+                  trendSummary
+                    .averagePerformance ===
                   null
                     ? "—"
                     : `${trendSummary.averagePerformance.toFixed(
@@ -1857,6 +3029,7 @@ function Production() {
                       )}%`
                 }
               />
+
             </div>
 
 
@@ -1864,6 +3037,7 @@ function Production() {
 
 
             <div className="production-summary-extremes">
+
               <SummaryRow
                 label={
                   copy.highestPerformance
@@ -1871,17 +3045,21 @@ function Production() {
                 value={
                   trendSummary.highest
                     ? formatProductionValue(
-                        trendSummary.highest.actual,
+                        trendSummary
+                          .highest
+                          .actual,
                         language,
                         productionUnit
                       )
                     : "—"
                 }
                 secondary={
-                  trendSummary.highest
+                  trendSummary
+                    .highest
                     ?.formattedDate
                 }
               />
+
 
               <SummaryRow
                 label={
@@ -1890,17 +3068,21 @@ function Production() {
                 value={
                   trendSummary.lowest
                     ? formatProductionValue(
-                        trendSummary.lowest.actual,
+                        trendSummary
+                          .lowest
+                          .actual,
                         language,
                         productionUnit
                       )
                     : "—"
                 }
                 secondary={
-                  trendSummary.lowest
+                  trendSummary
+                    .lowest
                     ?.formattedDate
                 }
               />
+
             </div>
 
 
@@ -1911,19 +3093,30 @@ function Production() {
               }
             >
               <div className="production-recent-trend-eyebrow">
-                {copy.lastSevenTrend}
+                {recentTrendCopy.title}
               </div>
 
+
               <div className="production-recent-trend-body">
+
                 <div className="production-recent-trend-icon">
-                  {trendSummary.recentTrendTone ===
+                  {trendSummary
+                    .recentTrendTone ===
                   "positive"
-                    ? <FiArrowUpRight />
-                    : trendSummary.recentTrendTone ===
+                    ? (
+                        <FiArrowUpRight />
+                      )
+                    : trendSummary
+                          .recentTrendTone ===
                         "negative"
-                      ? <FiArrowDownRight />
-                      : <FiMinus />}
+                      ? (
+                          <FiArrowDownRight />
+                        )
+                      : (
+                          <FiMinus />
+                        )}
                 </div>
+
 
                 <div>
                   <strong>
@@ -1931,22 +3124,26 @@ function Production() {
                   </strong>
 
                   <p>
-                    {copy.recentTrendDescription}
+                    {recentTrendCopy.description}
                   </p>
 
                   <span>
-                    {trendSummary.recentTrendPercent ===
+                    {trendSummary
+                      .recentTrendPercent ===
                     null
                       ? "—"
                       : formatSignedPercent(
-                          trendSummary.recentTrendPercent
+                          trendSummary
+                            .recentTrendPercent
                         )}
                   </span>
                 </div>
+
               </div>
             </div>
 
           </aside>
+
         </section>
       )}
 
@@ -1972,7 +3169,8 @@ function Production() {
               {copy.lastUpdated}:{" "}
 
               {formatReportingDate(
-                today?.report_date,
+                today
+                  ?.report_date,
                 language,
                 t
               )}

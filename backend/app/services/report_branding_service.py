@@ -1,58 +1,74 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 
 from app.database import engine
-from app.models.company import CompanySettings
-from app.models.mine import MineSettings
 
 
 # -------------------------------------------------------------------
-# Default branding
+# Safe defaults
 # -------------------------------------------------------------------
+
+# These are intentionally customer-neutral.
+# Real customer values should come from PostgreSQL configuration.
 
 DEFAULT_COMPANY_NAME = "Mine Manager AI"
-DEFAULT_MINE_NAME = "Demo Mine"
+DEFAULT_MINE_NAME = "Mining Operation"
 
-DEFAULT_PRIMARY_COLOR = "#16A34A"
-DEFAULT_SECONDARY_COLOR = "#1E293B"
+DEFAULT_PRIMARY_COLOR = "#0F172A"
+DEFAULT_SECONDARY_COLOR = "#020617"
 
 DEFAULT_TIMEZONE = "Asia/Ulaanbaatar"
 DEFAULT_LANGUAGE = "English"
 
 
 # -------------------------------------------------------------------
-# Branding data object
+# Report branding model
 # -------------------------------------------------------------------
 
-@dataclass
+@dataclass(frozen=True)
 class ReportBranding:
     company_name: str
     mine_name: str
+
     logo_url: Optional[str]
     logo_path: Optional[str]
+
     primary_color: str
     secondary_color: str
+
     timezone: str
     language: str
 
     @property
     def primary_color_excel(self) -> str:
         """
-        Return the primary color without '#', suitable for openpyxl.
+        Return the primary color without '#',
+        suitable for openpyxl.
         """
 
-        return self.primary_color.replace("#", "").upper()
+        return (
+            self.primary_color
+            .replace("#", "")
+            .upper()
+        )
 
     @property
     def secondary_color_excel(self) -> str:
         """
-        Return the secondary color without '#', suitable for openpyxl.
+        Return the secondary color without '#',
+        suitable for openpyxl.
         """
 
-        return self.secondary_color.replace("#", "").upper()
+        return (
+            self.secondary_color
+            .replace("#", "")
+            .upper()
+        )
 
 
 # -------------------------------------------------------------------
@@ -83,9 +99,9 @@ def _normalize_hex_color(
     default: str,
 ) -> str:
     """
-    Normalize a hex color into the format #RRGGBB.
+    Normalize a hex color into #RRGGBB format.
 
-    Valid examples:
+    Examples:
         #16A34A
         16A34A
         #abc
@@ -95,7 +111,11 @@ def _normalize_hex_color(
     if not value:
         return default.upper()
 
-    cleaned_value = str(value).strip().replace("#", "")
+    cleaned_value = (
+        str(value)
+        .strip()
+        .replace("#", "")
+    )
 
     if len(cleaned_value) == 3:
         cleaned_value = "".join(
@@ -118,37 +138,71 @@ def _resolve_logo_path(
     logo_url: Optional[str],
 ) -> Optional[str]:
     """
-    Convert a configured static logo URL into a local filesystem path.
+    Convert a configured static logo URL into a local
+    filesystem path.
 
     Example:
+
         /static/logos/company-logo.png
 
     becomes:
+
         backend/app/static/logos/company-logo.png
     """
 
     if not logo_url:
         return None
 
-    cleaned_logo_url = str(logo_url).strip()
+    cleaned_logo_url = str(
+        logo_url
+    ).strip()
 
     if not cleaned_logo_url:
         return None
 
-    backend_root = Path(__file__).resolve().parents[2]
+    backend_root = (
+        Path(__file__)
+        .resolve()
+        .parents[2]
+    )
 
-    if cleaned_logo_url.startswith("/static/"):
-        relative_path = cleaned_logo_url.lstrip("/")
-        candidate_path = backend_root / "app" / relative_path
-    elif cleaned_logo_url.startswith("static/"):
-        candidate_path = backend_root / "app" / cleaned_logo_url
+    if cleaned_logo_url.startswith(
+        "/static/"
+    ):
+        relative_path = (
+            cleaned_logo_url
+            .lstrip("/")
+        )
+
+        candidate_path = (
+            backend_root
+            / "app"
+            / relative_path
+        )
+
+    elif cleaned_logo_url.startswith(
+        "static/"
+    ):
+        candidate_path = (
+            backend_root
+            / "app"
+            / cleaned_logo_url
+        )
+
     else:
-        candidate_path = Path(cleaned_logo_url)
+        candidate_path = Path(
+            cleaned_logo_url
+        )
 
         if not candidate_path.is_absolute():
-            candidate_path = backend_root / cleaned_logo_url
+            candidate_path = (
+                backend_root
+                / cleaned_logo_url
+            )
 
-    candidate_path = candidate_path.resolve()
+    candidate_path = (
+        candidate_path.resolve()
+    )
 
     if not candidate_path.exists():
         return None
@@ -160,6 +214,95 @@ def _resolve_logo_path(
 
 
 # -------------------------------------------------------------------
+# Database helpers
+# -------------------------------------------------------------------
+
+def _load_latest_company():
+    """
+    Return the latest configured company.
+
+    V1.0 behavior:
+        The newest company configuration is treated as the
+        currently active customer.
+
+    Future multi-tenant behavior:
+        Replace this with authenticated-user / tenant resolution.
+    """
+
+    query = text(
+        """
+        SELECT
+            id,
+            company_name,
+            logo_url,
+            primary_color,
+            secondary_color,
+            timezone,
+            language
+        FROM public.company_settings
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    )
+
+    with engine.connect() as connection:
+        row = (
+            connection
+            .execute(query)
+            .mappings()
+            .first()
+        )
+
+    return row
+
+
+def _load_company_mine(
+    company_id: int,
+):
+    """
+    Return the latest mine belonging to the selected company.
+
+    The company_id filter prevents a company from being paired
+    with another customer's mine configuration.
+    """
+
+    query = text(
+        """
+        SELECT
+            id,
+            company_id,
+            mine_name,
+            site_code,
+            location,
+            mine_type,
+            shift_pattern,
+            operating_hours,
+            calendar_type
+        FROM public.mine_settings
+        WHERE company_id = :company_id
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    )
+
+    with engine.connect() as connection:
+        row = (
+            connection
+            .execute(
+                query,
+                {
+                    "company_id":
+                        company_id,
+                },
+            )
+            .mappings()
+            .first()
+        )
+
+    return row
+
+
+# -------------------------------------------------------------------
 # Public service
 # -------------------------------------------------------------------
 
@@ -167,78 +310,149 @@ def get_report_branding() -> ReportBranding:
     """
     Load the active company and mine configuration from PostgreSQL.
 
+    Current V1.0 selection strategy:
+        1. Select the latest configured company.
+        2. Select the latest mine belonging to that company.
+        3. Use customer branding values from company_settings.
+
     Safe defaults are returned when:
         - company settings do not exist
         - mine settings do not exist
         - optional branding values are empty
         - the configured logo file cannot be found
+
+    Important:
+        This service deliberately does not hard-code Achit-Ikht
+        or Oyu Tolgoi. The customer comes from PostgreSQL.
     """
 
-    SessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=engine,
+    company = _load_latest_company()
+
+    mine = None
+
+    if company is not None:
+        company_id = company.get(
+            "id"
+        )
+
+        if company_id is not None:
+            mine = _load_company_mine(
+                int(company_id)
+            )
+
+    # ---------------------------------------------------------------
+    # Company
+    # ---------------------------------------------------------------
+
+    company_name = _normalize_text(
+        (
+            company.get(
+                "company_name"
+            )
+            if company
+            else None
+        ),
+        DEFAULT_COMPANY_NAME,
     )
 
-    database_session = SessionLocal()
+    # ---------------------------------------------------------------
+    # Mine / Operation
+    # ---------------------------------------------------------------
 
-    try:
-        company = (
-            database_session.query(CompanySettings)
-            .order_by(CompanySettings.id.asc())
-            .first()
+    mine_name = _normalize_text(
+        (
+            mine.get(
+                "mine_name"
+            )
+            if mine
+            else None
+        ),
+        DEFAULT_MINE_NAME,
+    )
+
+    # ---------------------------------------------------------------
+    # Logo
+    # ---------------------------------------------------------------
+
+    logo_url = (
+        company.get(
+            "logo_url"
         )
+        if company
+        else None
+    )
 
-        mine = (
-            database_session.query(MineSettings)
-            .order_by(MineSettings.id.asc())
-            .first()
-        )
+    logo_path = _resolve_logo_path(
+        logo_url
+    )
 
-        company_name = _normalize_text(
-            getattr(company, "company_name", None),
-            DEFAULT_COMPANY_NAME,
-        )
+    # ---------------------------------------------------------------
+    # Colors
+    # ---------------------------------------------------------------
 
-        mine_name = _normalize_text(
-            getattr(mine, "mine_name", None),
-            DEFAULT_MINE_NAME,
-        )
+    primary_color = _normalize_hex_color(
+        (
+            company.get(
+                "primary_color"
+            )
+            if company
+            else None
+        ),
+        DEFAULT_PRIMARY_COLOR,
+    )
 
-        logo_url = getattr(company, "logo_url", None)
+    secondary_color = _normalize_hex_color(
+        (
+            company.get(
+                "secondary_color"
+            )
+            if company
+            else None
+        ),
+        DEFAULT_SECONDARY_COLOR,
+    )
 
-        primary_color = _normalize_hex_color(
-            getattr(company, "primary_color", None),
-            DEFAULT_PRIMARY_COLOR,
-        )
+    # ---------------------------------------------------------------
+    # Timezone
+    # ---------------------------------------------------------------
 
-        secondary_color = _normalize_hex_color(
-            getattr(company, "secondary_color", None),
-            DEFAULT_SECONDARY_COLOR,
-        )
+    timezone = _normalize_text(
+        (
+            company.get(
+                "timezone"
+            )
+            if company
+            else None
+        ),
+        DEFAULT_TIMEZONE,
+    )
 
-        timezone = _normalize_text(
-            getattr(company, "timezone", None),
-            DEFAULT_TIMEZONE,
-        )
+    # ---------------------------------------------------------------
+    # Language
+    # ---------------------------------------------------------------
 
-        language = _normalize_text(
-            getattr(company, "language", None),
-            DEFAULT_LANGUAGE,
-        )
+    language = _normalize_text(
+        (
+            company.get(
+                "language"
+            )
+            if company
+            else None
+        ),
+        DEFAULT_LANGUAGE,
+    )
 
-        logo_path = _resolve_logo_path(logo_url)
+    # ---------------------------------------------------------------
+    # Result
+    # ---------------------------------------------------------------
 
-        return ReportBranding(
-            company_name=company_name,
-            mine_name=mine_name,
-            logo_url=logo_url,
-            logo_path=logo_path,
-            primary_color=primary_color,
-            secondary_color=secondary_color,
-            timezone=timezone,
-            language=language,
-        )
-
-    finally:
-        database_session.close()
+    return ReportBranding(
+        company_name=company_name,
+        mine_name=mine_name,
+        logo_url=logo_url,
+        logo_path=logo_path,
+        primary_color=primary_color,
+        secondary_color=secondary_color,
+        timezone=timezone,
+        language=language,
+    )

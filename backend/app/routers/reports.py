@@ -199,6 +199,43 @@ def _get_generated_by(
     return f"User {current_user.id}"
 
 
+def _resolve_report_mine_name(
+    mine_name: Optional[str] = None,
+) -> str:
+    """
+    Resolve the mine used for report generation.
+
+    If an explicit mine_name is supplied, use it.
+    Otherwise use the active mine from report branding.
+
+    This keeps report generation customer-aware while still
+    allowing an explicit mine override when required.
+    """
+
+    if mine_name:
+        normalized_mine_name = mine_name.strip()
+
+        if normalized_mine_name:
+            return normalized_mine_name
+
+    branding = get_report_branding()
+
+    resolved_mine_name = str(
+        branding.mine_name or ""
+    ).strip()
+
+    if not resolved_mine_name:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "No active mine is configured "
+                "for report generation."
+            ),
+        )
+
+    return resolved_mine_name
+
+
 # ============================================================
 # DAILY EXECUTIVE PDF
 # ============================================================
@@ -210,8 +247,8 @@ def _get_generated_by(
     ],
 )
 def download_daily_executive_pdf(
-    mine_name: str = Query(
-        default="Oyu Tolgoi Surface",
+    mine_name: Optional[str] = Query(
+        default=None,
         min_length=1,
         max_length=100,
     ),
@@ -224,6 +261,8 @@ def download_daily_executive_pdf(
     Generate and download the Daily Executive Report PDF
     using the latest live operational KPI data.
 
+    If mine_name is omitted, the active configured mine is used.
+
     Allowed roles:
     - Superintendent
     - Mine Manager
@@ -231,7 +270,9 @@ def download_daily_executive_pdf(
     - Administrator
     """
 
-    normalized_mine_name = mine_name.strip()
+    normalized_mine_name = _resolve_report_mine_name(
+        mine_name
+    )
 
     live_kpis = get_live_kpi_summary(
         db=db,
@@ -282,8 +323,8 @@ def download_daily_executive_pdf(
     ],
 )
 def download_weekly_operations_pdf(
-    mine_name: str = Query(
-        default="Oyu Tolgoi Surface",
+    mine_name: Optional[str] = Query(
+        default=None,
         min_length=1,
         max_length=100,
     ),
@@ -296,6 +337,8 @@ def download_weekly_operations_pdf(
     Generate and download the Weekly Operations Report PDF
     using the latest seven available reporting days.
 
+    If mine_name is omitted, the active configured mine is used.
+
     Allowed roles:
     - Superintendent
     - Mine Manager
@@ -303,7 +346,9 @@ def download_weekly_operations_pdf(
     - Administrator
     """
 
-    normalized_mine_name = mine_name.strip()
+    normalized_mine_name = _resolve_report_mine_name(
+        mine_name
+    )
 
     weekly_kpis = get_weekly_kpi_summary(
         db=db,
@@ -354,8 +399,8 @@ def download_weekly_operations_pdf(
     ],
 )
 def download_monthly_kpi_pdf(
-    mine_name: str = Query(
-        default="Oyu Tolgoi Surface",
+    mine_name: Optional[str] = Query(
+        default=None,
         min_length=1,
         max_length=100,
     ),
@@ -368,6 +413,8 @@ def download_monthly_kpi_pdf(
     Generate and download the Monthly KPI Pack PDF
     using the latest 30 available reporting days.
 
+    If mine_name is omitted, the active configured mine is used.
+
     Allowed roles:
     - Superintendent
     - Mine Manager
@@ -375,7 +422,9 @@ def download_monthly_kpi_pdf(
     - Administrator
     """
 
-    normalized_mine_name = mine_name.strip()
+    normalized_mine_name = _resolve_report_mine_name(
+        mine_name
+    )
 
     monthly_kpis = get_monthly_kpi_summary(
         db=db,
@@ -434,6 +483,11 @@ def download_executive_excel_export(
     """
     Generate and download the Executive Operations Excel workbook.
 
+    NOTE:
+    The Excel generator is unchanged in this step.
+    Its underlying service will be updated next so that it filters
+    data by the active configured mine.
+
     Allowed roles:
     - Superintendent
     - Mine Manager
@@ -482,6 +536,11 @@ def download_executive_powerpoint(
     """
     Generate and download the Executive Operations
     PowerPoint board pack.
+
+    NOTE:
+    The PowerPoint generator is unchanged in this step.
+    Its underlying service will be updated next so that it filters
+    data by the active configured mine.
 
     Allowed roles:
     - Superintendent
