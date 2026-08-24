@@ -56,18 +56,11 @@ function getErrorMessage(
 }
 
 
-export async function getTodayPlant(
-  mineName = "Oyu Tolgoi Surface"
-) {
+export async function getTodayPlant() {
   try {
     const response =
       await plantClient.get(
-        "/today",
-        {
-          params: {
-            mine_name: mineName,
-          },
-        }
+        "/today"
       );
 
     return response.data;
@@ -83,7 +76,6 @@ export async function getTodayPlant(
 
 
 export async function getPlantTrend(
-  mineName = "Oyu Tolgoi Surface",
   days = 30
 ) {
   try {
@@ -92,7 +84,6 @@ export async function getPlantTrend(
         "/trend",
         {
           params: {
-            mine_name: mineName,
             days,
           },
         }

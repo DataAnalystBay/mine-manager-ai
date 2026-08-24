@@ -390,15 +390,6 @@ function Plant() {
     useState("");
 
 
-  /*
-   * Existing functionality preserved.
-   *
-   * Replace later with configured/current mine context.
-   */
-  const mineName =
-    "Oyu Tolgoi Surface";
-
-
   /* =======================================================
      DATA LOADING
      ======================================================= */
@@ -413,12 +404,9 @@ function Plant() {
           todayData,
           trendData,
         ] = await Promise.all([
-          getTodayPlant(
-            mineName
-          ),
+          getTodayPlant(),
 
           getPlantTrend(
-            mineName,
             30
           ),
         ]);
