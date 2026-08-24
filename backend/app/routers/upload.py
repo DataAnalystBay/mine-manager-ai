@@ -5,17 +5,24 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
-    Form,
     HTTPException,
     UploadFile,
 )
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.auth.dependencies import (
     get_current_user,
     require_report_uploader,
 )
-from app.database import SessionLocal
+from app.database import (
+    SessionLocal,
+    get_db,
+)
+from app.models.user import User
+from app.services.tenant_service import (
+    resolve_authenticated_tenant,
+)
 
 
 router = APIRouter(
@@ -34,70 +41,56 @@ UPLOAD_FOLDER.mkdir(
 )
 
 
-DEFAULT_MINE_NAME = "Oyu Tolgoi Surface"
-
-
 # ============================================================
-# TENANT RESOLUTION
+# AUTHENTICATED TENANT
 # ============================================================
 
-def resolve_tenant(
-    db,
-    mine_name: str,
-):
+def resolve_upload_tenant(
+    db: Session,
+    current_user: User,
+) -> dict:
     """
-    Resolve a configured mine into its immutable tenant IDs.
+    Resolve the authoritative tenant for report uploads.
 
-    Operational records are isolated using:
-        company_id + mine_id
+    Security boundary:
+        authenticated user
+            -> tenant service
+            -> company_id
+            -> mine_id
+            -> mine_name
+            -> operation_profile
 
-    mine_name is retained for display and backward compatibility.
+    The frontend never determines tenant ownership.
     """
 
-    normalized_mine_name = str(
-        mine_name or ""
-    ).strip()
+    tenant = resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
-    if not normalized_mine_name:
+    required_fields = (
+        "company_id",
+        "mine_id",
+        "company_name",
+        "mine_name",
+    )
+
+    missing_fields = [
+        field
+        for field in required_fields
+        if tenant.get(field) is None
+    ]
+
+    if missing_fields:
         raise HTTPException(
-            status_code=400,
-            detail="mine_name is required.",
-        )
-
-    tenant = db.execute(
-        text(
-            """
-            SELECT
-                m.id AS mine_id,
-                m.company_id AS company_id,
-                m.mine_name AS mine_name,
-                c.company_name AS company_name
-            FROM public.mine_settings AS m
-            JOIN public.company_settings AS c
-                ON c.id = m.company_id
-            WHERE m.mine_name = :mine_name
-            """
-        ),
-        {
-            "mine_name": normalized_mine_name,
-        },
-    ).mappings().first()
-
-    if tenant is None:
-        raise HTTPException(
-            status_code=404,
+            status_code=500,
             detail=(
-                "Configured mine not found: "
-                f"{normalized_mine_name}"
+                "Authenticated tenant configuration "
+                "is incomplete."
             ),
         )
 
-    return {
-        "company_id": int(tenant["company_id"]),
-        "mine_id": int(tenant["mine_id"]),
-        "company_name": tenant["company_name"],
-        "mine_name": tenant["mine_name"],
-    }
+    return tenant
 
 
 # ============================================================
@@ -150,12 +143,16 @@ def save_file(
 # ============================================================
 
 def save_upload_log(
+    *,
     report_type: str,
     file_name: str,
+    uploaded_by: str,
+    company_id: int,
+    mine_id: int,
     status: str = "Success",
 ):
     """
-    Save an upload result to the upload history table.
+    Save an upload result to the tenant-aware upload history table.
     """
 
     db = SessionLocal()
@@ -169,22 +166,28 @@ def save_upload_log(
                     report_type,
                     file_name,
                     uploaded_by,
-                    status
+                    status,
+                    company_id,
+                    mine_id
                 )
                 VALUES
                 (
                     :report_type,
                     :file_name,
                     :uploaded_by,
-                    :status
+                    :status,
+                    :company_id,
+                    :mine_id
                 )
                 """
             ),
             {
                 "report_type": report_type,
                 "file_name": file_name,
-                "uploaded_by": "Bayarbat",
+                "uploaded_by": uploaded_by,
                 "status": status,
+                "company_id": int(company_id),
+                "mine_id": int(mine_id),
             },
         )
 
@@ -690,8 +693,9 @@ def normalize_safety_dataframe(
 # ============================================================
 
 def import_production_excel(
+    *,
     file_path: str,
-    mine_name: str,
+    tenant: dict,
 ):
     """
     Import Production Excel data using tenant-safe isolation.
@@ -717,14 +721,15 @@ def import_production_excel(
     updated_count = 0
 
     try:
-        tenant = resolve_tenant(
-            db=db,
-            mine_name=mine_name,
+        company_id = int(
+            tenant["company_id"]
         )
-
-        company_id = tenant["company_id"]
-        mine_id = tenant["mine_id"]
-        normalized_mine_name = tenant["mine_name"]
+        mine_id = int(
+            tenant["mine_id"]
+        )
+        normalized_mine_name = str(
+            tenant["mine_name"]
+        ).strip()
 
         for _, row in df.iterrows():
             existing_id = db.execute(
@@ -830,8 +835,9 @@ def import_production_excel(
 # ============================================================
 
 def import_fleet_excel(
+    *,
     file_path: str,
-    mine_name: str,
+    tenant: dict,
 ):
     """
     Import Fleet Excel data using tenant-safe isolation.
@@ -857,14 +863,15 @@ def import_fleet_excel(
     updated_count = 0
 
     try:
-        tenant = resolve_tenant(
-            db=db,
-            mine_name=mine_name,
+        company_id = int(
+            tenant["company_id"]
         )
-
-        company_id = tenant["company_id"]
-        mine_id = tenant["mine_id"]
-        normalized_mine_name = tenant["mine_name"]
+        mine_id = int(
+            tenant["mine_id"]
+        )
+        normalized_mine_name = str(
+            tenant["mine_name"]
+        ).strip()
 
         for _, row in df.iterrows():
             existing_id = db.execute(
@@ -966,8 +973,9 @@ def import_fleet_excel(
 # ============================================================
 
 def import_plant_excel(
+    *,
     file_path: str,
-    mine_name: str,
+    tenant: dict,
 ):
     """
     Import Plant Excel data using tenant-safe isolation.
@@ -993,14 +1001,15 @@ def import_plant_excel(
     updated_count = 0
 
     try:
-        tenant = resolve_tenant(
-            db=db,
-            mine_name=mine_name,
+        company_id = int(
+            tenant["company_id"]
         )
-
-        company_id = tenant["company_id"]
-        mine_id = tenant["mine_id"]
-        normalized_mine_name = tenant["mine_name"]
+        mine_id = int(
+            tenant["mine_id"]
+        )
+        normalized_mine_name = str(
+            tenant["mine_name"]
+        ).strip()
 
         for _, row in df.iterrows():
             existing_id = db.execute(
@@ -1108,8 +1117,9 @@ def import_plant_excel(
 # ============================================================
 
 def import_safety_excel(
+    *,
     file_path: str,
-    mine_name: str,
+    tenant: dict,
 ):
     """
     Import Safety Excel data using tenant-safe isolation.
@@ -1135,14 +1145,15 @@ def import_safety_excel(
     updated_count = 0
 
     try:
-        tenant = resolve_tenant(
-            db=db,
-            mine_name=mine_name,
+        company_id = int(
+            tenant["company_id"]
         )
-
-        company_id = tenant["company_id"]
-        mine_id = tenant["mine_id"]
-        normalized_mine_name = tenant["mine_name"]
+        mine_id = int(
+            tenant["mine_id"]
+        )
+        normalized_mine_name = str(
+            tenant["mine_name"]
+        ).strip()
 
         for _, row in df.iterrows():
             existing_id = db.execute(
@@ -1275,6 +1286,36 @@ def upload_report(
 
 
 # ============================================================
+# UPLOAD USER LABEL
+# ============================================================
+
+def _get_uploaded_by(
+    current_user: User,
+) -> str:
+    """
+    Return a safe display label for upload-history records.
+    """
+
+    full_name = str(
+        current_user.full_name
+        or ""
+    ).strip()
+
+    if full_name:
+        return full_name
+
+    email = str(
+        current_user.email
+        or ""
+    ).strip()
+
+    if email:
+        return email
+
+    return f"User {current_user.id}"
+
+
+# ============================================================
 # PRODUCTION ENDPOINT
 # ============================================================
 
@@ -1286,28 +1327,44 @@ def upload_report(
 )
 async def upload_production(
     file: UploadFile = File(...),
-    mine_name: str = Form(
-        DEFAULT_MINE_NAME
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
     ),
 ):
     """
     Upload and synchronize Production data with PostgreSQL.
+
+    Tenant ownership is derived exclusively from the
+    authenticated user.
     """
+
+    tenant = resolve_upload_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
     upload_result = upload_report(
         file=file,
         report_type="Production",
     )
 
+    uploaded_by = _get_uploaded_by(
+        current_user
+    )
+
     try:
         import_result = import_production_excel(
             file_path=upload_result["file_path"],
-            mine_name=mine_name,
+            tenant=tenant,
         )
 
         save_upload_log(
             report_type="Production",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Success",
         )
 
@@ -1315,6 +1372,9 @@ async def upload_production(
         save_upload_log(
             report_type="Production",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Failed",
         )
         raise
@@ -1342,28 +1402,44 @@ async def upload_production(
 )
 async def upload_fleet(
     file: UploadFile = File(...),
-    mine_name: str = Form(
-        DEFAULT_MINE_NAME
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
     ),
 ):
     """
     Upload and synchronize Fleet data with PostgreSQL.
+
+    Tenant ownership is derived exclusively from the
+    authenticated user.
     """
+
+    tenant = resolve_upload_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
     upload_result = upload_report(
         file=file,
         report_type="Fleet",
     )
 
+    uploaded_by = _get_uploaded_by(
+        current_user
+    )
+
     try:
         import_result = import_fleet_excel(
             file_path=upload_result["file_path"],
-            mine_name=mine_name,
+            tenant=tenant,
         )
 
         save_upload_log(
             report_type="Fleet",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Success",
         )
 
@@ -1371,6 +1447,9 @@ async def upload_fleet(
         save_upload_log(
             report_type="Fleet",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Failed",
         )
         raise
@@ -1398,28 +1477,44 @@ async def upload_fleet(
 )
 async def upload_plant(
     file: UploadFile = File(...),
-    mine_name: str = Form(
-        DEFAULT_MINE_NAME
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
     ),
 ):
     """
     Upload and synchronize Plant data with PostgreSQL.
+
+    Tenant ownership is derived exclusively from the
+    authenticated user.
     """
+
+    tenant = resolve_upload_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
     upload_result = upload_report(
         file=file,
         report_type="Plant",
     )
 
+    uploaded_by = _get_uploaded_by(
+        current_user
+    )
+
     try:
         import_result = import_plant_excel(
             file_path=upload_result["file_path"],
-            mine_name=mine_name,
+            tenant=tenant,
         )
 
         save_upload_log(
             report_type="Plant",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Success",
         )
 
@@ -1427,6 +1522,9 @@ async def upload_plant(
         save_upload_log(
             report_type="Plant",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Failed",
         )
         raise
@@ -1454,28 +1552,44 @@ async def upload_plant(
 )
 async def upload_safety(
     file: UploadFile = File(...),
-    mine_name: str = Form(
-        DEFAULT_MINE_NAME
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
     ),
 ):
     """
     Upload and synchronize Safety data with PostgreSQL.
+
+    Tenant ownership is derived exclusively from the
+    authenticated user.
     """
+
+    tenant = resolve_upload_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
     upload_result = upload_report(
         file=file,
         report_type="Safety",
     )
 
+    uploaded_by = _get_uploaded_by(
+        current_user
+    )
+
     try:
         import_result = import_safety_excel(
             file_path=upload_result["file_path"],
-            mine_name=mine_name,
+            tenant=tenant,
         )
 
         save_upload_log(
             report_type="Safety",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Success",
         )
 
@@ -1483,6 +1597,9 @@ async def upload_safety(
         save_upload_log(
             report_type="Safety",
             file_name=upload_result["filename"],
+            uploaded_by=uploaded_by,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             status="Failed",
         )
         raise
@@ -1503,42 +1620,57 @@ async def upload_safety(
 # ============================================================
 
 @router.get("/history")
-def get_upload_history():
+def get_upload_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
+):
     """
-    Return the twenty most recent upload-log records.
+    Return the twenty most recent upload-log records
+    belonging to the authenticated tenant.
     """
 
-    db = SessionLocal()
+    tenant = resolve_upload_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
-    try:
-        rows = db.execute(
-            text(
-                """
-                SELECT
-                    report_type,
-                    file_name,
-                    uploaded_by,
-                    status,
-                    uploaded_at
-                FROM public.upload_logs
-                ORDER BY uploaded_at DESC
-                LIMIT 20
-                """
-            )
-        ).mappings().all()
+    rows = db.execute(
+        text(
+            """
+            SELECT
+                report_type,
+                file_name,
+                uploaded_by,
+                status,
+                uploaded_at
+            FROM public.upload_logs
+            WHERE company_id = :company_id
+              AND mine_id = :mine_id
+            ORDER BY uploaded_at DESC
+            LIMIT 20
+            """
+        ),
+        {
+            "company_id": int(
+                tenant["company_id"]
+            ),
+            "mine_id": int(
+                tenant["mine_id"]
+            ),
+        },
+    ).mappings().all()
 
-        return [
-            {
-                "report_type": row["report_type"],
-                "file_name": row["file_name"],
-                "uploaded_by": row["uploaded_by"],
-                "status": row["status"],
-                "uploaded_at": str(
-                    row["uploaded_at"]
-                ),
-            }
-            for row in rows
-        ]
-
-    finally:
-        db.close()
+    return [
+        {
+            "report_type": row["report_type"],
+            "file_name": row["file_name"],
+            "uploaded_by": row["uploaded_by"],
+            "status": row["status"],
+            "uploaded_at": str(
+                row["uploaded_at"]
+            ),
+        }
+        for row in rows
+    ]
