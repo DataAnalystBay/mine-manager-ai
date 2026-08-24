@@ -3,11 +3,10 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.services.ai.kpi_engine import get_kpi_intelligence
-from app.services.demo_data_service import generate_all_demo_data
-from app.services.trend_engine_service import (
-    get_trend_analysis_service,
+from app.services.analytics_engine_service import (
+    get_shared_analytics,
 )
+from app.services.demo_data_service import generate_all_demo_data
 
 
 # --------------------------------------------------
@@ -207,6 +206,30 @@ def _average(
     )
 
 
+def _build_attainment_kpi(
+    achievement: Any,
+) -> Dict[str, Any]:
+    """Adapt a percentage-of-plan value to the live insight contract."""
+
+    value = round(_safe_float(achievement), 1)
+
+    if value >= 100.0:
+        status = "Above Plan"
+    elif value >= 95.0:
+        status = "On Plan"
+    else:
+        status = "Below Plan"
+
+    return {
+        "plan": 100.0,
+        "actual": value,
+        "performance": value,
+        "severity": None,
+        "status": status,
+        "is_percentage_attainment": True,
+    }
+
+
 def _build_reporting_period(
     trend_data: Dict[str, Any],
 ) -> str:
@@ -353,6 +376,7 @@ def _build_kpi_summary(
     actual: Any,
     performance: Any,
     variance_percent: float,
+    is_percentage_attainment: bool = False,
 ) -> str:
     """
     Build a concise executive KPI summary.
@@ -361,6 +385,22 @@ def _build_kpi_summary(
     plan_value = _safe_float(plan)
     actual_value = _safe_float(actual)
     performance_value = _safe_float(performance)
+
+    if is_percentage_attainment:
+        if variance_percent < 0:
+            return (
+                f"{kpi_name} is {abs(variance_percent):.1f}% below target, "
+                f"operating at {performance_value:.1f}% of plan."
+            )
+        if variance_percent > 0:
+            return (
+                f"{kpi_name} is {variance_percent:.1f}% above target, "
+                f"operating at {performance_value:.1f}% of plan."
+            )
+        return (
+            f"{kpi_name} is exactly on target at "
+            f"{performance_value:.1f}% of plan."
+        )
 
     if plan_value <= 0:
         return (
@@ -441,6 +481,15 @@ def _find_likely_driver(
             "fleet",
             "plant",
         ],
+        "Cathode Production": [
+            "cathode",
+            "copper",
+            "recovery",
+            "plant",
+            "throughput",
+            "sx-ew",
+            "sxew",
+        ],
         "Waste Movement": [
             "waste",
             "fleet",
@@ -497,6 +546,20 @@ def _find_recommendation(
             "экскаватор",
             "флот",
             "засвар",
+        ],
+        "Cathode Production": [
+            "cathode",
+            "copper",
+            "recovery",
+            "plant",
+            "throughput",
+            "process",
+            "sx-ew",
+            "sxew",
+            "катод",
+            "зэс",
+            "авалт",
+            "үйлдвэр",
         ],
         "Waste Movement": [
             "waste",
@@ -664,11 +727,31 @@ def _build_kpi_insight(
         language=language,
     )
 
-    impact = _estimate_impact(
-        kpi_name=kpi_name,
-        plan=plan,
-        actual=actual,
+    is_percentage_attainment = bool(
+        kpi_data.get(
+            "is_percentage_attainment",
+            False,
+        )
     )
+
+    if is_percentage_attainment:
+        attainment_gap = max(100.0 - _safe_float(actual), 0.0)
+        impact = {
+            "value": round(attainment_gap, 1),
+            "unit": "percentage points",
+            "description": (
+                f"{kpi_name} is {attainment_gap:.1f} percentage points below target performance."
+                if attainment_gap > 0
+                else f"No negative {kpi_name.lower()} performance gap is currently estimated."
+            ),
+            "method": "Target attainment gap",
+        }
+    else:
+        impact = _estimate_impact(
+            kpi_name=kpi_name,
+            plan=plan,
+            actual=actual,
+        )
 
     return {
         "insight_key": insight_key,
@@ -689,6 +772,7 @@ def _build_kpi_insight(
             actual=actual,
             performance=performance,
             variance_percent=variance_percent,
+            is_percentage_attainment=is_percentage_attainment,
         ),
         "trend": {
             "direction": trend_direction,
@@ -715,7 +799,7 @@ def _build_kpi_insight(
         "source": {
             "type": "rule_based_orchestrator",
             "engines": [
-                "KPI Intelligence Engine",
+                "Shared Analytics Engine",
                 "Trend Analysis Engine",
             ],
         },
@@ -2156,31 +2240,23 @@ def get_executive_summary_v2(
     db: Session,
     scenario: Optional[str] = None,
     language: str = "en",
+    company_id: int | None = None,
+    mine_id: int | None = None,
+    operation_profile: str = "standard_mine",
 ) -> Dict[str, Any]:
     """
     Generate structured executive insights.
 
-    Live mode:
-        Uses PostgreSQL KPI and trend data.
-
-    Demo mode:
-        Uses deterministic scenario datasets when the
-        supplied scenario has a dedicated implementation.
+    Live mode uses the tenant-aware Shared Analytics Engine.
+    Demo mode preserves the existing deterministic scenarios.
     """
 
-    generated_at = datetime.now(
-        timezone.utc
-    ).isoformat()
-
-    normalized_language = _normalize_language(
-        language
-    )
-
-    normalized_scenario = (
-        _normalize_scenario(
-            scenario
-        )
-    )
+    generated_at = datetime.now(timezone.utc).isoformat()
+    normalized_language = _normalize_language(language)
+    normalized_scenario = _normalize_scenario(scenario)
+    normalized_operation_profile = str(
+        operation_profile or "standard_mine"
+    ).strip().lower()
 
     if normalized_scenario:
         try:
@@ -2190,28 +2266,19 @@ def get_executive_summary_v2(
                 generated_at=generated_at,
             )
         except Exception as exc:
-            base_response = (
-                _build_base_response(
-                    mine_name=mine_name,
-                    scenario=normalized_scenario,
-                    generated_at=generated_at,
-                )
+            base_response = _build_base_response(
+                mine_name=mine_name,
+                scenario=normalized_scenario,
+                generated_at=generated_at,
             )
-
             return {
                 **base_response,
                 "status": "error",
-                "message": (
-                    "Demo executive insight "
-                    "generation failed."
-                ),
+                "message": "Demo executive insight generation failed.",
                 "error": str(exc),
                 "total_insights": 0,
                 "severity_counts": {
-                    "critical": 0,
-                    "high": 0,
-                    "medium": 0,
-                    "low": 0,
+                    "critical": 0, "high": 0, "medium": 0, "low": 0
                 },
                 "insights": [],
             }
@@ -2223,167 +2290,137 @@ def get_executive_summary_v2(
     )
 
     try:
-        kpi_data = get_kpi_intelligence()
-
-        trend_data = (
-            get_trend_analysis_service(
-                mine_name=mine_name,
-                db=db,
-                language=normalized_language,
-            )
+        analytics_data = get_shared_analytics(
+            db=db,
+            mine_name=mine_name,
+            days=7,
+            language=normalized_language,
+            company_id=company_id,
+            mine_id=mine_id,
+            operation_profile=normalized_operation_profile,
         )
 
-        if not kpi_data:
-            return {
-                **base_response,
-                "status": "no_data",
-                "message": (
-                    "No KPI intelligence data "
-                    "was returned."
-                ),
-                "total_insights": 0,
-                "severity_counts": {
-                    "critical": 0,
-                    "high": 0,
-                    "medium": 0,
-                    "low": 0,
-                },
-                "insights": [],
-            }
+        summary_data = analytics_data.get("summary", {})
+        kpis = analytics_data.get("kpis", {})
+        production_data = kpis.get("production", {})
 
-        if (
-            kpi_data.get("message")
-            == "No production data found"
-        ):
+        drivers = [
+            str(item.get("title") or item) if isinstance(item, dict) else str(item)
+            for item in analytics_data.get("insights", [])
+            if item
+        ]
+        recommendations = [
+            str(item.get("title") or item) if isinstance(item, dict) else str(item)
+            for item in analytics_data.get("priority_actions", [])
+            if item
+        ]
+
+        trend_data = {
+            "direction": summary_data.get("direction", "No Data"),
+            "direction_code": summary_data.get("direction_code", "no_data"),
+            "change_percent": summary_data.get("change_percent", 0),
+            "summary": (
+                f"Mine Health trend is {summary_data.get('direction', 'No Data')}."
+            ),
+            "drivers": drivers,
+            "recommendations": recommendations,
+        }
+
+        if summary_data.get("status") != "available":
             return {
                 **base_response,
                 "status": "no_data",
                 "message": (
-                    "No production data is available "
-                    "for executive insight generation."
+                    "No operational data is available for executive insight generation."
                 ),
                 "report_date": None,
-                "reporting_period": (
-                    _build_reporting_period(
-                        trend_data
-                    )
-                ),
+                "reporting_period": _build_reporting_period(trend_data),
+                "operation_profile": normalized_operation_profile,
                 "total_insights": 0,
                 "severity_counts": {
-                    "critical": 0,
-                    "high": 0,
-                    "medium": 0,
-                    "low": 0,
+                    "critical": 0, "high": 0, "medium": 0, "low": 0
                 },
                 "insights": [],
             }
 
+        production_trend = analytics_data.get("trends", {}).get(
+            "production", []
+        )
         report_date = (
-            kpi_data.get("report_date")
+            production_trend[-1].get("report_date")
+            if production_trend
+            else analytics_data.get("mine", {}).get("report_date")
         )
 
-        insights: List[
-            Dict[str, Any]
-        ] = []
+        insights: List[Dict[str, Any]] = []
+        production_label = (
+            production_data.get("production_label") or "Ore Production"
+        )
 
-        ore_data = kpi_data.get("ore")
-
-        if isinstance(ore_data, dict):
+        if production_data:
             insights.append(
                 _build_kpi_insight(
-                    insight_key=(
-                        "ore-production-performance"
-                    ),
-                    kpi_name=(
-                        "Ore Production"
-                    ),
+                    insight_key="production-performance",
+                    kpi_name=production_label,
                     category="Production",
-                    kpi_data=ore_data,
+                    kpi_data=_build_attainment_kpi(
+                        production_data.get("ore_achievement")
+                    ),
                     trend_data=trend_data,
                     report_date=report_date,
                     language=normalized_language,
                 )
             )
 
-        waste_data = (
-            kpi_data.get("waste")
+        waste_applicable = bool(
+            production_data.get("waste_applicable", True)
         )
-
-        if isinstance(
-            waste_data,
-            dict,
-        ):
+        if waste_applicable and production_data:
             insights.append(
                 _build_kpi_insight(
-                    insight_key=(
-                        "waste-movement-performance"
-                    ),
-                    kpi_name=(
-                        "Waste Movement"
-                    ),
+                    insight_key="waste-movement-performance",
+                    kpi_name="Waste Movement",
                     category="Production",
-                    kpi_data=waste_data,
+                    kpi_data=_build_attainment_kpi(
+                        production_data.get("waste_achievement")
+                    ),
                     trend_data=trend_data,
                     report_date=report_date,
                     language=normalized_language,
                 )
             )
 
-        insights = _sort_insights(
-            insights
-        )
-
-        severity_counts = (
-            _count_severities(
-                insights
-            )
-        )
+        insights = _sort_insights(insights)
+        severity_counts = _count_severities(insights)
 
         return {
             **base_response,
             "status": "success",
             "report_date": report_date,
-            "reporting_period": (
-                _build_reporting_period(
-                    trend_data
-                )
-            ),
-            "executive_headline": (
-                _build_executive_headline(
-                    insights=insights,
-                    trend_data=trend_data,
-                )
-            ),
-            "overall_trend": {
-                "direction": (
-                    trend_data.get(
-                        "direction",
-                        "No Data",
-                    )
-                ),
-                "change_percent": (
-                    _safe_float(
-                        trend_data.get(
-                            "change_percent"
-                        )
-                    )
-                ),
-                "summary": (
-                    trend_data.get(
-                        "summary",
-                        (
-                            "No trend summary is "
-                            "currently available."
-                        ),
-                    )
+            "reporting_period": _build_reporting_period(trend_data),
+            "operation_profile": normalized_operation_profile,
+            "applicability": {
+                "waste": waste_applicable,
+                "fleet": bool(
+                    kpis.get("fleet", {}).get("applicable", True)
                 ),
             },
-            "total_insights": len(
-                insights
+            "executive_headline": _build_executive_headline(
+                insights=insights,
+                trend_data=trend_data,
             ),
-            "severity_counts": (
-                severity_counts
-            ),
+            "overall_trend": {
+                "direction": trend_data.get("direction", "No Data"),
+                "change_percent": _safe_float(
+                    trend_data.get("change_percent")
+                ),
+                "summary": trend_data.get(
+                    "summary",
+                    "No trend summary is currently available.",
+                ),
+            },
+            "total_insights": len(insights),
+            "severity_counts": severity_counts,
             "insights": insights,
         }
 
@@ -2391,16 +2428,11 @@ def get_executive_summary_v2(
         return {
             **base_response,
             "status": "error",
-            "message": (
-                "Executive insight generation failed."
-            ),
+            "message": "Executive insight generation failed.",
             "error": str(exc),
             "total_insights": 0,
             "severity_counts": {
-                "critical": 0,
-                "high": 0,
-                "medium": 0,
-                "low": 0,
+                "critical": 0, "high": 0, "medium": 0, "low": 0
             },
             "insights": [],
         }

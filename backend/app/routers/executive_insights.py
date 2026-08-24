@@ -1,6 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+)
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import (
@@ -8,8 +12,12 @@ from app.auth.dependencies import (
     require_operational_editor,
 )
 from app.database import get_db
+from app.models.user import User
 from app.services.executive_summary_service_v2 import (
     get_executive_summary_v2,
+)
+from app.services.tenant_service import (
+    resolve_authenticated_tenant,
 )
 
 
@@ -29,12 +37,13 @@ router = APIRouter(
     ],
 )
 def get_executive_insights(
-    mine_name: str = Query(
-        default="Oyu Tolgoi Surface",
+    mine_name: Optional[str] = Query(
+        default=None,
         min_length=1,
         max_length=255,
         description=(
-            "Mine name used to generate executive insights."
+            "Optional mine name retained for API compatibility. "
+            "The authenticated tenant determines the active mine."
         ),
     ),
     scenario: Optional[str] = Query(
@@ -56,9 +65,23 @@ def get_executive_insights(
         ),
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
-    Generate structured executive insights.
+    Generate structured executive insights for the
+    authenticated tenant.
+
+    Tenant security:
+        authenticated user
+            -> tenant service
+            -> company + mine
+            -> executive insight data
+
+    The optional mine_name query parameter is retained only
+    for backward compatibility and does not determine the
+    active tenant.
 
     Live mode:
         Uses PostgreSQL KPI and trend data.
@@ -79,7 +102,14 @@ def get_executive_insights(
         - Administrator
     """
 
-    normalized_mine_name = mine_name.strip()
+    tenant = resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
+    )
+
+    resolved_mine_name = (
+        tenant["mine_name"]
+    )
 
     normalized_scenario = (
         scenario.strip()
@@ -104,10 +134,15 @@ def get_executive_insights(
         normalized_language = "en"
 
     return get_executive_summary_v2(
-        mine_name=normalized_mine_name,
+        mine_name=resolved_mine_name,
         db=db,
         scenario=normalized_scenario,
         language=normalized_language,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
+        operation_profile=tenant[
+            "operation_profile"
+        ],
     )
 
 
