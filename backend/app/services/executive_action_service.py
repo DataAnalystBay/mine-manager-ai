@@ -23,14 +23,52 @@ HIGH_PRIORITIES = {
 }
 
 
+# ============================================================
+# TENANT HELPERS
+# ============================================================
+
+def _tenant_filter(
+    company_id: int,
+    mine_id: int,
+):
+    """
+    Return the mandatory Executive Action tenant filters.
+
+    Every Executive Action query must be constrained by both
+    company_id and mine_id.
+    """
+
+    return (
+        ExecutiveAction.company_id == company_id,
+        ExecutiveAction.mine_id == mine_id,
+    )
+
+
+# ============================================================
+# ACTION LOOKUPS
+# ============================================================
+
 def get_action_by_id(
     db: Session,
     action_id: int,
+    company_id: int,
+    mine_id: int,
 ) -> Optional[ExecutiveAction]:
+    """
+    Return one Executive Action belonging to the active tenant.
+
+    An action belonging to another tenant is intentionally
+    indistinguishable from a missing action.
+    """
+
     return (
         db.query(ExecutiveAction)
         .filter(
-            ExecutiveAction.id == action_id
+            ExecutiveAction.id == action_id,
+            *_tenant_filter(
+                company_id=company_id,
+                mine_id=mine_id,
+            ),
         )
         .first()
     )
@@ -39,25 +77,55 @@ def get_action_by_id(
 def get_action_by_key(
     db: Session,
     action_key: str,
+    company_id: int,
+    mine_id: int,
 ) -> Optional[ExecutiveAction]:
+    """
+    Return one Executive Action by action_key inside the
+    active tenant.
+    """
+
     return (
         db.query(ExecutiveAction)
         .filter(
-            ExecutiveAction.action_key == action_key
+            ExecutiveAction.action_key == action_key,
+            *_tenant_filter(
+                company_id=company_id,
+                mine_id=mine_id,
+            ),
         )
         .first()
     )
 
 
+# ============================================================
+# LIST ACTIONS
+# ============================================================
+
 def list_actions(
     db: Session,
+    company_id: int,
+    mine_id: int,
     status: Optional[str] = None,
     priority: Optional[str] = None,
     kpi_key: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> list[ExecutiveAction]:
-    query = db.query(ExecutiveAction)
+    """
+    Return Executive Actions belonging only to the active
+    company + mine tenant.
+    """
+
+    query = (
+        db.query(ExecutiveAction)
+        .filter(
+            *_tenant_filter(
+                company_id=company_id,
+                mine_id=mine_id,
+            )
+        )
+    )
 
     if status:
         query = query.filter(
@@ -86,12 +154,40 @@ def list_actions(
     )
 
 
+# ============================================================
+# CREATE ACTION
+# ============================================================
+
 def create_action(
     db: Session,
     action_data: ExecutiveActionCreate,
+    company_id: int,
+    mine_id: int,
 ) -> ExecutiveAction:
+    """
+    Create an Executive Action owned by the active tenant.
+
+    Tenant ownership is supplied by the authenticated backend
+    context and must never be accepted from the frontend.
+    """
+
+    action_values = action_data.model_dump()
+
+    # Never allow schema/frontend values to override tenant
+    # ownership if tenant fields are added to the schema later.
+    action_values.pop(
+        "company_id",
+        None,
+    )
+    action_values.pop(
+        "mine_id",
+        None,
+    )
+
     action = ExecutiveAction(
-        **action_data.model_dump()
+        company_id=company_id,
+        mine_id=mine_id,
+        **action_values,
     )
 
     if action.status == "completed":
@@ -106,27 +202,56 @@ def create_action(
     return action
 
 
+# ============================================================
+# UPDATE ACTION
+# ============================================================
+
 def update_action(
     db: Session,
     action: ExecutiveAction,
     action_data: ExecutiveActionUpdate,
 ) -> ExecutiveAction:
+    """
+    Update an already tenant-authorized Executive Action.
+
+    Tenant ownership cannot be changed through this function.
+    """
+
     update_values = action_data.model_dump(
         exclude_unset=True
+    )
+
+    # Defensive protection in case tenant fields are ever added
+    # to the update schema.
+    update_values.pop(
+        "company_id",
+        None,
+    )
+    update_values.pop(
+        "mine_id",
+        None,
     )
 
     old_status = action.status
 
     for field, value in update_values.items():
-        setattr(action, field, value)
+        setattr(
+            action,
+            field,
+            value,
+        )
 
     if "status" in update_values:
-        new_status = update_values["status"]
+        new_status = update_values[
+            "status"
+        ]
 
         if new_status == "completed":
             if old_status != "completed":
-                action.completed_at = datetime.now(
-                    timezone.utc
+                action.completed_at = (
+                    datetime.now(
+                        timezone.utc
+                    )
                 )
         else:
             action.completed_at = None
@@ -141,11 +266,19 @@ def update_action(
     return action
 
 
+# ============================================================
+# UPDATE STATUS
+# ============================================================
+
 def update_action_status(
     db: Session,
     action: ExecutiveAction,
     status: str,
 ) -> ExecutiveAction:
+    """
+    Update status for an already tenant-authorized action.
+    """
+
     old_status = action.status
 
     action.status = status
@@ -168,13 +301,25 @@ def update_action_status(
     return action
 
 
+# ============================================================
+# DELETE ACTION
+# ============================================================
+
 def delete_action(
     db: Session,
     action: ExecutiveAction,
 ) -> None:
+    """
+    Delete an already tenant-authorized action.
+    """
+
     db.delete(action)
     db.commit()
 
+
+# ============================================================
+# ANALYTICS HELPERS
+# ============================================================
 
 def calculate_average_days_to_close(
     completed_actions: list[ExecutiveAction],
@@ -201,7 +346,10 @@ def calculate_average_days_to_close(
                 tzinfo=timezone.utc
             )
 
-        duration = completed_at - created_at
+        duration = (
+            completed_at
+            - created_at
+        )
 
         days_to_close = max(
             duration.total_seconds()
@@ -223,9 +371,19 @@ def calculate_average_days_to_close(
     )
 
 
+# ============================================================
+# ACTION SUMMARY
+# ============================================================
+
 def get_action_summary(
     db: Session,
+    company_id: int,
+    mine_id: int,
 ) -> dict:
+    """
+    Return summary metrics for the active tenant only.
+    """
+
     today = datetime.now(
         timezone.utc
     ).date()
@@ -236,11 +394,19 @@ def get_action_summary(
         1,
     )
 
+    tenant_filters = _tenant_filter(
+        company_id=company_id,
+        mine_id=mine_id,
+    )
+
     total = (
         db.query(
             func.count(
                 ExecutiveAction.id
             )
+        )
+        .filter(
+            *tenant_filters
         )
         .scalar()
         or 0
@@ -253,7 +419,9 @@ def get_action_summary(
             )
         )
         .filter(
-            ExecutiveAction.status == "open"
+            *tenant_filters,
+            ExecutiveAction.status
+            == "open",
         )
         .scalar()
         or 0
@@ -266,8 +434,9 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.status
-            == "in_progress"
+            == "in_progress",
         )
         .scalar()
         or 0
@@ -280,8 +449,9 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.status
-            == "completed"
+            == "completed",
         )
         .scalar()
         or 0
@@ -294,8 +464,9 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.status
-            == "blocked"
+            == "blocked",
         )
         .scalar()
         or 0
@@ -308,6 +479,7 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.due_date
             == today,
             ExecutiveAction.status.in_(
@@ -325,6 +497,7 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.due_date
             < today,
             ExecutiveAction.status.in_(
@@ -342,6 +515,7 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.priority.in_(
                 HIGH_PRIORITIES
             ),
@@ -360,6 +534,7 @@ def get_action_summary(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.status
             == "completed",
             ExecutiveAction.completed_at
@@ -374,6 +549,7 @@ def get_action_summary(
             ExecutiveAction
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.status
             == "completed",
             ExecutiveAction.completed_at.isnot(
@@ -406,37 +582,60 @@ def get_action_summary(
     )
 
     return {
-        "total": total,
-        "open": open_count,
-        "in_progress": in_progress_count,
-        "completed": completed_count,
-        "blocked": blocked_count,
+        "total": int(total),
+        "open": int(open_count),
+        "in_progress": int(
+            in_progress_count
+        ),
+        "completed": int(
+            completed_count
+        ),
+        "blocked": int(
+            blocked_count
+        ),
         "completion_percentage":
             completion_percentage,
-
         "due_today":
-            due_today_count,
-
+            int(due_today_count),
         "overdue":
-            overdue_count,
-
+            int(overdue_count),
         "high_priority":
-            high_priority_count,
-
+            int(high_priority_count),
         "completed_this_month":
-            completed_this_month_count,
-
+            int(
+                completed_this_month_count
+            ),
         "average_days_to_close":
             average_days_to_close,
     }
 
 
+# ============================================================
+# ACTION ANALYTICS
+# ============================================================
+
 def get_action_analytics(
     db: Session,
+    company_id: int,
+    mine_id: int,
 ) -> dict:
+    """
+    Return Executive Action analytics for the active tenant
+    only.
+    """
+
     today = datetime.now(
         timezone.utc
     ).date()
+
+    tenant_filters = _tenant_filter(
+        company_id=company_id,
+        mine_id=mine_id,
+    )
+
+    # --------------------------------------------------------
+    # Actions by status
+    # --------------------------------------------------------
 
     status_rows = (
         db.query(
@@ -444,6 +643,9 @@ def get_action_analytics(
             func.count(
                 ExecutiveAction.id
             ).label("count"),
+        )
+        .filter(
+            *tenant_filters
         )
         .group_by(
             ExecutiveAction.status
@@ -458,11 +660,23 @@ def get_action_analytics(
         "blocked": 0,
     }
 
-    for status_value, count_value in status_rows:
-        if status_value in actions_by_status:
-            actions_by_status[status_value] = int(
+    for (
+        status_value,
+        count_value,
+    ) in status_rows:
+        if (
+            status_value
+            in actions_by_status
+        ):
+            actions_by_status[
+                status_value
+            ] = int(
                 count_value or 0
             )
+
+    # --------------------------------------------------------
+    # Actions by priority
+    # --------------------------------------------------------
 
     priority_rows = (
         db.query(
@@ -470,6 +684,9 @@ def get_action_analytics(
             func.count(
                 ExecutiveAction.id
             ).label("count"),
+        )
+        .filter(
+            *tenant_filters
         )
         .group_by(
             ExecutiveAction.priority
@@ -484,9 +701,17 @@ def get_action_analytics(
         "critical": 0,
     }
 
-    for priority_value, count_value in priority_rows:
-        if priority_value in actions_by_priority:
-            actions_by_priority[priority_value] = int(
+    for (
+        priority_value,
+        count_value,
+    ) in priority_rows:
+        if (
+            priority_value
+            in actions_by_priority
+        ):
+            actions_by_priority[
+                priority_value
+            ] = int(
                 count_value or 0
             )
 
@@ -495,17 +720,28 @@ def get_action_analytics(
     )
 
     completed_actions_count = (
-        actions_by_status["completed"]
+        actions_by_status[
+            "completed"
+        ]
     )
 
     active_actions = sum(
-        actions_by_status[status_value]
-        for status_value in ACTIVE_STATUSES
+        actions_by_status[
+            status_value
+        ]
+        for status_value
+        in ACTIVE_STATUSES
     )
 
     blocked_actions = (
-        actions_by_status["blocked"]
+        actions_by_status[
+            "blocked"
+        ]
     )
+
+    # --------------------------------------------------------
+    # Critical actions
+    # --------------------------------------------------------
 
     critical_actions = (
         db.query(
@@ -514,6 +750,7 @@ def get_action_analytics(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.priority
             == "critical",
             ExecutiveAction.status.in_(
@@ -524,6 +761,10 @@ def get_action_analytics(
         or 0
     )
 
+    # --------------------------------------------------------
+    # Overdue actions
+    # --------------------------------------------------------
+
     overdue_actions = (
         db.query(
             func.count(
@@ -531,6 +772,7 @@ def get_action_analytics(
             )
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.due_date
             < today,
             ExecutiveAction.status.in_(
@@ -567,11 +809,16 @@ def get_action_analytics(
         else 0.0
     )
 
+    # --------------------------------------------------------
+    # Average closure time
+    # --------------------------------------------------------
+
     completed_actions = (
         db.query(
             ExecutiveAction
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.status
             == "completed",
             ExecutiveAction.created_at.isnot(
@@ -590,6 +837,10 @@ def get_action_analytics(
         )
     )
 
+    # --------------------------------------------------------
+    # Owner analytics
+    # --------------------------------------------------------
+
     owner_rows = (
         db.query(
             ExecutiveAction.owner,
@@ -606,9 +857,12 @@ def get_action_analytics(
                     ),
                     else_=0,
                 )
-            ).label("active_count"),
+            ).label(
+                "active_count"
+            ),
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.owner.isnot(
                 None
             ),
@@ -829,6 +1083,10 @@ def get_action_analytics(
         )[:5]
     ]
 
+    # --------------------------------------------------------
+    # KPI analytics
+    # --------------------------------------------------------
+
     kpi_rows = (
         db.query(
             ExecutiveAction.kpi_key,
@@ -846,9 +1104,12 @@ def get_action_analytics(
                     ),
                     else_=0,
                 )
-            ).label("active_count"),
+            ).label(
+                "active_count"
+            ),
         )
         .filter(
+            *tenant_filters,
             ExecutiveAction.kpi_key.isnot(
                 None
             ),
@@ -872,17 +1133,23 @@ def get_action_analytics(
 
     top_kpis = [
         {
-            "kpi_key": kpi_key,
+            "kpi_key":
+                kpi_key,
+
             "kpi_name": (
                 kpi_name
                 or kpi_key
             ),
-            "count": int(
-                count_value or 0
-            ),
-            "active_count": int(
-                active_count or 0
-            ),
+
+            "count":
+                int(
+                    count_value or 0
+                ),
+
+            "active_count":
+                int(
+                    active_count or 0
+                ),
         }
         for (
             kpi_key,
