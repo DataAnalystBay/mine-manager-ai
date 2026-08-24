@@ -748,10 +748,6 @@ function Safety() {
   const [error, setError] =
     useState("");
 
-  const mineName =
-    "Oyu Tolgoi Surface";
-
-
   /* ---------------------------------------------------------
      LOAD DATA
   --------------------------------------------------------- */
@@ -766,11 +762,9 @@ function Safety() {
           todayData,
           trendData,
         ] = await Promise.all([
-          getTodaySafety(
-            mineName
-          ),
+          getTodaySafety(),
+
           getSafetyTrend(
-            mineName,
             TREND_PERIODS
           ),
         ]);

@@ -56,18 +56,11 @@ function getErrorMessage(
 }
 
 
-export async function getTodaySafety(
-  mineName = "Oyu Tolgoi Surface"
-) {
+export async function getTodaySafety() {
   try {
     const response =
       await safetyClient.get(
-        "/today",
-        {
-          params: {
-            mine_name: mineName,
-          },
-        }
+        "/today"
       );
 
     return response.data;
@@ -83,7 +76,6 @@ export async function getTodaySafety(
 
 
 export async function getSafetyTrend(
-  mineName = "Oyu Tolgoi Surface",
   days = 30
 ) {
   try {
@@ -92,7 +84,6 @@ export async function getSafetyTrend(
         "/trend",
         {
           params: {
-            mine_name: mineName,
             days,
           },
         }

@@ -1,5 +1,3 @@
-import os
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -14,6 +12,10 @@ from app.auth.dependencies import (
     get_current_user,
 )
 from app.database import SessionLocal
+from app.models.user import User
+from app.services.tenant_service import (
+    resolve_authenticated_tenant,
+)
 
 
 router = APIRouter(
@@ -22,21 +24,6 @@ router = APIRouter(
     dependencies=[
         Depends(get_current_user),
     ],
-)
-
-
-ACTIVE_COMPANY_ID = int(
-    os.getenv(
-        "ACTIVE_COMPANY_ID",
-        "1",
-    )
-)
-
-ACTIVE_MINE_ID = int(
-    os.getenv(
-        "ACTIVE_MINE_ID",
-        "1",
-    )
 )
 
 
@@ -54,87 +41,27 @@ def get_db():
 
 
 # ============================================================
-# ACTIVE TENANT RESOLUTION
+# AUTHENTICATED TENANT RESOLUTION
 # ============================================================
 
-def resolve_active_tenant(
+def resolve_safety_tenant(
     db: Session,
-):
+    current_user: User,
+) -> dict:
     """
-    Resolve the active company and mine.
+    Resolve the authenticated user's operational tenant.
 
-    company_id + mine_id are the authoritative tenant boundary.
+    The authenticated user determines the company and mine.
+
+    company_id + mine_id are the authoritative data boundary.
+
+    The frontend must not determine the active tenant.
     """
 
-    tenant = db.execute(
-        text(
-            """
-            SELECT
-                m.id AS mine_id,
-                m.company_id AS company_id,
-                m.mine_name AS mine_name,
-                m.mine_type AS mine_type,
-                c.company_name AS company_name
-            FROM public.mine_settings AS m
-            JOIN public.company_settings AS c
-                ON c.id = m.company_id
-            WHERE m.id = :mine_id
-              AND m.company_id = :company_id
-            """
-        ),
-        {
-            "company_id": ACTIVE_COMPANY_ID,
-            "mine_id": ACTIVE_MINE_ID,
-        },
-    ).mappings().first()
-
-    if tenant is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                "Active tenant was not found: "
-                f"company_id={ACTIVE_COMPANY_ID}, "
-                f"mine_id={ACTIVE_MINE_ID}"
-            ),
-        )
-
-    mine_type = str(
-        tenant["mine_type"] or ""
-    ).strip().lower()
-
-    is_sxew_operation = (
-        mine_type
-        in {
-            "processing plant / sx-ew",
-            "sx-ew",
-            "hydrometallurgical copper processing",
-        }
-        or tenant["mine_name"]
-        == "Achit-Ikht Copper Cathode Operation"
+    return resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
     )
-
-    return {
-        "company_id": int(
-            tenant["company_id"]
-        ),
-        "mine_id": int(
-            tenant["mine_id"]
-        ),
-        "company_name": tenant[
-            "company_name"
-        ],
-        "mine_name": tenant[
-            "mine_name"
-        ],
-        "mine_type": tenant[
-            "mine_type"
-        ],
-        "operation_profile": (
-            "sxew_copper"
-            if is_sxew_operation
-            else "standard_mine"
-        ),
-    }
 
 
 # ============================================================
@@ -143,12 +70,13 @@ def resolve_active_tenant(
 
 def build_safety_metadata(
     tenant: dict,
-):
+) -> dict:
     """
     Return operation-aware Safety labels.
 
-    Current Safety KPI structure is shared between operation types,
-    so these labels remain broadly applicable.
+    The current Safety KPI structure is shared between
+    operation profiles, so these labels remain broadly
+    applicable.
     """
 
     if (
@@ -173,6 +101,31 @@ def build_safety_metadata(
 
 
 # ============================================================
+# TENANT RESPONSE HELPERS
+# ============================================================
+
+def build_tenant_response(
+    tenant: dict,
+    metadata: dict,
+) -> dict:
+    """
+    Build common tenant metadata returned by Safety APIs.
+    """
+
+    return {
+        "company_id": tenant["company_id"],
+        "mine_id": tenant["mine_id"],
+        "company_name": tenant["company_name"],
+        "mine_name": tenant["mine_name"],
+        "mine_type": tenant["mine_type"],
+        "operation_profile": (
+            tenant["operation_profile"]
+        ),
+        **metadata,
+    }
+
+
+# ============================================================
 # TODAY
 # ============================================================
 
@@ -184,17 +137,27 @@ def get_today_safety(
         max_length=100,
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
-    Return the latest Safety record for the active tenant.
+    Return the latest Safety record for the
+    authenticated tenant.
 
-    The optional mine_name parameter is accepted only for
-    frontend compatibility. It is not used as the security boundary.
+    The optional mine_name parameter is retained
+    temporarily for backward frontend compatibility.
+
+    It is NOT used to determine or authorize the tenant.
+
+    The authenticated user determines the company
+    and mine through resolve_authenticated_tenant().
     """
 
     try:
-        tenant = resolve_active_tenant(
+        tenant = resolve_safety_tenant(
             db=db,
+            current_user=current_user,
         )
 
         metadata = build_safety_metadata(
@@ -224,51 +187,24 @@ def get_today_safety(
             query,
             {
                 "company_id": (
-                    tenant[
-                        "company_id"
-                    ]
+                    tenant["company_id"]
                 ),
                 "mine_id": (
-                    tenant[
-                        "mine_id"
-                    ]
+                    tenant["mine_id"]
                 ),
             },
         ).mappings().first()
 
+        tenant_response = (
+            build_tenant_response(
+                tenant=tenant,
+                metadata=metadata,
+            )
+        )
+
         if not result:
             return {
-                "company_id": (
-                    tenant[
-                        "company_id"
-                    ]
-                ),
-                "mine_id": (
-                    tenant[
-                        "mine_id"
-                    ]
-                ),
-                "company_name": (
-                    tenant[
-                        "company_name"
-                    ]
-                ),
-                "mine_name": (
-                    tenant[
-                        "mine_name"
-                    ]
-                ),
-                "mine_type": (
-                    tenant[
-                        "mine_type"
-                    ]
-                ),
-                "operation_profile": (
-                    tenant[
-                        "operation_profile"
-                    ]
-                ),
-                **metadata,
+                **tenant_response,
                 "message": (
                     "No safety data found"
                 ),
@@ -280,65 +216,25 @@ def get_today_safety(
             }
 
         return {
-            "company_id": (
-                tenant[
-                    "company_id"
-                ]
-            ),
-            "mine_id": (
-                tenant[
-                    "mine_id"
-                ]
-            ),
-            "company_name": (
-                tenant[
-                    "company_name"
-                ]
-            ),
-            "mine_name": (
-                tenant[
-                    "mine_name"
-                ]
-            ),
-            "mine_type": (
-                tenant[
-                    "mine_type"
-                ]
-            ),
-            "operation_profile": (
-                tenant[
-                    "operation_profile"
-                ]
-            ),
-            **metadata,
+            **tenant_response,
             "report_date": str(
-                result[
-                    "report_date"
-                ]
+                result["report_date"]
             ),
             "incidents": int(
-                result[
-                    "incidents"
-                ]
+                result["incidents"]
                 or 0
             ),
             "near_misses": int(
-                result[
-                    "near_misses"
-                ]
+                result["near_misses"]
                 or 0
             ),
             "critical_risks": int(
-                result[
-                    "critical_risks"
-                ]
+                result["critical_risks"]
                 or 0
             ),
             "safety_score": round(
                 float(
-                    result[
-                        "safety_score"
-                    ]
+                    result["safety_score"]
                     or 0
                 ),
                 1,
@@ -378,21 +274,38 @@ def get_safety_trend(
         le=90,
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
-    Return recent Safety records for the active tenant
-    in chronological order.
+    Return recent Safety records for the
+    authenticated tenant in chronological order.
 
-    company_id + mine_id are the tenant-security boundary.
+    company_id + mine_id are the authoritative
+    tenant-security boundary.
+
+    The optional mine_name parameter is retained
+    temporarily for backward frontend compatibility.
+
+    It cannot change the authenticated tenant.
     """
 
     try:
-        tenant = resolve_active_tenant(
+        tenant = resolve_safety_tenant(
             db=db,
+            current_user=current_user,
         )
 
         metadata = build_safety_metadata(
             tenant
+        )
+
+        tenant_response = (
+            build_tenant_response(
+                tenant=tenant,
+                metadata=metadata,
+            )
         )
 
         query = text(
@@ -418,14 +331,10 @@ def get_safety_trend(
             query,
             {
                 "company_id": (
-                    tenant[
-                        "company_id"
-                    ]
+                    tenant["company_id"]
                 ),
                 "mine_id": (
-                    tenant[
-                        "mine_id"
-                    ]
+                    tenant["mine_id"]
                 ),
                 "days": days,
             },
@@ -433,70 +342,28 @@ def get_safety_trend(
 
         data = []
 
-        for row in reversed(
-            results
-        ):
+        for row in reversed(results):
             data.append(
                 {
-                    "company_id": (
-                        tenant[
-                            "company_id"
-                        ]
-                    ),
-                    "mine_id": (
-                        tenant[
-                            "mine_id"
-                        ]
-                    ),
-                    "company_name": (
-                        tenant[
-                            "company_name"
-                        ]
-                    ),
-                    "mine_name": (
-                        tenant[
-                            "mine_name"
-                        ]
-                    ),
-                    "mine_type": (
-                        tenant[
-                            "mine_type"
-                        ]
-                    ),
-                    "operation_profile": (
-                        tenant[
-                            "operation_profile"
-                        ]
-                    ),
-                    **metadata,
+                    **tenant_response,
                     "report_date": str(
-                        row[
-                            "report_date"
-                        ]
+                        row["report_date"]
                     ),
                     "incidents": int(
-                        row[
-                            "incidents"
-                        ]
+                        row["incidents"]
                         or 0
                     ),
                     "near_misses": int(
-                        row[
-                            "near_misses"
-                        ]
+                        row["near_misses"]
                         or 0
                     ),
                     "critical_risks": int(
-                        row[
-                            "critical_risks"
-                        ]
+                        row["critical_risks"]
                         or 0
                     ),
                     "safety_score": round(
                         float(
-                            row[
-                                "safety_score"
-                            ]
+                            row["safety_score"]
                             or 0
                         ),
                         1,
