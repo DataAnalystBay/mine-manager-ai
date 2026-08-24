@@ -2,6 +2,8 @@ from sqlalchemy import (
     BigInteger,
     Column,
     DateTime,
+    ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -15,16 +17,56 @@ class ReportHistory(Base):
     """
     Metadata record for a generated executive report.
 
-    This first version stores generation history only.
-    The generated file itself is not persisted yet.
+    Tenant boundary:
+        company_id + mine_id
+
+    company_name and mine_name are retained as historical
+    display/branding fields, but tenant security is enforced
+    using immutable IDs.
     """
 
     __tablename__ = "report_history"
-    __table_args__ = {"schema": "public"}
+
+    __table_args__ = (
+        Index(
+            "ix_report_history_tenant",
+            "company_id",
+            "mine_id",
+        ),
+        Index(
+            "ix_report_history_tenant_generated_at",
+            "company_id",
+            "mine_id",
+            "generated_at",
+        ),
+        {
+            "schema": "public",
+        },
+    )
 
     id = Column(
         Integer,
         primary_key=True,
+        index=True,
+    )
+
+    company_id = Column(
+        Integer,
+        ForeignKey(
+            "public.company_settings.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    mine_id = Column(
+        Integer,
+        ForeignKey(
+            "public.mine_settings.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
         index=True,
     )
 
@@ -89,3 +131,14 @@ class ReportHistory(Base):
         server_default=func.now(),
         index=True,
     )
+
+    def __repr__(self) -> str:
+        return (
+            f"<ReportHistory("
+            f"id={self.id}, "
+            f"company_id={self.company_id}, "
+            f"mine_id={self.mine_id}, "
+            f"report_key='{self.report_key}', "
+            f"status='{self.status}'"
+            f")>"
+        )

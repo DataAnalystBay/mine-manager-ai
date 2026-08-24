@@ -13,8 +13,8 @@ from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from app.database import engine
 from app.services.report_branding_service import (
     ReportBranding,
     get_report_branding,
@@ -49,28 +49,81 @@ BLUE_LIGHT = "DBEAFE"
 
 
 # -------------------------------------------------------------------
+# Operation profile helpers
+# -------------------------------------------------------------------
+
+SXEW_OPERATION_PROFILES = {
+    "sxew",
+    "sx_ew",
+    "sxew_copper",
+    "copper_sxew",
+    "copper_cathode",
+    "cathode",
+}
+
+
+def _normalize_operation_profile(
+    operation_profile: str,
+) -> str:
+    """Normalize an operation profile into a stable internal value."""
+
+    normalized = (
+        str(operation_profile or "standard_mine")
+        .strip()
+        .lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+    )
+
+    if normalized in SXEW_OPERATION_PROFILES:
+        return "sxew_copper"
+
+    return normalized or "standard_mine"
+
+
+def _is_sxew_operation(
+    operation_profile: str,
+) -> bool:
+    return _normalize_operation_profile(operation_profile) == "sxew_copper"
+
+
+# -------------------------------------------------------------------
 # Database helpers
 # -------------------------------------------------------------------
 
-def _fetch_rows(query: str) -> List[Dict[str, Any]]:
+def _fetch_rows(
+    db: Session,
+    query: str,
+    params: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     """
-    Execute a read-only SQL query.
+    Execute a read-only tenant-scoped SQL query.
 
-    The PowerPoint export should remain available even when an optional
-    operational table has no data or is not yet deployed.
+    Optional operational datasets return an empty list when unavailable so
+    board-pack generation can continue without mixing tenant data.
     """
 
     try:
-        with engine.connect() as connection:
-            result = connection.execute(text(query))
-            return [dict(row._mapping) for row in result]
+        result = db.execute(
+            text(query),
+            params or {},
+        )
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
     except Exception:
         return []
 
-
-def _fetch_production_data(limit: int = 30) -> List[Dict[str, Any]]:
-    return _fetch_rows(
-        f"""
+def _fetch_production_data(
+    db: Session,
+    company_id: int,
+    mine_id: int,
+    limit: int = 30,
+) -> List[Dict[str, Any]]:
+    rows = _fetch_rows(
+        db,
+        """
         SELECT
             report_date,
             mine_name,
@@ -80,15 +133,28 @@ def _fetch_production_data(limit: int = 30) -> List[Dict[str, Any]]:
             waste_actual,
             created_at
         FROM public.production_daily
+        WHERE company_id = :company_id
+          AND mine_id = :mine_id
         ORDER BY report_date DESC
-        LIMIT {int(limit)}
+        LIMIT :limit
+        """,
+        {
+            "company_id": int(company_id),
+            "mine_id": int(mine_id),
+            "limit": int(limit),
+        },
+    )
+    return rows[::-1]
+
+def _fetch_fleet_data(
+    db: Session,
+    company_id: int,
+    mine_id: int,
+    limit: int = 30,
+) -> List[Dict[str, Any]]:
+    rows = _fetch_rows(
+        db,
         """
-    )[::-1]
-
-
-def _fetch_fleet_data(limit: int = 30) -> List[Dict[str, Any]]:
-    return _fetch_rows(
-        f"""
         SELECT
             report_date,
             mine_name,
@@ -96,15 +162,28 @@ def _fetch_fleet_data(limit: int = 30) -> List[Dict[str, Any]]:
             utilization,
             created_at
         FROM public.fleet_daily
+        WHERE company_id = :company_id
+          AND mine_id = :mine_id
         ORDER BY report_date DESC
-        LIMIT {int(limit)}
+        LIMIT :limit
+        """,
+        {
+            "company_id": int(company_id),
+            "mine_id": int(mine_id),
+            "limit": int(limit),
+        },
+    )
+    return rows[::-1]
+
+def _fetch_plant_data(
+    db: Session,
+    company_id: int,
+    mine_id: int,
+    limit: int = 30,
+) -> List[Dict[str, Any]]:
+    rows = _fetch_rows(
+        db,
         """
-    )[::-1]
-
-
-def _fetch_plant_data(limit: int = 30) -> List[Dict[str, Any]]:
-    return _fetch_rows(
-        f"""
         SELECT
             report_date,
             mine_name,
@@ -113,15 +192,28 @@ def _fetch_plant_data(limit: int = 30) -> List[Dict[str, Any]]:
             recovery,
             created_at
         FROM public.plant_daily
+        WHERE company_id = :company_id
+          AND mine_id = :mine_id
         ORDER BY report_date DESC
-        LIMIT {int(limit)}
+        LIMIT :limit
+        """,
+        {
+            "company_id": int(company_id),
+            "mine_id": int(mine_id),
+            "limit": int(limit),
+        },
+    )
+    return rows[::-1]
+
+def _fetch_safety_data(
+    db: Session,
+    company_id: int,
+    mine_id: int,
+    limit: int = 30,
+) -> List[Dict[str, Any]]:
+    rows = _fetch_rows(
+        db,
         """
-    )[::-1]
-
-
-def _fetch_safety_data(limit: int = 30) -> List[Dict[str, Any]]:
-    return _fetch_rows(
-        f"""
         SELECT
             report_date,
             mine_name,
@@ -131,15 +223,28 @@ def _fetch_safety_data(limit: int = 30) -> List[Dict[str, Any]]:
             safety_score,
             created_at
         FROM public.safety_daily
+        WHERE company_id = :company_id
+          AND mine_id = :mine_id
         ORDER BY report_date DESC
-        LIMIT {int(limit)}
-        """
-    )[::-1]
+        LIMIT :limit
+        """,
+        {
+            "company_id": int(company_id),
+            "mine_id": int(mine_id),
+            "limit": int(limit),
+        },
+    )
+    return rows[::-1]
 
-
-def _fetch_executive_actions(limit: int = 8) -> List[Dict[str, Any]]:
+def _fetch_executive_actions(
+    db: Session,
+    company_id: int,
+    mine_id: int,
+    limit: int = 8,
+) -> List[Dict[str, Any]]:
     return _fetch_rows(
-        f"""
+        db,
+        """
         SELECT
             title,
             priority,
@@ -149,6 +254,8 @@ def _fetch_executive_actions(limit: int = 8) -> List[Dict[str, Any]]:
             status,
             linked_cause
         FROM public.executive_actions
+        WHERE company_id = :company_id
+          AND mine_id = :mine_id
         ORDER BY
             CASE LOWER(COALESCE(priority, ''))
                 WHEN 'critical' THEN 1
@@ -158,14 +265,14 @@ def _fetch_executive_actions(limit: int = 8) -> List[Dict[str, Any]]:
                 ELSE 5
             END,
             id DESC
-        LIMIT {int(limit)}
-        """
+        LIMIT :limit
+        """,
+        {
+            "company_id": int(company_id),
+            "mine_id": int(mine_id),
+            "limit": int(limit),
+        },
     )
-
-
-# -------------------------------------------------------------------
-# Value helpers
-# -------------------------------------------------------------------
 
 def _number(value: Any) -> float:
     if value is None:
@@ -827,17 +934,26 @@ def _build_kpi_summary_slide(
     fleet_rows: List[Dict[str, Any]],
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
+    operation_profile: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
     )
     _set_slide_background(slide)
 
+    is_sxew = _is_sxew_operation(operation_profile)
+
+    subtitle = (
+        "Current operational position across cathode production, plant, and safety"
+        if is_sxew
+        else "Current operational position across production, fleet, plant, and safety"
+    )
+
     _add_standard_header(
         slide,
         branding,
         "Executive KPI Summary",
-        "Current operational position across production, fleet, plant, and safety",
+        subtitle,
         2,
     )
 
@@ -846,24 +962,12 @@ def _build_kpi_summary_slide(
     latest_plant = _latest(plant_rows)
     latest_safety = _latest(safety_rows)
 
-    ore_achievement = (
+    production_achievement = (
         _safe_ratio(
             latest_production.get("ore_actual"),
             latest_production.get("ore_plan"),
         )
         if latest_production
-        else None
-    )
-
-    fleet_availability = (
-        _number(latest_fleet.get("availability"))
-        if latest_fleet
-        else None
-    )
-
-    fleet_utilization = (
-        _number(latest_fleet.get("utilization"))
-        if latest_fleet
         else None
     )
 
@@ -899,63 +1003,38 @@ def _build_kpi_summary_slide(
         (8.49, 4.38),
     ]
 
-    ore_status = _achievement_status(ore_achievement)
+    production_status = _achievement_status(
+        production_achievement
+    )
     _add_kpi_card(
         slide,
-        "Ore production achievement",
+        (
+            "Cathode production achievement"
+            if is_sxew
+            else "Ore production achievement"
+        ),
         _format_percent(
-            ore_achievement * 100
-            if ore_achievement is not None
+            production_achievement * 100
+            if production_achievement is not None
             else None
         ),
-        ore_status[0],
+        production_status[0],
         *positions[0],
         card_width,
         card_height,
-        ore_status[1],
-        ore_status[2],
-        note="Actual ore movement compared with plan",
+        production_status[1],
+        production_status[2],
+        note=(
+            "Actual cathode production compared with plan"
+            if is_sxew
+            else "Actual ore movement compared with plan"
+        ),
     )
 
-    availability_ratio = (
-        fleet_availability / 100
-        if fleet_availability is not None
-        else None
+    plant_status = _achievement_status(
+        plant_achievement
     )
-    availability_status = _achievement_status(availability_ratio)
-    _add_kpi_card(
-        slide,
-        "Fleet availability",
-        _format_percent(fleet_availability),
-        availability_status[0],
-        *positions[1],
-        card_width,
-        card_height,
-        availability_status[1],
-        availability_status[2],
-        note="Latest available fleet record",
-    )
-
-    utilization_ratio = (
-        fleet_utilization / 100
-        if fleet_utilization is not None
-        else None
-    )
-    utilization_status = _achievement_status(utilization_ratio)
-    _add_kpi_card(
-        slide,
-        "Fleet utilization",
-        _format_percent(fleet_utilization),
-        utilization_status[0],
-        *positions[2],
-        card_width,
-        card_height,
-        utilization_status[1],
-        utilization_status[2],
-        note="Latest available fleet record",
-    )
-
-    plant_status = _achievement_status(plant_achievement)
+    plant_position = positions[1] if is_sxew else positions[3]
     _add_kpi_card(
         slide,
         "Plant throughput achievement",
@@ -965,7 +1044,7 @@ def _build_kpi_summary_slide(
             else None
         ),
         plant_status[0],
-        *positions[3],
+        *plant_position,
         card_width,
         card_height,
         plant_status[1],
@@ -979,12 +1058,13 @@ def _build_kpi_summary_slide(
         else None
     )
     safety_status = _achievement_status(safety_ratio)
+    safety_position = positions[2] if is_sxew else positions[4]
     _add_kpi_card(
         slide,
         "Safety score",
         _format_percent(safety_score),
         safety_status[0],
-        *positions[4],
+        *safety_position,
         card_width,
         card_height,
         safety_status[1],
@@ -1001,12 +1081,13 @@ def _build_kpi_summary_slide(
             else ("No data", TEXT_MUTED, BACKGROUND)
         )
     )
+    incident_position = positions[3] if is_sxew else positions[5]
     _add_kpi_card(
         slide,
         "Safety incidents",
         str(incidents) if incidents is not None else "No data",
         incident_status[0],
-        *positions[5],
+        *incident_position,
         card_width,
         card_height,
         incident_status[1],
@@ -1014,38 +1095,115 @@ def _build_kpi_summary_slide(
         note="Latest reporting date",
     )
 
+    if not is_sxew:
+        fleet_availability = (
+            _number(latest_fleet.get("availability"))
+            if latest_fleet
+            else None
+        )
+        fleet_utilization = (
+            _number(latest_fleet.get("utilization"))
+            if latest_fleet
+            else None
+        )
+
+        availability_ratio = (
+            fleet_availability / 100
+            if fleet_availability is not None
+            else None
+        )
+        availability_status = _achievement_status(
+            availability_ratio
+        )
+        _add_kpi_card(
+            slide,
+            "Fleet availability",
+            _format_percent(fleet_availability),
+            availability_status[0],
+            *positions[1],
+            card_width,
+            card_height,
+            availability_status[1],
+            availability_status[2],
+            note="Latest available fleet record",
+        )
+
+        utilization_ratio = (
+            fleet_utilization / 100
+            if fleet_utilization is not None
+            else None
+        )
+        utilization_status = _achievement_status(
+            utilization_ratio
+        )
+        _add_kpi_card(
+            slide,
+            "Fleet utilization",
+            _format_percent(fleet_utilization),
+            utilization_status[0],
+            *positions[2],
+            card_width,
+            card_height,
+            utilization_status[1],
+            utilization_status[2],
+            note="Latest available fleet record",
+        )
 
 def _build_production_slide(
     presentation: Presentation,
     branding: ReportBranding,
     production_rows: List[Dict[str, Any]],
+    operation_profile: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
     )
     _set_slide_background(slide)
 
+    is_sxew = _is_sxew_operation(operation_profile)
+
     _add_standard_header(
         slide,
         branding,
-        "Production Trend",
-        "Ore production plan versus actual performance",
+        (
+            "Cathode Production Trend"
+            if is_sxew
+            else "Production Trend"
+        ),
+        (
+            "Cathode production plan versus actual performance"
+            if is_sxew
+            else "Ore production plan versus actual performance"
+        ),
         3,
     )
 
     trend_rows = production_rows[-14:]
-    categories = [_format_date(row.get("report_date")) for row in trend_rows]
+    categories = [
+        _format_date(row.get("report_date"))
+        for row in trend_rows
+    ]
 
-    plan_values = [_number(row.get("ore_plan")) for row in trend_rows]
-    actual_values = [_number(row.get("ore_actual")) for row in trend_rows]
+    plan_values = [
+        _number(row.get("ore_plan"))
+        for row in trend_rows
+    ]
+    actual_values = [
+        _number(row.get("ore_actual"))
+        for row in trend_rows
+    ]
 
     _add_line_chart(
         slide,
         categories,
         [
-            ("Ore Plan", plan_values, TEXT_MUTED),
             (
-                "Ore Actual",
+                "Cathode Plan" if is_sxew else "Ore Plan",
+                plan_values,
+                TEXT_MUTED,
+            ),
+            (
+                "Cathode Actual" if is_sxew else "Ore Actual",
                 actual_values,
                 branding.primary_color_excel,
             ),
@@ -1060,13 +1218,23 @@ def _build_production_slide(
     latest_production = _latest(production_rows)
 
     if latest_production:
-        ore_plan = _number(latest_production.get("ore_plan"))
-        ore_actual = _number(latest_production.get("ore_actual"))
-        achievement = _safe_ratio(ore_actual, ore_plan)
-        variance = ore_actual - ore_plan
+        production_plan = _number(
+            latest_production.get("ore_plan")
+        )
+        production_actual = _number(
+            latest_production.get("ore_actual")
+        )
+        achievement = _safe_ratio(
+            production_actual,
+            production_plan,
+        )
+        variance = (
+            production_actual
+            - production_plan
+        )
     else:
-        ore_plan = None
-        ore_actual = None
+        production_plan = None
+        production_actual = None
         achievement = None
         variance = None
 
@@ -1093,10 +1261,24 @@ def _build_production_slide(
         bold=True,
     )
 
+    production_label = (
+        "Cathode"
+        if is_sxew
+        else "Ore"
+    )
     items = [
-        ("Ore plan", _format_number(ore_plan)),
-        ("Ore actual", _format_number(ore_actual)),
-        ("Variance", _format_number(variance)),
+        (
+            f"{production_label} plan",
+            _format_number(production_plan),
+        ),
+        (
+            f"{production_label} actual",
+            _format_number(production_actual),
+        ),
+        (
+            "Variance",
+            _format_number(variance),
+        ),
         (
             "Achievement",
             _format_percent(
@@ -1161,63 +1343,38 @@ def _build_production_slide(
         alignment=PP_ALIGN.CENTER,
     )
 
-
 def _build_operations_overview_slide(
     presentation: Presentation,
     branding: ReportBranding,
     fleet_rows: List[Dict[str, Any]],
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
+    operation_profile: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
     )
     _set_slide_background(slide)
 
+    is_sxew = _is_sxew_operation(operation_profile)
+
     _add_standard_header(
         slide,
         branding,
-        "Fleet, Plant and Safety Overview",
-        "Recent operational performance across supporting value streams",
+        (
+            "Plant and Safety Overview"
+            if is_sxew
+            else "Fleet, Plant and Safety Overview"
+        ),
+        (
+            "Recent processing and safety performance"
+            if is_sxew
+            else "Recent operational performance across supporting value streams"
+        ),
         4,
     )
 
-    fleet_trend = fleet_rows[-10:]
     plant_trend = plant_rows[-10:]
-    safety_trend = safety_rows[-10:]
-
-    fleet_categories = [
-        _format_date(row.get("report_date"))
-        for row in fleet_trend
-    ]
-    fleet_availability = [
-        _number(row.get("availability")) / 100
-        for row in fleet_trend
-    ]
-    fleet_utilization = [
-        _number(row.get("utilization")) / 100
-        for row in fleet_trend
-    ]
-
-    _add_line_chart(
-        slide,
-        fleet_categories,
-        [
-            ("Availability", fleet_availability, BLUE),
-            (
-                "Utilization",
-                fleet_utilization,
-                branding.primary_color_excel,
-            ),
-        ],
-        0.55,
-        2.02,
-        5.95,
-        2.1,
-        title="Fleet performance",
-        percentage_axis=True,
-    )
-
     plant_categories = [
         _format_date(row.get("report_date"))
         for row in plant_trend
@@ -1231,23 +1388,79 @@ def _build_operations_overview_slide(
         for row in plant_trend
     ]
 
-    _add_line_chart(
-        slide,
-        plant_categories,
-        [
-            (
-                "Throughput achievement",
-                plant_achievement,
-                GREEN,
-            )
-        ],
-        6.8,
-        2.02,
-        5.95,
-        2.1,
-        title="Plant throughput achievement",
-        percentage_axis=True,
-    )
+    if is_sxew:
+        _add_line_chart(
+            slide,
+            plant_categories,
+            [
+                (
+                    "Throughput achievement",
+                    plant_achievement,
+                    branding.primary_color_excel,
+                )
+            ],
+            0.55,
+            2.02,
+            12.2,
+            2.1,
+            title="Plant throughput achievement",
+            percentage_axis=True,
+        )
+    else:
+        fleet_trend = fleet_rows[-10:]
+        fleet_categories = [
+            _format_date(row.get("report_date"))
+            for row in fleet_trend
+        ]
+        fleet_availability = [
+            _number(row.get("availability")) / 100
+            for row in fleet_trend
+        ]
+        fleet_utilization = [
+            _number(row.get("utilization")) / 100
+            for row in fleet_trend
+        ]
+
+        _add_line_chart(
+            slide,
+            fleet_categories,
+            [
+                (
+                    "Availability",
+                    fleet_availability,
+                    BLUE,
+                ),
+                (
+                    "Utilization",
+                    fleet_utilization,
+                    branding.primary_color_excel,
+                ),
+            ],
+            0.55,
+            2.02,
+            5.95,
+            2.1,
+            title="Fleet performance",
+            percentage_axis=True,
+        )
+
+        _add_line_chart(
+            slide,
+            plant_categories,
+            [
+                (
+                    "Throughput achievement",
+                    plant_achievement,
+                    GREEN,
+                )
+            ],
+            6.8,
+            2.02,
+            5.95,
+            2.1,
+            title="Plant throughput achievement",
+            percentage_axis=True,
+        )
 
     _add_rounded_rectangle(
         slide,
@@ -1263,26 +1476,46 @@ def _build_operations_overview_slide(
     safety_metrics = [
         (
             "Incidents",
-            str(int(_number(latest_safety.get("incidents"))))
+            str(
+                int(
+                    _number(
+                        latest_safety.get("incidents")
+                    )
+                )
+            )
             if latest_safety
             else "No data",
         ),
         (
             "Near misses",
-            str(int(_number(latest_safety.get("near_misses"))))
+            str(
+                int(
+                    _number(
+                        latest_safety.get("near_misses")
+                    )
+                )
+            )
             if latest_safety
             else "No data",
         ),
         (
             "Critical risks",
-            str(int(_number(latest_safety.get("critical_risks"))))
+            str(
+                int(
+                    _number(
+                        latest_safety.get("critical_risks")
+                    )
+                )
+            )
             if latest_safety
             else "No data",
         ),
         (
             "Safety score",
             _format_percent(
-                _number(latest_safety.get("safety_score"))
+                _number(
+                    latest_safety.get("safety_score")
+                )
                 if latest_safety
                 else None
             ),
@@ -1301,7 +1534,9 @@ def _build_operations_overview_slide(
         bold=True,
     )
 
-    for index, (label, value) in enumerate(safety_metrics):
+    for index, (label, value) in enumerate(
+        safety_metrics
+    ):
         left = 0.85 + index * 2.9
 
         _add_text(
@@ -1326,7 +1561,6 @@ def _build_operations_overview_slide(
             bold=True,
         )
 
-
 def _build_risk_slide(
     presentation: Presentation,
     branding: ReportBranding,
@@ -1334,11 +1568,14 @@ def _build_risk_slide(
     fleet_rows: List[Dict[str, Any]],
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
+    operation_profile: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
     )
     _set_slide_background(slide)
+
+    is_sxew = _is_sxew_operation(operation_profile)
 
     _add_standard_header(
         slide,
@@ -1356,44 +1593,63 @@ def _build_risk_slide(
     risks: List[Tuple[str, str, str]] = []
 
     if latest_production:
-        ore_achievement = _safe_ratio(
+        production_achievement = _safe_ratio(
             latest_production.get("ore_actual"),
             latest_production.get("ore_plan"),
         )
 
-        if ore_achievement is not None and ore_achievement < 0.9:
+        production_name = (
+            "Cathode production"
+            if is_sxew
+            else "Ore production"
+        )
+
+        if (
+            production_achievement is not None
+            and production_achievement < 0.9
+        ):
             risks.append(
                 (
                     "High",
-                    "Ore production materially below plan",
+                    f"{production_name} materially below plan",
                     (
-                        f"Latest achievement is "
-                        f"{ore_achievement * 100:.1f}%."
+                        "Latest achievement is "
+                        f"{production_achievement * 100:.1f}%."
                     ),
                 )
             )
-        elif ore_achievement is not None and ore_achievement < 1.0:
+        elif (
+            production_achievement is not None
+            and production_achievement < 1.0
+        ):
             risks.append(
                 (
                     "Medium",
-                    "Ore production below plan",
+                    f"{production_name} below plan",
                     (
-                        f"Latest achievement is "
-                        f"{ore_achievement * 100:.1f}%."
+                        "Latest achievement is "
+                        f"{production_achievement * 100:.1f}%."
                     ),
                 )
             )
 
-    if latest_fleet:
-        availability = _number(latest_fleet.get("availability"))
-        utilization = _number(latest_fleet.get("utilization"))
+    if latest_fleet and not is_sxew:
+        availability = _number(
+            latest_fleet.get("availability")
+        )
+        utilization = _number(
+            latest_fleet.get("utilization")
+        )
 
         if availability < 80:
             risks.append(
                 (
                     "High",
                     "Fleet availability constraint",
-                    f"Latest availability is {availability:.1f}%.",
+                    (
+                        "Latest availability is "
+                        f"{availability:.1f}%."
+                    ),
                 )
             )
         elif availability < 90:
@@ -1401,7 +1657,10 @@ def _build_risk_slide(
                 (
                     "Medium",
                     "Fleet availability below target",
-                    f"Latest availability is {availability:.1f}%.",
+                    (
+                        "Latest availability is "
+                        f"{availability:.1f}%."
+                    ),
                 )
             )
 
@@ -1410,7 +1669,10 @@ def _build_risk_slide(
                 (
                     "High",
                     "Fleet utilization constraint",
-                    f"Latest utilization is {utilization:.1f}%.",
+                    (
+                        "Latest utilization is "
+                        f"{utilization:.1f}%."
+                    ),
                 )
             )
         elif utilization < 90:
@@ -1418,7 +1680,10 @@ def _build_risk_slide(
                 (
                     "Medium",
                     "Fleet utilization below target",
-                    f"Latest utilization is {utilization:.1f}%.",
+                    (
+                        "Latest utilization is "
+                        f"{utilization:.1f}%."
+                    ),
                 )
             )
 
@@ -1428,13 +1693,16 @@ def _build_risk_slide(
             latest_plant.get("throughput_plan"),
         )
 
-        if plant_achievement is not None and plant_achievement < 0.9:
+        if (
+            plant_achievement is not None
+            and plant_achievement < 0.9
+        ):
             risks.append(
                 (
                     "High",
                     "Plant throughput materially below plan",
                     (
-                        f"Latest achievement is "
+                        "Latest achievement is "
                         f"{plant_achievement * 100:.1f}%."
                     ),
                 )
@@ -1448,16 +1716,22 @@ def _build_risk_slide(
                     "Medium",
                     "Plant throughput below plan",
                     (
-                        f"Latest achievement is "
+                        "Latest achievement is "
                         f"{plant_achievement * 100:.1f}%."
                     ),
                 )
             )
 
     if latest_safety:
-        incidents = int(_number(latest_safety.get("incidents")))
+        incidents = int(
+            _number(
+                latest_safety.get("incidents")
+            )
+        )
         critical_risks = int(
-            _number(latest_safety.get("critical_risks"))
+            _number(
+                latest_safety.get("critical_risks")
+            )
         )
 
         if incidents > 0:
@@ -1465,7 +1739,10 @@ def _build_risk_slide(
                 (
                     "Critical",
                     "Safety incident recorded",
-                    f"{incidents} incident(s) in the latest record.",
+                    (
+                        f"{incidents} incident(s) "
+                        "in the latest record."
+                    ),
                 )
             )
 
@@ -1475,8 +1752,8 @@ def _build_risk_slide(
                     "High",
                     "Open critical safety risks",
                     (
-                        f"{critical_risks} critical risk exposure(s) "
-                        "require review."
+                        f"{critical_risks} critical risk "
+                        "exposure(s) require review."
                     ),
                 )
             )
@@ -1487,8 +1764,8 @@ def _build_risk_slide(
                 "Low",
                 "No material threshold exception detected",
                 (
-                    "Latest records are within the basic automated "
-                    "screening thresholds."
+                    "Latest records are within the basic "
+                    "automated screening thresholds."
                 ),
             )
         )
@@ -1502,9 +1779,13 @@ def _build_risk_slide(
         "Low": (GREEN, GREEN_LIGHT),
     }
 
-    for index, (level, title, description) in enumerate(risks):
+    for index, (level, title, description) in enumerate(
+        risks
+    ):
         top = 2.05 + index * 0.92
-        level_color, level_background = color_map[level]
+        level_color, level_background = (
+            color_map[level]
+        )
 
         _add_rounded_rectangle(
             slide,
@@ -1559,7 +1840,6 @@ def _build_risk_slide(
             font_size=9.5,
             color=TEXT_MUTED,
         )
-
 
 def _build_actions_slide(
     presentation: Presentation,
@@ -1726,11 +2006,14 @@ def _build_recommendation_slide(
     fleet_rows: List[Dict[str, Any]],
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
+    operation_profile: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
     )
     _set_slide_background(slide)
+
+    is_sxew = _is_sxew_operation(operation_profile)
 
     _add_standard_header(
         slide,
@@ -1748,9 +2031,15 @@ def _build_recommendation_slide(
     latest_safety = _latest(safety_rows)
 
     if latest_safety:
-        incidents = int(_number(latest_safety.get("incidents")))
+        incidents = int(
+            _number(
+                latest_safety.get("incidents")
+            )
+        )
         critical_risks = int(
-            _number(latest_safety.get("critical_risks"))
+            _number(
+                latest_safety.get("critical_risks")
+            )
         )
 
         if incidents > 0 or critical_risks > 0:
@@ -1760,20 +2049,34 @@ def _build_recommendation_slide(
             )
 
     if latest_production:
-        ore_achievement = _safe_ratio(
+        production_achievement = _safe_ratio(
             latest_production.get("ore_actual"),
             latest_production.get("ore_plan"),
         )
 
-        if ore_achievement is not None and ore_achievement < 1:
+        if (
+            production_achievement is not None
+            and production_achievement < 1
+        ):
             recommendations.append(
-                "Review the primary production constraint and agree a "
-                "recoverable plan for ore movement before the next shift cycle."
+                (
+                    "Review the cathode production constraint and agree a "
+                    "recoverable production plan for the next operating cycle."
+                )
+                if is_sxew
+                else (
+                    "Review the primary production constraint and agree a "
+                    "recoverable plan for ore movement before the next shift cycle."
+                )
             )
 
-    if latest_fleet:
-        availability = _number(latest_fleet.get("availability"))
-        utilization = _number(latest_fleet.get("utilization"))
+    if latest_fleet and not is_sxew:
+        availability = _number(
+            latest_fleet.get("availability")
+        )
+        utilization = _number(
+            latest_fleet.get("utilization")
+        )
 
         if availability < 85:
             recommendations.append(
@@ -1793,10 +2096,21 @@ def _build_recommendation_slide(
             latest_plant.get("throughput_plan"),
         )
 
-        if plant_achievement is not None and plant_achievement < 1:
+        if (
+            plant_achievement is not None
+            and plant_achievement < 1
+        ):
             recommendations.append(
-                "Validate the plant throughput constraint and align mine-to-"
-                "mill priorities with the next achievable production target."
+                (
+                    "Validate the plant throughput constraint and align "
+                    "processing priorities with the next achievable cathode "
+                    "production target."
+                )
+                if is_sxew
+                else (
+                    "Validate the plant throughput constraint and align mine-to-"
+                    "mill priorities with the next achievable production target."
+                )
             )
 
     default_recommendations = [
@@ -1817,7 +2131,9 @@ def _build_recommendation_slide(
     for recommendation in default_recommendations:
         if len(recommendations) >= 5:
             break
-        recommendations.append(recommendation)
+        recommendations.append(
+            recommendation
+        )
 
     _add_rounded_rectangle(
         slide,
@@ -1903,16 +2219,17 @@ def _build_recommendation_slide(
         vertical_anchor=MSO_ANCHOR.TOP,
     )
 
-
-# -------------------------------------------------------------------
-# Public service
-# -------------------------------------------------------------------
-
-def generate_executive_powerpoint() -> BytesIO:
+def generate_executive_powerpoint(
+    *,
+    db: Session,
+    company_id: int,
+    mine_id: int,
+    operation_profile: str = "standard_mine",
+) -> BytesIO:
     """
-    Generate a branded Executive Operations Board Pack.
+    Generate a tenant-isolated, operation-aware Executive Operations Board Pack.
 
-    Slides:
+    Standard mine slides:
         1. Cover
         2. Executive KPI Summary
         3. Production Trend
@@ -1920,15 +2237,74 @@ def generate_executive_powerpoint() -> BytesIO:
         5. Key Operational Risks
         6. Management Action Register
         7. Executive Recommendations
+
+    SX-EW slides:
+        1. Cover
+        2. Executive KPI Summary
+        3. Cathode Production Trend
+        4. Plant and Safety Overview
+        5. Key Operational Risks
+        6. Management Action Register
+        7. Executive Recommendations
     """
 
-    branding = get_report_branding()
+    if company_id is None:
+        raise ValueError(
+            "company_id is required"
+        )
 
-    production_rows = _fetch_production_data()
-    fleet_rows = _fetch_fleet_data()
-    plant_rows = _fetch_plant_data()
-    safety_rows = _fetch_safety_data()
-    executive_actions = _fetch_executive_actions()
+    if mine_id is None:
+        raise ValueError(
+            "mine_id is required"
+        )
+
+    normalized_operation_profile = (
+        _normalize_operation_profile(
+            operation_profile
+        )
+    )
+    is_sxew = _is_sxew_operation(
+        normalized_operation_profile
+    )
+
+    branding = get_report_branding(
+        db=db,
+        company_id=int(company_id),
+        mine_id=int(mine_id),
+    )
+
+    production_rows = _fetch_production_data(
+        db=db,
+        company_id=company_id,
+        mine_id=mine_id,
+    )
+
+    if is_sxew:
+        fleet_rows: List[
+            Dict[str, Any]
+        ] = []
+    else:
+        fleet_rows = _fetch_fleet_data(
+            db=db,
+            company_id=company_id,
+            mine_id=mine_id,
+        )
+
+    plant_rows = _fetch_plant_data(
+        db=db,
+        company_id=company_id,
+        mine_id=mine_id,
+    )
+    safety_rows = _fetch_safety_data(
+        db=db,
+        company_id=company_id,
+        mine_id=mine_id,
+    )
+    executive_actions = _fetch_executive_actions(
+        db=db,
+        company_id=company_id,
+        mine_id=mine_id,
+    )
 
     presentation = Presentation()
     presentation.slide_width = SLIDE_WIDTH
@@ -1943,7 +2319,7 @@ def generate_executive_powerpoint() -> BytesIO:
     presentation.core_properties.author = "Mine Manager AI"
     presentation.core_properties.company = branding.company_name
     presentation.core_properties.comments = (
-        "Generated by Mine Manager AI from configured operational data."
+        "Generated by Mine Manager AI from tenant-isolated operational data."
     )
     presentation.core_properties.created = datetime.now()
     presentation.core_properties.modified = datetime.now()
@@ -1960,12 +2336,14 @@ def generate_executive_powerpoint() -> BytesIO:
         fleet_rows,
         plant_rows,
         safety_rows,
+        normalized_operation_profile,
     )
 
     _build_production_slide(
         presentation,
         branding,
         production_rows,
+        normalized_operation_profile,
     )
 
     _build_operations_overview_slide(
@@ -1974,6 +2352,7 @@ def generate_executive_powerpoint() -> BytesIO:
         fleet_rows,
         plant_rows,
         safety_rows,
+        normalized_operation_profile,
     )
 
     _build_risk_slide(
@@ -1983,6 +2362,7 @@ def generate_executive_powerpoint() -> BytesIO:
         fleet_rows,
         plant_rows,
         safety_rows,
+        normalized_operation_profile,
     )
 
     _build_actions_slide(
@@ -1998,6 +2378,7 @@ def generate_executive_powerpoint() -> BytesIO:
         fleet_rows,
         plant_rows,
         safety_rows,
+        normalized_operation_profile,
     )
 
     buffer = BytesIO()
@@ -2005,3 +2386,4 @@ def generate_executive_powerpoint() -> BytesIO:
     buffer.seek(0)
 
     return buffer
+
