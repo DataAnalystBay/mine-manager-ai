@@ -599,23 +599,46 @@ def _build_ai_insight(
 
 def load_live_kpi_pdf_data(
     db: Session,
+    company_id: int,
+    mine_id: int,
     mine_name: str,
+    operation_profile: str,
     kpi_key: str,
     days: int = 7,
 ) -> Dict[str, Any]:
     """
-    Convert Shared Analytics and KPI Detail outputs into the structure
-    expected by generate_executive_kpi_pdf().
+    Convert tenant-aware Shared Analytics and KPI Detail outputs into
+    the structure expected by generate_executive_kpi_pdf().
 
-    Returned payload includes:
+    Security boundary:
+        company_id + mine_id
 
-        - kpi_data
-        - historical_data
-        - benchmark_data
-        - ai_insight_data
-        - root_cause_data
-        - metadata
+    mine_name remains display/context information.
     """
+
+    if company_id is None:
+        raise ValueError(
+            "company_id is required."
+        )
+
+    if mine_id is None:
+        raise ValueError(
+            "mine_id is required."
+        )
+
+    normalized_mine_name = str(
+        mine_name or ""
+    ).strip()
+
+    if not normalized_mine_name:
+        raise ValueError(
+            "mine_name is required."
+        )
+
+    normalized_operation_profile = str(
+        operation_profile
+        or "standard_mine"
+    ).strip().lower()
 
     if days < 1:
         raise ValueError(
@@ -642,14 +665,33 @@ def load_live_kpi_pdf_data(
             f"Supported keys: {supported}"
         )
 
+    # --------------------------------------------------
+    # Tenant-aware shared analytics
+    # --------------------------------------------------
+
     analytics = get_shared_analytics(
         db=db,
-        mine_name=mine_name,
+        mine_name=normalized_mine_name,
         days=days,
+        company_id=int(company_id),
+        mine_id=int(mine_id),
+        operation_profile=(
+            normalized_operation_profile
+        ),
     )
 
+    # --------------------------------------------------
+    # KPI detail fallback
+    # --------------------------------------------------
+    #
+    # kpi_detail_service currently contains configuration /
+    # demonstration context. Authoritative live operational
+    # values and trends come from tenant-aware Shared
+    # Analytics above.
+    # --------------------------------------------------
+
     detail = _load_detail_fallback(
-        mine_name=mine_name,
+        mine_name=normalized_mine_name,
         detail_key=config["detail_key"],
         days=days,
     )
@@ -797,7 +839,6 @@ def load_live_kpi_pdf_data(
         target_value=target_value,
     )
 
-    # Add helpful KPI context to the benchmark payload.
     benchmark_data.update(
         {
             "kpi_key": normalized_key,
@@ -862,7 +903,18 @@ def load_live_kpi_pdf_data(
             root_cause_data
         ),
         "metadata": {
-            "mine_name": mine_name,
+            "company_id": int(
+                company_id
+            ),
+            "mine_id": int(
+                mine_id
+            ),
+            "mine_name": (
+                normalized_mine_name
+            ),
+            "operation_profile": (
+                normalized_operation_profile
+            ),
             "days": days,
             "generated_at": (
                 datetime.utcnow().isoformat()

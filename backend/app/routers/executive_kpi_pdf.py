@@ -10,6 +10,7 @@ from app.auth.dependencies import (
     require_operational_editor,
 )
 from app.database import get_db
+from app.models.user import User
 from app.services.executive_pdf.executive_action_pdf_data import (
     load_pdf_actions_for_kpi,
 )
@@ -22,6 +23,9 @@ from app.services.executive_pdf.executive_pdf_branding import (
 from app.services.executive_pdf.executive_pdf_service import (
     generate_executive_kpi_pdf,
 )
+from app.services.tenant_service import (
+    resolve_authenticated_tenant,
+)
 
 
 router = APIRouter(
@@ -31,6 +35,53 @@ router = APIRouter(
         Depends(get_current_user),
     ],
 )
+
+
+# ==================================================
+# Authenticated tenant resolution
+# ==================================================
+
+
+def resolve_pdf_tenant(
+    db: Session,
+    current_user: User,
+) -> Dict[str, Any]:
+    """
+    Resolve the authoritative tenant for Executive KPI PDF routes.
+
+    Tenant ownership always comes from the authenticated user.
+    Client-supplied company or mine identifiers are never trusted.
+    """
+
+    tenant = resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
+    )
+
+    required_fields = (
+        "company_id",
+        "mine_id",
+        "company_name",
+        "mine_name",
+        "operation_profile",
+    )
+
+    missing_fields = [
+        field
+        for field in required_fields
+        if tenant.get(field) is None
+    ]
+
+    if missing_fields:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Authenticated tenant configuration "
+                "is incomplete."
+            ),
+        )
+
+    return tenant
 
 
 # ==================================================
@@ -183,7 +234,6 @@ def _prepare_decision_banner_data(
 
     return prepared_data
 
-
 # ==================================================
 # Action preview
 # ==================================================
@@ -201,20 +251,33 @@ def preview_executive_kpi_actions(
         default=False,
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
-    Preview the Executive Actions that will be included in the
-    Executive KPI Analysis PDF.
+    Preview Executive Actions included in the KPI PDF.
+
+    Actions are restricted to the authenticated company + mine tenant.
     """
+
+    tenant = resolve_pdf_tenant(
+        db=db,
+        current_user=current_user,
+    )
 
     actions = load_pdf_actions_for_kpi(
         db=db,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
         kpi_key=kpi_key,
         limit=limit,
         include_completed=include_completed,
     )
 
     return {
+        "company_id": tenant["company_id"],
+        "mine_id": tenant["mine_id"],
         "kpi_key": kpi_key,
         "action_count": len(actions),
         "include_completed": include_completed,
@@ -229,27 +292,25 @@ def preview_executive_kpi_actions(
 
 @router.get("/branding/preview")
 def preview_executive_pdf_branding(
-    company_id: int = Query(
-        default=None,
-        ge=1,
-    ),
-    mine_id: int = Query(
-        default=None,
-        ge=1,
-    ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
-    Preview the company and mine branding used by PDF exports.
+    Preview PDF branding for the authenticated tenant only.
     """
 
-    branding = load_pdf_branding(
+    tenant = resolve_pdf_tenant(
         db=db,
-        company_id=company_id,
-        mine_id=mine_id,
+        current_user=current_user,
     )
 
-    return branding
+    return load_pdf_branding(
+        db=db,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
+    )
 
 
 # ==================================================
@@ -265,9 +326,12 @@ def preview_executive_pdf_branding(
 )
 def export_test_executive_kpi_pdf(
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
-    Generate a branded Executive KPI Analysis PDF using:
+    Generate a tenant-aware branded Executive KPI Analysis PDF using:
 
         - live KPI analytics
         - PostgreSQL history
@@ -284,8 +348,15 @@ def export_test_executive_kpi_pdf(
     days = 7
 
     try:
+        tenant = resolve_pdf_tenant(
+            db=db,
+            current_user=current_user,
+        )
+
         branding = load_pdf_branding(
             db=db,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
         )
 
         mine_name = branding["mine_name"]
@@ -294,13 +365,20 @@ def export_test_executive_kpi_pdf(
 
         pdf_data = load_live_kpi_pdf_data(
             db=db,
-            mine_name=mine_name,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
+            mine_name=tenant["mine_name"],
+            operation_profile=tenant[
+                "operation_profile"
+            ],
             kpi_key=kpi_key,
             days=days,
         )
 
         recommended_action_data = load_pdf_actions_for_kpi(
             db=db,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             kpi_key=kpi_key,
             limit=5,
             include_completed=True,
@@ -330,7 +408,7 @@ def export_test_executive_kpi_pdf(
         )
 
         filename = (
-            f"executive_kpi_analysis_"
+            "executive_kpi_analysis_"
             f"{kpi_key}_"
             f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         )
@@ -374,58 +452,48 @@ def export_test_executive_kpi_pdf(
 )
 def export_executive_kpi_pdf(
     kpi_key: str,
-
-    company_id: int = Query(
-        default=None,
-        ge=1,
-    ),
-
-    mine_id: int = Query(
-        default=None,
-        ge=1,
-    ),
-
     days: int = Query(
         default=7,
         ge=1,
         le=90,
     ),
-
     action_limit: int = Query(
         default=5,
         ge=1,
         le=20,
     ),
-
     include_completed_actions: bool = Query(
         default=False,
     ),
-
     db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
 ):
     """
     Generate an automatically branded Executive KPI Analysis PDF.
 
-    Branding is loaded from:
-        company_settings
-        mine_settings
+    Tenant ownership is derived exclusively from the authenticated user.
 
     Example:
         /api/executive-kpi/ore_production/export-pdf
 
     Optional:
-        ?company_id=1
-        &mine_id=1
-        &days=14
+        ?days=14
         &action_limit=5
         &include_completed_actions=false
     """
 
     try:
+        tenant = resolve_pdf_tenant(
+            db=db,
+            current_user=current_user,
+        )
+
         branding = load_pdf_branding(
             db=db,
-            company_id=company_id,
-            mine_id=mine_id,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
         )
 
         company_name = branding["company_name"]
@@ -434,16 +502,25 @@ def export_executive_kpi_pdf(
 
         pdf_data = load_live_kpi_pdf_data(
             db=db,
-            mine_name=mine_name,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
+            mine_name=tenant["mine_name"],
+            operation_profile=tenant[
+                "operation_profile"
+            ],
             kpi_key=kpi_key,
             days=days,
         )
 
         recommended_action_data = load_pdf_actions_for_kpi(
             db=db,
+            company_id=tenant["company_id"],
+            mine_id=tenant["mine_id"],
             kpi_key=kpi_key,
             limit=action_limit,
-            include_completed=include_completed_actions,
+            include_completed=(
+                include_completed_actions
+            ),
         )
 
         kpi_data = pdf_data["kpi_data"]
@@ -478,7 +555,7 @@ def export_executive_kpi_pdf(
         )
 
         filename = (
-            f"executive_kpi_analysis_"
+            "executive_kpi_analysis_"
             f"{safe_kpi_key}_"
             f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         )

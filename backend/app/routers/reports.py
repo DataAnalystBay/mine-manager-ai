@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime
 from io import BytesIO
 from typing import Callable, Optional
@@ -54,6 +56,9 @@ from app.services.report_history_service import (
 from app.services.tenant_service import (
     resolve_authenticated_tenant,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(
@@ -272,6 +277,11 @@ def _generate_report_response(
         raise
 
     except Exception as exc:
+        logger.exception(
+            "Report generation failed: %s",
+            report_name,
+        )
+
         try:
             record_failed_report(
                 db=db,
@@ -766,12 +776,16 @@ def download_executive_powerpoint(
     ),
 ):
     """
-    Generate and download the Executive Operations
-    PowerPoint board pack.
+    Generate and download the tenant-isolated Executive
+    Operations PowerPoint board pack.
 
-    NOTE:
-        PowerPoint service tenant conversion is the next
-        remaining report-generator step.
+    The authenticated tenant determines:
+        - company_id
+        - mine_id
+        - operation_profile
+
+    The PowerPoint service uses these values to isolate
+    operational data and select the appropriate report layout.
     """
 
     tenant = _resolve_tenant(
@@ -788,8 +802,19 @@ def download_executive_powerpoint(
     return _generate_report_response(
         db=db,
 
-        generator=(
-            generate_executive_powerpoint
+        generator=lambda: (
+            generate_executive_powerpoint(
+                db=db,
+                company_id=tenant[
+                    "company_id"
+                ],
+                mine_id=tenant[
+                    "mine_id"
+                ],
+                operation_profile=tenant[
+                    "operation_profile"
+                ],
+            )
         ),
 
         report_key=(

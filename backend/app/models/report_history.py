@@ -53,7 +53,7 @@ class ReportHistory(Base):
     company_id = Column(
         Integer,
         ForeignKey(
-            "public.company_settings.id",
+            "company_settings.id",
             ondelete="RESTRICT",
         ),
         nullable=False,
@@ -63,7 +63,7 @@ class ReportHistory(Base):
     mine_id = Column(
         Integer,
         ForeignKey(
-            "public.mine_settings.id",
+            "mine_settings.id",
             ondelete="RESTRICT",
         ),
         nullable=False,
