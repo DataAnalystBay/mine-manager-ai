@@ -1212,7 +1212,7 @@ def _build_production_slide(
         2.0,
         8.35,
         4.6,
-        title="Last 14 reporting periods",
+        title="Recent reporting periods",
     )
 
     latest_production = _latest(production_rows)

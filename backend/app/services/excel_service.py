@@ -144,11 +144,26 @@ def _fetch_rows(
     ]
 
 
+
 def _fetch_production_data(
     db: Session,
     company_id: int,
     mine_id: int,
+    reporting_days: int = 7,
 ) -> List[Dict[str, Any]]:
+    """
+    Return production records for a consistent executive-reporting window.
+
+    The latest production report date is treated as the authoritative
+    reporting calendar for the workbook. This keeps Production/Cathode,
+    Plant, Safety, and Fleet aligned to the same reporting period.
+    """
+
+    normalized_days = max(
+        1,
+        int(reporting_days or 7),
+    )
+
     return _fetch_rows(
         db,
         """
@@ -163,12 +178,22 @@ def _fetch_production_data(
         FROM public.production_daily
         WHERE company_id = :company_id
           AND mine_id = :mine_id
+          AND report_date >= (
+              SELECT MAX(report_date)
+              FROM public.production_daily
+              WHERE company_id = :company_id
+                AND mine_id = :mine_id
+          ) - (:reporting_days - 1)
         ORDER BY report_date ASC
         """,
-        _tenant_params(
-            company_id,
-            mine_id,
-        ),
+        {
+            **_tenant_params(
+                company_id,
+                mine_id,
+            ),
+            "reporting_days":
+                normalized_days,
+        },
     )
 
 
@@ -176,7 +201,19 @@ def _fetch_fleet_data(
     db: Session,
     company_id: int,
     mine_id: int,
+    reporting_days: int = 7,
 ) -> List[Dict[str, Any]]:
+    """
+    Return fleet records aligned to the current executive-reporting window.
+
+    Fleet is only used for operation profiles where it is applicable.
+    """
+
+    normalized_days = max(
+        1,
+        int(reporting_days or 7),
+    )
+
     return _fetch_rows(
         db,
         """
@@ -189,12 +226,22 @@ def _fetch_fleet_data(
         FROM public.fleet_daily
         WHERE company_id = :company_id
           AND mine_id = :mine_id
+          AND report_date >= (
+              SELECT MAX(report_date)
+              FROM public.production_daily
+              WHERE company_id = :company_id
+                AND mine_id = :mine_id
+          ) - (:reporting_days - 1)
         ORDER BY report_date ASC
         """,
-        _tenant_params(
-            company_id,
-            mine_id,
-        ),
+        {
+            **_tenant_params(
+                company_id,
+                mine_id,
+            ),
+            "reporting_days":
+                normalized_days,
+        },
     )
 
 
@@ -202,7 +249,17 @@ def _fetch_plant_data(
     db: Session,
     company_id: int,
     mine_id: int,
+    reporting_days: int = 7,
 ) -> List[Dict[str, Any]]:
+    """
+    Return plant records aligned to the current executive-reporting window.
+    """
+
+    normalized_days = max(
+        1,
+        int(reporting_days or 7),
+    )
+
     return _fetch_rows(
         db,
         """
@@ -216,12 +273,22 @@ def _fetch_plant_data(
         FROM public.plant_daily
         WHERE company_id = :company_id
           AND mine_id = :mine_id
+          AND report_date >= (
+              SELECT MAX(report_date)
+              FROM public.production_daily
+              WHERE company_id = :company_id
+                AND mine_id = :mine_id
+          ) - (:reporting_days - 1)
         ORDER BY report_date ASC
         """,
-        _tenant_params(
-            company_id,
-            mine_id,
-        ),
+        {
+            **_tenant_params(
+                company_id,
+                mine_id,
+            ),
+            "reporting_days":
+                normalized_days,
+        },
     )
 
 
@@ -229,7 +296,17 @@ def _fetch_safety_data(
     db: Session,
     company_id: int,
     mine_id: int,
+    reporting_days: int = 7,
 ) -> List[Dict[str, Any]]:
+    """
+    Return safety records aligned to the current executive-reporting window.
+    """
+
+    normalized_days = max(
+        1,
+        int(reporting_days or 7),
+    )
+
     return _fetch_rows(
         db,
         """
@@ -244,18 +321,23 @@ def _fetch_safety_data(
         FROM public.safety_daily
         WHERE company_id = :company_id
           AND mine_id = :mine_id
+          AND report_date >= (
+              SELECT MAX(report_date)
+              FROM public.production_daily
+              WHERE company_id = :company_id
+                AND mine_id = :mine_id
+          ) - (:reporting_days - 1)
         ORDER BY report_date ASC
         """,
-        _tenant_params(
-            company_id,
-            mine_id,
-        ),
+        {
+            **_tenant_params(
+                company_id,
+                mine_id,
+            ),
+            "reporting_days":
+                normalized_days,
+        },
     )
-
-
-# ============================================================
-# VALUE HELPERS
-# ============================================================
 
 def _number(
     value: Any,
