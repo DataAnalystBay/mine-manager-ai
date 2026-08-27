@@ -4,7 +4,7 @@ Release: Version 1.0.0
 Release Branch: commercial/v1.0-pilot
 Release Sprint: 10.22
 Review Date: 2026-08-27
-Release Candidate: v1.0.0-rc2
+Release Candidate: v1.0.0-rc3
 
 ## 1. Source Control
 
@@ -120,7 +120,7 @@ Before creating the Version 1.0 Release Candidate:
 * [x] Re-test login after credential rotation
 * [x] Re-test protected `/api/auth/me` endpoint with fresh JWT
 * [x] Confirm final Git working tree clean
-* [ ] Create annotated `v1.0.0-rc2` Git tag
+* [ ] Create annotated `v1.0.0-rc3` Git tag
 
 ## Current Decision
 
@@ -136,7 +136,7 @@ Version 1.0 is approved to proceed to Release Candidate creation after the final
 
 ## Release Candidate Approval
 
-Target tag: `v1.0.0-rc2`
+Target tag: `v1.0.0-rc3`
 
 Release branch: `commercial/v1.0-pilot`
 
@@ -146,5 +146,5 @@ Remaining actions:
 
 1. Save and commit this final Go/No-Go checklist.
 2. Confirm the Git working tree is clean.
-3. Create the annotated `v1.0.0-rc2` tag.
+3. Create the annotated `v1.0.0-rc3` tag.
 4. Verify the tag points to the approved release commit.
