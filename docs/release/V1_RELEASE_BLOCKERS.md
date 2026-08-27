@@ -4,11 +4,11 @@
 
 Release: Version 1.0.0
 
-Branch: release/v1.0.0
+Branch: commercial/v1.0-pilot
 
 Release Sprint: 10.22
 
-Review Date: 2026-08-08
+Review Date: 2026-08-27
 
 
 
@@ -60,7 +60,7 @@ Cosmetic, documentation, usability, or non-blocking technical issue.
 
 | V1-002 | Low | Source Hygiene | Legacy `\*\_before\_\*` backup source files exist locally in the backend source tree. Git ignore rules prevent future backup copies from being committed. | Exclude backup artifacts from commercial deployment package. | Accepted |
 
-| V1-003 | Security Action | Credentials | Release validation used temporary test credentials and JWT tokens. | Rotate test password and JWT signing secret before final commercial release. | Open |
+| V1-003 | Security Action | Credentials | Release validation used temporary test credentials and JWT tokens. | Test password and JWT signing secret rotated; old JWT invalidated; fresh authentication revalidated. | Closed |
 
 
 
@@ -152,7 +152,7 @@ Medium defects: 0
 
 Low accepted findings: 2
 
-Open security actions: 1
+Open security actions: 0
 
 
 
@@ -160,11 +160,8 @@ Open security actions: 1
 
 
 
-CONDITIONAL GO
+GO FOR RELEASE CANDIDATE
 
 
 
-Version 1.0 is technically ready to proceed toward Release Candidate status, subject to completion of the remaining security credential rotation and final Go/No-Go checklist.
-
-
-
+Version 1.0 has completed the required security credential rotation and final core reporting validation. No identified Critical, High, Medium, or open Security Action currently prevents creation of the Version 1.0 Release Candidate.

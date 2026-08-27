@@ -1,9 +1,9 @@
-# Mine Manager AI Version 1.0 — Final Go/No-Go Checklist
+# Mine Manager AI Version 1.0 - Final Go/No-Go Checklist
 
 Release: Version 1.0.0
-Release Branch: release/v1.0.0
+Release Branch: commercial/v1.0-pilot
 Release Sprint: 10.22
-Review Date: 2026-08-08
+Review Date: 2026-08-27
 Release Candidate: v1.0.0-rc1
 
 ## 1. Source Control
@@ -82,6 +82,12 @@ Release Candidate: v1.0.0-rc1
 * [x] Executive Excel workbook generated successfully
 * [x] Generated XLSX signature validated
 * [x] Report History returns completed report records
+* [x] Weekly Operations PDF generated successfully
+* [x] Monthly KPI PDF generated successfully
+* [x] PowerPoint Board Pack generated successfully
+* [x] Achit-Ikht SX-EW report profile validated
+* [x] Executive Excel export validated with aligned reporting window
+* [x] Report History validated with tenant-aware completed records
 
 ## 9. Demo Mode
 
@@ -113,7 +119,7 @@ Before creating the Version 1.0 Release Candidate:
 * [x] Confirm previously issued JWT is rejected
 * [x] Re-test login after credential rotation
 * [x] Re-test protected `/api/auth/me` endpoint with fresh JWT
-* [ ] Confirm final Git working tree clean
+* [x] Confirm final Git working tree clean
 * [ ] Create annotated `v1.0.0-rc1` Git tag
 
 ## Current Decision
