@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../api/authApi";
+import { useLanguage } from "../context/LanguageContext";
 import useAuth from "../hooks/useAuth";
 import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
   const [email, setEmail] = useState("admin@minemanager.ai");
   const [password, setPassword] = useState("admin123");
   const [rememberMe, setRememberMe] = useState(true);
-  const [language, setLanguage] = useState("EN");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +40,7 @@ function Login() {
       setError(
         error?.response?.data?.detail ||
           error?.message ||
-          "Unable to sign in"
+          t("login.unableToSignIn")
       );
     } finally {
       setLoading(false);
@@ -53,39 +54,38 @@ function Login() {
           <div className="brand-top">
             <img
               src="/images/logo.png"
-              alt="Mine Manager AI Logo"
+              alt={t("login.logoAlt")}
               className="brand-logo"
             />
 
             <div>
               <h1>Mine Manager AI</h1>
               <p className="brand-subtitle">
-                Executive Operations Intelligence Platform
+                {t("login.brandSubtitle")}
               </p>
             </div>
           </div>
 
           <div className="brand-hero simple-hero">
             <div className="hero-label">
-              Commercial MVP · Version 1.0
+              {t("login.commercialMvp")}
             </div>
 
             <h3>
-              Transform operational data into executive decisions.
+              {t("login.heroTitle")}
             </h3>
 
             <p>
-              Monitor. Analyze. Act.
+              {t("login.heroTagline")}
             </p>
 
             <p className="brand-support-text">
-              Secure AI-powered operational intelligence for modern mining
-              companies.
+              {t("login.brandSupport")}
             </p>
           </div>
 
           <div className="brand-footer">
-            Secure Pilot Access · Built for Mine Leaders
+            {t("login.brandFooter")}
           </div>
         </section>
 
@@ -96,7 +96,7 @@ function Login() {
               onClick={() => setLanguage("EN")}
               type="button"
             >
-              🇬🇧 English
+              EN
             </button>
 
             <button
@@ -104,18 +104,18 @@ function Login() {
               onClick={() => setLanguage("MN")}
               type="button"
             >
-              🇲🇳
+              МОН
             </button>
           </div>
 
-          <h2>Welcome Back</h2>
+          <h2>{t("login.welcomeBack")}</h2>
 
           <p className="login-muted">
-            Sign in to access your Executive Dashboard.
+            {t("login.dashboardAccess")}
           </p>
 
           <form onSubmit={handleLogin}>
-            <label>Email Address</label>
+            <label>{t("login.emailAddress")}</label>
             <input
               type="email"
               placeholder="admin@minemanager.ai"
@@ -124,10 +124,10 @@ function Login() {
               required
             />
 
-            <label>Password</label>
+            <label>{t("login.password")}</label>
             <input
               type="password"
-              placeholder="Enter password"
+              placeholder={t("login.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -140,25 +140,25 @@ function Login() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                Remember Me
+                {t("login.rememberMe")}
               </label>
 
               <button type="button" className="link-button">
-                Forgot Password?
+                {t("login.forgotPassword")}
               </button>
             </div>
 
             {error && <div className="login-error">{error}</div>}
 
             <button className="login-button" type="submit" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? t("login.signingIn") : t("login.signIn")}
             </button>
           </form>
 
           <p className="security-note">
-            Secure Access
+            {t("login.secureAccess")}
             <br />
-            JWT Authentication · Role-Based Access Control
+            {t("login.securityDescription")}
           </p>
         </section>
       </div>

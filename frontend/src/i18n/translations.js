@@ -46,6 +46,30 @@ export const translations = {
       declining: "Declining",
       unknown: "Unknown",
     },
+
+    login: {
+      logoAlt: "Mine Manager AI Logo",
+      brandSubtitle: "Executive Operations Intelligence Platform",
+      commercialMvp: "Commercial MVP · Version 1.0",
+      heroTitle: "Transform operational data into executive decisions.",
+      heroTagline: "Monitor. Analyze. Act.",
+      brandSupport:
+        "Secure AI-powered operational intelligence for modern mining companies.",
+      brandFooter: "Secure Pilot Access · Built for Mine Leaders",
+      welcomeBack: "Welcome Back",
+      dashboardAccess: "Sign in to access your Executive Dashboard.",
+      emailAddress: "Email Address",
+      password: "Password",
+      passwordPlaceholder: "Enter password",
+      rememberMe: "Remember Me",
+      forgotPassword: "Forgot Password?",
+      signIn: "Sign In",
+      signingIn: "Signing in...",
+      unableToSignIn: "Unable to sign in",
+      secureAccess: "Secure Access",
+      securityDescription:
+        "JWT Authentication · Role-Based Access Control",
+    },
  
     navigation: {
       dashboard: "Dashboard",
@@ -1588,6 +1612,32 @@ export const translations = {
       stable: "Тогтвортой",
       declining: "Буурч байна",
       unknown: "Тодорхойгүй",
+    },
+
+    login: {
+      logoAlt: "Mine Manager AI лого",
+      brandSubtitle: "Удирдлагын үйл ажиллагааны мэдээллийн платформ",
+      commercialMvp: "Арилжааны MVP · Хувилбар 1.0",
+      heroTitle:
+        "Үйл ажиллагааны өгөгдлийг удирдлагын шийдвэр болгон хувиргана.",
+      heroTagline: "Хяна. Шинжил. Үйлд.",
+      brandSupport:
+        "Орчин үеийн уул уурхайн компаниудад зориулсан аюулгүй, AI-д суурилсан үйл ажиллагааны мэдээллийн шийдэл.",
+      brandFooter:
+        "Аюулгүй туршилтын нэвтрэлт · Уурхайн удирдлагад зориулсан",
+      welcomeBack: "Тавтай морилно уу",
+      dashboardAccess: "Удирдлагын самбарт нэвтрэх",
+      emailAddress: "Имэйл хаяг",
+      password: "Нууц үг",
+      passwordPlaceholder: "Нууц үгээ оруулна уу",
+      rememberMe: "Намайг санах",
+      forgotPassword: "Нууц үгээ мартсан уу?",
+      signIn: "Нэвтрэх",
+      signingIn: "Нэвтэрч байна...",
+      unableToSignIn: "Нэвтрэх боломжгүй байна",
+      secureAccess: "Аюулгүй нэвтрэлт",
+      securityDescription:
+        "JWT баталгаажуулалт · Үүрэгт суурилсан хандалтын хяналт",
     },
  
     navigation: {
