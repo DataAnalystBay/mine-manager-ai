@@ -1,7 +1,6 @@
 import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import Header from "./Header";
 
 function MainLayout() {
   return (
@@ -22,14 +21,13 @@ function MainLayout() {
           minWidth: 0,
         }}
       >
-        <Header />
-
         <Box
           component="main"
           sx={{
             flex: 1,
             px: 4,
-            py: 3,
+            pt: 2.5,
+            pb: 3,
             overflow: "auto",
             bgcolor: "#f5f7fb",
           }}
@@ -37,7 +35,6 @@ function MainLayout() {
           <Box
             sx={{
               width: "100%",
-              maxWidth: 1800,
               mx: "auto",
             }}
           >

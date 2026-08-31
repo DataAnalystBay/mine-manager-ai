@@ -39,10 +39,6 @@ import {
   updateExecutiveActionStatus,
 } from "../api/executiveActionsApi";
 
-import {
-  getExecutiveActionKpiContext,
-} from "../api/executiveKpiContextApi";
-
 import { useConfig } from "../context/ConfigContext";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -120,42 +116,6 @@ function formatSpecialFilterLabel(filterKey, t) {
   return labels[filterKey] || "";
 }
 
-
-
-function formatKpiLabel(kpiKey, t) {
-  const labels = isMongolianLanguage(t)
-    ? {
-        ore: "Хүдрийн гүйцэтгэл",
-        waste: "Хөрс хуулалт",
-        fleet: "Техникийн гүйцэтгэл",
-        plant: "Үйлдвэрийн гүйцэтгэл",
-        safety: "Аюулгүй ажиллагаа",
-        mine_health: "Уурхайн ерөнхий төлөв",
-      }
-    : {
-        ore: "Ore Performance",
-        waste: "Waste Movement",
-        fleet: "Fleet Performance",
-        plant: "Plant Performance",
-        safety: "Safety",
-        mine_health: "Mine Health",
-      };
-
-  const normalizedKey =
-    normalizeValue(kpiKey);
-
-  if (labels[normalizedKey]) {
-    return labels[normalizedKey];
-  }
-
-  return String(kpiKey || "")
-    .replaceAll("_", " ")
-    .replace(
-      /\b\w/g,
-      (character) =>
-        character.toUpperCase()
-    );
-}
 
 
 function getActionOwner(action) {
@@ -377,6 +337,12 @@ function ExecutiveActions() {
       "kpi_key"
     ) || "";
 
+
+  const activeActionId =
+    searchParams.get(
+      "action_id"
+    ) || "";
+
   const primaryColor =
     company?.primary_color ||
     "#16a34a";
@@ -400,13 +366,24 @@ function ExecutiveActions() {
 
 
   useEffect(() => {
-    setFilters(
-      (currentFilters) => ({
-        ...currentFilters,
-        kpiKey:
-          activeKpiKey,
-      })
+    const timeoutId = window.setTimeout(
+      () => {
+        setFilters(
+          (currentFilters) => ({
+            ...currentFilters,
+            kpiKey:
+              activeKpiKey,
+          })
+        );
+      },
+      0
     );
+
+    return () => {
+      window.clearTimeout(
+        timeoutId
+      );
+    };
   }, [activeKpiKey]);
 
 
@@ -675,7 +652,7 @@ function ExecutiveActions() {
           false
         );
       }
-    }, []);
+    }, [t]);
 
 
   const loadActions =
@@ -751,7 +728,7 @@ function ExecutiveActions() {
           false
         );
       }
-    }, [activeKpiKey]);
+    }, [activeKpiKey, t]);
 
 
   const refreshExecutiveActions =
@@ -774,10 +751,78 @@ function ExecutiveActions() {
 
 
   useEffect(() => {
-    refreshExecutiveActions();
+    const timeoutId = window.setTimeout(
+      refreshExecutiveActions,
+      0
+    );
+
+    return () => {
+      window.clearTimeout(
+        timeoutId
+      );
+    };
   }, [
     refreshExecutiveActions,
   ]);
+
+
+  useEffect(
+    () => {
+      if (
+        !activeActionId ||
+        actionsLoading ||
+        !actions.length
+      ) {
+        return;
+      }
+
+      const matchedAction =
+        actions.find(
+          (
+            action
+          ) =>
+            String(
+              action?.id ||
+              action?.action_id ||
+              ""
+            ) ===
+            String(
+              activeActionId
+            )
+        );
+
+      if (
+        !matchedAction
+      ) {
+        return;
+      }
+
+      const timeoutId =
+        window.setTimeout(
+          () => {
+            setSelectedAction(
+              matchedAction
+            );
+
+            setDialogOpen(
+              true
+            );
+          },
+          0
+        );
+
+      return () => {
+        window.clearTimeout(
+          timeoutId
+        );
+      };
+    },
+    [
+      activeActionId,
+      actions,
+      actionsLoading,
+    ]
+  );
 
 
   const handleFilterChange = (
@@ -991,14 +1036,51 @@ function ExecutiveActions() {
 
 
   const handleCloseDialog =
-    () => {
-      if (savingAction) {
-        return;
-      }
+    useCallback(
+      () => {
+        if (
+          savingAction
+        ) {
+          return;
+        }
 
-      setDialogOpen(false);
-      setSelectedAction(null);
-    };
+        setDialogOpen(
+          false
+        );
+
+        setSelectedAction(
+          null
+        );
+
+        if (
+          !activeActionId
+        ) {
+          return;
+        }
+
+        const nextParams =
+          new URLSearchParams(
+            searchParams
+          );
+
+        nextParams.delete(
+          "action_id"
+        );
+
+        setSearchParams(
+          nextParams,
+          {
+            replace: true,
+          }
+        );
+      },
+      [
+        savingAction,
+        activeActionId,
+        searchParams,
+        setSearchParams,
+      ]
+    );
 
 
   const handleSaveAction =
@@ -1037,6 +1119,26 @@ function ExecutiveActions() {
 
         setDialogOpen(false);
         setSelectedAction(null);
+
+        if (
+          activeActionId
+        ) {
+          const nextParams =
+            new URLSearchParams(
+              searchParams
+            );
+
+          nextParams.delete(
+            "action_id"
+          );
+
+          setSearchParams(
+            nextParams,
+            {
+              replace: true,
+            }
+          );
+        }
 
         await refreshExecutiveActions();
       } catch (error) {
@@ -1191,40 +1293,6 @@ function ExecutiveActions() {
     };
 
 
-  const handleTestKpiContext =
-    async () => {
-      try {
-        setErrorMessage("");
-
-        const result =
-          await getExecutiveActionKpiContext(
-            1
-          );
-
-        console.log(
-          "Live KPI Context:",
-          result
-        );
-
-        setSuccessMessage(
-          localizeLabel(t, "Live KPI context loaded successfully. Check the browser console.", "Live KPI контекст амжилттай ачааллаа. Browser console-ийг шалгана уу.")
-        );
-      } catch (error) {
-        console.error(
-          "KPI Context Error:",
-          error
-        );
-
-        setErrorMessage(
-          getBackendErrorMessage(
-            error,
-            localizeLabel(t, "Unable to load live KPI context.", "Live KPI контекстийг ачаалж чадсангүй.")
-          )
-        );
-      }
-    };
-
-
   const isRefreshing =
     summaryLoading ||
     actionsLoading;
@@ -1364,40 +1432,6 @@ function ExecutiveActions() {
                   "Refresh",
                   "Шинэчлэх"
                 )}
-          </Button>
-
-          <Button
-            variant="outlined"
-            onClick={
-              handleTestKpiContext
-            }
-            sx={{
-              minWidth: 165,
-              width: {
-                xs: "100%",
-                sm: "auto",
-              },
-              minHeight: 44,
-              borderRadius: "12px",
-              borderColor:
-                primaryColor,
-              color: primaryColor,
-              fontWeight: 800,
-              textTransform: "none",
-
-              "&:hover": {
-                borderColor:
-                  primaryColor,
-                bgcolor:
-                  `${primaryColor}0A`,
-              },
-            }}
-          >
-            {localizeLabel(
-              t,
-              "Test KPI Context",
-              "KPI контекст шалгах"
-            )}
           </Button>
 
           <Button

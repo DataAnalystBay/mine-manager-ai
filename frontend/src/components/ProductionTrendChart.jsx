@@ -91,29 +91,16 @@ function getNiceAxisConfig(
     roughStep /
     magnitude;
 
-  let niceMultiplier = 1;
-
-  if (normalized <= 1) {
-    niceMultiplier = 1;
-
-  } else if (
-    normalized <= 2
-  ) {
-    niceMultiplier = 2;
-
-  } else if (
-    normalized <= 2.5
-  ) {
-    niceMultiplier = 2.5;
-
-  } else if (
-    normalized <= 5
-  ) {
-    niceMultiplier = 5;
-
-  } else {
-    niceMultiplier = 10;
-  }
+  const niceMultiplier =
+    normalized <= 1
+      ? 1
+      : normalized <= 2
+        ? 2
+        : normalized <= 2.5
+          ? 2.5
+          : normalized <= 5
+            ? 5
+            : 10;
 
   const step =
     niceMultiplier *
@@ -265,62 +252,6 @@ function normalizeAggregation(
   }
 
   return "daily";
-}
-
-
-function getRangeLabel(
-  range,
-  language
-) {
-  const normalized =
-    String(
-      range ||
-      "30D"
-    ).toUpperCase();
-
-  const english = {
-    "30D":
-      "last 30 days",
-
-    "90D":
-      "last 90 days",
-
-    "1Y":
-      "last 1 year",
-
-    "3Y":
-      "last 3 years",
-
-    "5Y":
-      "full 5-year history",
-  };
-
-  const mongolian = {
-    "30D":
-      "сүүлийн 30 хоног",
-
-    "90D":
-      "сүүлийн 90 хоног",
-
-    "1Y":
-      "сүүлийн 1 жил",
-
-    "3Y":
-      "сүүлийн 3 жил",
-
-    "5Y":
-      "5 жилийн түүхэн хугацаа",
-  };
-
-  return (
-    language === "MN"
-      ? mongolian[
-          normalized
-        ]
-      : english[
-          normalized
-        ]
-  ) || normalized;
 }
 
 
@@ -590,8 +521,338 @@ function TargetLineLabel({
    Component
    ============================================================ */
 
+function formatProductionTooltipValue(
+  value
+) {
+  return `${Number(
+    value ||
+    0
+  ).toLocaleString()} t`;
+}
+
+
+function ProductionTrendTooltip({
+  active,
+  payload,
+  label,
+  aggregation,
+  language,
+  t,
+}) {
+  if (
+    !active ||
+    !payload ||
+    payload.length ===
+      0
+  ) {
+    return null;
+  }
+
+  const row =
+    payload?.[0]
+      ?.payload ||
+    {};
+
+  const plan =
+    Number(
+      row.chart_plan ||
+      0
+    );
+
+  const actual =
+    Number(
+      row.chart_actual ||
+      0
+    );
+
+  const variance =
+    Number(
+      row.variance ||
+      0
+    );
+
+  const variancePercent =
+    Number(
+      row
+        .variance_percent ||
+      0
+    );
+
+  const isAtOrAbovePlan =
+    plan > 0
+      ? actual >=
+        plan
+      : actual >
+        0;
+
+  return (
+    <Box
+      sx={{
+        minWidth:
+          220,
+
+        px:
+          1.8,
+
+        py:
+          1.5,
+
+        bgcolor:
+          "#ffffff",
+
+        border:
+          "1px solid #dfe5ec",
+
+        borderRadius:
+          2.5,
+
+        boxShadow:
+          "0 12px 28px rgba(15, 23, 42, 0.11)",
+      }}
+    >
+      <Typography
+        sx={{
+          mb:
+            1,
+
+          color:
+            "#0f172a",
+
+          fontSize:
+            11,
+
+          fontWeight:
+            800,
+        }}
+      >
+        {formatTooltipDate(
+          label,
+          aggregation,
+          language
+        )}
+      </Typography>
+
+
+      <Box
+        sx={{
+          mb:
+            0.45,
+
+          display:
+            "flex",
+
+          justifyContent:
+            "space-between",
+
+          gap:
+            3,
+        }}
+      >
+        <Typography
+          sx={{
+            color:
+              "#64748b",
+
+            fontSize:
+              11,
+          }}
+        >
+          {t(
+            "production.plan"
+          )}
+        </Typography>
+
+        <Typography
+          sx={{
+            color:
+              PLAN_COLOR,
+
+            fontSize:
+              11,
+
+            fontWeight:
+              800,
+          }}
+        >
+          {formatProductionTooltipValue(
+            plan
+          )}
+        </Typography>
+      </Box>
+
+
+      <Box
+        sx={{
+          mb:
+            0.45,
+
+          display:
+            "flex",
+
+          justifyContent:
+            "space-between",
+
+          gap:
+            3,
+        }}
+      >
+        <Typography
+          sx={{
+            color:
+              "#64748b",
+
+            fontSize:
+              11,
+          }}
+        >
+          {t(
+            "production.actual"
+          )}
+        </Typography>
+
+        <Typography
+          sx={{
+            color:
+              isAtOrAbovePlan
+                ? ABOVE_PLAN_COLOR
+                : BELOW_PLAN_COLOR,
+
+            fontSize:
+              11,
+
+            fontWeight:
+              800,
+          }}
+        >
+          {formatProductionTooltipValue(
+            actual
+          )}
+        </Typography>
+      </Box>
+
+
+      <Box
+        sx={{
+          mb:
+            1,
+
+          display:
+            "flex",
+
+          justifyContent:
+            "space-between",
+
+          gap:
+            3,
+        }}
+      >
+        <Typography
+          sx={{
+            color:
+              "#64748b",
+
+            fontSize:
+              11,
+          }}
+        >
+          {t(
+            "production.variance"
+          )}
+        </Typography>
+
+        <Typography
+          sx={{
+            color:
+              isAtOrAbovePlan
+                ? ABOVE_PLAN_COLOR
+                : BELOW_PLAN_COLOR,
+
+            fontSize:
+              11,
+
+            fontWeight:
+              800,
+
+            textAlign:
+              "right",
+          }}
+        >
+          {variance >= 0
+            ? "+"
+            : ""}
+
+          {variance
+            .toLocaleString()}
+
+          {" t "}
+
+          (
+          {variancePercent >=
+          0
+            ? "+"
+            : ""}
+
+          {variancePercent
+            .toFixed(
+              1
+            )}
+          %)
+        </Typography>
+      </Box>
+
+
+      <Box
+        sx={{
+          display:
+            "inline-flex",
+
+          alignItems:
+            "center",
+
+          px:
+            1,
+
+          py:
+            0.35,
+
+          borderRadius:
+            999,
+
+          bgcolor:
+            isAtOrAbovePlan
+              ? "#dcfce7"
+              : "#fee2e2",
+
+          color:
+            isAtOrAbovePlan
+              ? "#166534"
+              : "#991b1b",
+
+          fontSize:
+            9,
+
+          fontWeight:
+            900,
+        }}
+      >
+        {isAtOrAbovePlan
+          ? t(
+              "production.atOrAbovePlan"
+            )
+              .toUpperCase()
+          : t(
+              "production.belowPlan"
+            )
+              .toUpperCase()}
+      </Box>
+    </Box>
+  );
+}
+
+
 function ProductionTrendChart({
   data = [],
+  headerActions = null,
 }) {
   const {
     t,
@@ -600,11 +861,17 @@ function ProductionTrendChart({
 
 
   const safeData =
-    Array.isArray(
-      data
-    )
-      ? data
-      : [];
+    useMemo(
+      () =>
+        Array.isArray(
+          data
+        )
+          ? data
+          : [],
+      [
+        data,
+      ]
+    );
 
 
   const operationProfile =
@@ -626,16 +893,6 @@ function ProductionTrendChart({
     safeData?.[0]
       ?.waste_applicable !==
     false;
-
-
-  const selectedRange =
-    String(
-      safeData?.[0]
-        ?.range ||
-      "30D"
-    )
-      .trim()
-      .toUpperCase();
 
 
   const aggregation =
@@ -693,27 +950,6 @@ function ProductionTrendChart({
     "ore"
       ? "ore_actual"
       : "waste_actual";
-
-
-  const title =
-    effectiveMode ===
-    "ore"
-      ? (
-          safeData?.[0]
-            ?.production_label ||
-          safeData?.[0]
-            ?.ore_label ||
-          t(
-            "production.oreProduction"
-          )
-        )
-      : (
-          safeData?.[0]
-            ?.waste_label ||
-          t(
-            "production.wasteMovement"
-          )
-        );
 
 
   /*
@@ -954,29 +1190,12 @@ function ProductionTrendChart({
   };
 
 
-  const formatTooltipValue = (
-    value
-  ) => {
-    return `${Number(
-      value ||
-      0
-    ).toLocaleString()} t`;
-  };
-
-
-  const rangeDescription =
-    getRangeLabel(
-      selectedRange,
-      language
-    );
-
-
   const chartHeading =
     isSxewOperation
       ? (
           language === "MN"
-            ? "Катодын зэсийн үйлдвэрлэлийн гүйцэтгэлийн чиг хандлага"
-            : "Cathode Production Performance Trend"
+            ? "Катодын зэсийн үйлдвэрлэлийн чиг хандлага"
+            : "Cathode Production Trend"
         )
       : t(
           "production.productionPerformanceTrend"
@@ -984,9 +1203,17 @@ function ProductionTrendChart({
 
 
   const chartSubtitle =
-    language === "MN"
-      ? `${title}: төлөвлөгөө болон бодит гүйцэтгэлийн харьцуулалт, ${rangeDescription}`
-      : `${title}: actual performance against plan, ${rangeDescription}`;
+    isSxewOperation
+      ? (
+          language === "MN"
+            ? "Төлөвлөгөө болон бодит катодын зэсийн үйлдвэрлэл"
+            : "Plan versus actual cathode production"
+        )
+      : (
+          language === "MN"
+            ? "Төлөвлөгөө болон бодит үйлдвэрлэлийн гүйцэтгэл"
+            : "Plan versus actual production performance"
+        );
 
 
   const averagePlanLegendLabel =
@@ -1013,321 +1240,6 @@ function ProductionTrendChart({
   /* ==========================================================
      Tooltip
      ========================================================== */
-
-  function CustomTooltip({
-    active,
-    payload,
-    label,
-  }) {
-    if (
-      !active ||
-      !payload ||
-      payload.length ===
-        0
-    ) {
-      return null;
-    }
-
-    const row =
-      payload?.[0]
-        ?.payload ||
-      {};
-
-    const plan =
-      Number(
-        row.chart_plan ||
-        0
-      );
-
-    const actual =
-      Number(
-        row.chart_actual ||
-        0
-      );
-
-    const variance =
-      Number(
-        row.variance ||
-        0
-      );
-
-    const variancePercent =
-      Number(
-        row
-          .variance_percent ||
-        0
-      );
-
-    const isAtOrAbovePlan =
-      plan > 0
-        ? actual >=
-          plan
-        : actual >
-          0;
-
-    return (
-      <Box
-        sx={{
-          minWidth:
-            220,
-
-          px:
-            1.8,
-
-          py:
-            1.5,
-
-          bgcolor:
-            "#ffffff",
-
-          border:
-            "1px solid #dfe5ec",
-
-          borderRadius:
-            2.5,
-
-          boxShadow:
-            "0 12px 28px rgba(15, 23, 42, 0.11)",
-        }}
-      >
-        <Typography
-          sx={{
-            mb:
-              1,
-
-            color:
-              "#0f172a",
-
-            fontSize:
-              11,
-
-            fontWeight:
-              800,
-          }}
-        >
-          {formatTooltipDate(
-            label,
-            aggregation,
-            language
-          )}
-        </Typography>
-
-
-        <Box
-          sx={{
-            mb:
-              0.45,
-
-            display:
-              "flex",
-
-            justifyContent:
-              "space-between",
-
-            gap:
-              3,
-          }}
-        >
-          <Typography
-            sx={{
-              color:
-                "#64748b",
-
-              fontSize:
-                11,
-            }}
-          >
-            {t(
-              "production.plan"
-            )}
-          </Typography>
-
-          <Typography
-            sx={{
-              color:
-                PLAN_COLOR,
-
-              fontSize:
-                11,
-
-              fontWeight:
-                800,
-            }}
-          >
-            {formatTooltipValue(
-              plan
-            )}
-          </Typography>
-        </Box>
-
-
-        <Box
-          sx={{
-            mb:
-              0.45,
-
-            display:
-              "flex",
-
-            justifyContent:
-              "space-between",
-
-            gap:
-              3,
-          }}
-        >
-          <Typography
-            sx={{
-              color:
-                "#64748b",
-
-              fontSize:
-                11,
-            }}
-          >
-            {t(
-              "production.actual"
-            )}
-          </Typography>
-
-          <Typography
-            sx={{
-              color:
-                isAtOrAbovePlan
-                  ? ABOVE_PLAN_COLOR
-                  : BELOW_PLAN_COLOR,
-
-              fontSize:
-                11,
-
-              fontWeight:
-                800,
-            }}
-          >
-            {formatTooltipValue(
-              actual
-            )}
-          </Typography>
-        </Box>
-
-
-        <Box
-          sx={{
-            mb:
-              1,
-
-            display:
-              "flex",
-
-            justifyContent:
-              "space-between",
-
-            gap:
-              3,
-          }}
-        >
-          <Typography
-            sx={{
-              color:
-                "#64748b",
-
-              fontSize:
-                11,
-            }}
-          >
-            {t(
-              "production.variance"
-            )}
-          </Typography>
-
-          <Typography
-            sx={{
-              color:
-                isAtOrAbovePlan
-                  ? ABOVE_PLAN_COLOR
-                  : BELOW_PLAN_COLOR,
-
-              fontSize:
-                11,
-
-              fontWeight:
-                800,
-
-              textAlign:
-                "right",
-            }}
-          >
-            {variance >= 0
-              ? "+"
-              : ""}
-
-            {variance
-              .toLocaleString()}
-
-            {" t "}
-
-            (
-            {variancePercent >=
-            0
-              ? "+"
-              : ""}
-
-            {variancePercent
-              .toFixed(
-                1
-              )}
-            %)
-          </Typography>
-        </Box>
-
-
-        <Box
-          sx={{
-            display:
-              "inline-flex",
-
-            alignItems:
-              "center",
-
-            px:
-              1,
-
-            py:
-              0.35,
-
-            borderRadius:
-              999,
-
-            bgcolor:
-              isAtOrAbovePlan
-                ? "#dcfce7"
-                : "#fee2e2",
-
-            color:
-              isAtOrAbovePlan
-                ? "#166534"
-                : "#991b1b",
-
-            fontSize:
-              9,
-
-            fontWeight:
-              900,
-          }}
-        >
-          {isAtOrAbovePlan
-            ? t(
-                "production.atOrAbovePlan"
-              )
-                .toUpperCase()
-            : t(
-                "production.belowPlan"
-              )
-                .toUpperCase()}
-        </Box>
-      </Box>
-    );
-  }
 
 
   return (
@@ -1356,13 +1268,13 @@ function ProductionTrendChart({
         sx={{
           p: {
             xs:
-              2,
+              1.5,
 
             md:
-              2,
+              1.25,
 
             lg:
-              2,
+              1.25,
           },
 
           "&:last-child": {
@@ -1387,7 +1299,7 @@ function ProductionTrendChart({
         <Box
           sx={{
             mb:
-              1.2,
+              0.8,
 
             display:
               "flex",
@@ -1406,7 +1318,12 @@ function ProductionTrendChart({
           }}
         >
 
-          <Box>
+          <Box
+            sx={{
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
             <Typography
               sx={{
                 color:
@@ -1417,11 +1334,14 @@ function ProductionTrendChart({
                     15,
 
                   lg:
-                    17,
+                    16,
                 },
 
                 fontWeight:
                   800,
+
+                lineHeight:
+                  1.2,
 
                 letterSpacing:
                   "-0.01em",
@@ -1430,22 +1350,22 @@ function ProductionTrendChart({
               {chartHeading}
             </Typography>
 
-
             <Typography
               sx={{
                 mt:
-                  0.35,
+                  0.25,
 
                 color:
-                  "#64748b",
+                  "#7b8497",
 
-                fontSize: {
-                  xs:
-                    10,
+                fontSize:
+                  9.5,
 
-                  lg:
-                    10,
-                },
+                fontWeight:
+                  500,
+
+                lineHeight:
+                  1.35,
               }}
             >
               {chartSubtitle}
@@ -1453,9 +1373,19 @@ function ProductionTrendChart({
           </Box>
 
 
-          {wasteApplicable &&
-            !isSxewOperation && (
-            <ToggleButtonGroup
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              gap: 1,
+              flexShrink: 0,
+            }}
+          >
+            {wasteApplicable &&
+              !isSxewOperation && (
+              <ToggleButtonGroup
               value={
                 mode
               }
@@ -1531,8 +1461,11 @@ function ProductionTrendChart({
                   "production.waste"
                 )}
               </ToggleButton>
-            </ToggleButtonGroup>
-          )}
+              </ToggleButtonGroup>
+            )}
+
+            {headerActions}
+          </Box>
         </Box>
 
 
@@ -1543,7 +1476,7 @@ function ProductionTrendChart({
         <Box
           sx={{
             mb:
-              0.9,
+              0.65,
 
             display:
               "flex",
@@ -1558,54 +1491,6 @@ function ProductionTrendChart({
               1.8,
           }}
         >
-
-          <Box
-            sx={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                0.65,
-            }}
-          >
-            <Box
-              sx={{
-                width:
-                  22,
-
-                height:
-                  0,
-
-                borderTop:
-                  `2px dashed ${PLAN_COLOR}`,
-              }}
-            />
-
-            <Typography
-              sx={{
-                color:
-                  "#64748b",
-
-                fontSize:
-                  9,
-
-                fontWeight:
-                  800,
-              }}
-            >
-              {averagePlanLegendLabel}
-
-              {targetValue > 0
-                ? ` (${Math.round(
-                    targetValue
-                  ).toLocaleString()} t)`
-                : ""}
-            </Typography>
-          </Box>
-
 
           <Box
             sx={{
@@ -1700,6 +1585,54 @@ function ProductionTrendChart({
             </Typography>
           </Box>
 
+
+          <Box
+            sx={{
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              gap:
+                0.65,
+            }}
+          >
+            <Box
+              sx={{
+                width:
+                  22,
+
+                height:
+                  0,
+
+                borderTop:
+                  `2px dashed ${PLAN_COLOR}`,
+              }}
+            />
+
+            <Typography
+              sx={{
+                color:
+                  "#64748b",
+
+                fontSize:
+                  9,
+
+                fontWeight:
+                  800,
+              }}
+            >
+              {averagePlanLegendLabel}
+
+              {targetValue > 0
+                ? ` (${Math.round(
+                    targetValue
+                  ).toLocaleString()} t)`
+                : ""}
+            </Typography>
+          </Box>
+
         </Box>
 
 
@@ -1714,19 +1647,19 @@ function ProductionTrendChart({
 
             height: {
               xs:
-                310,
+                265,
 
               sm:
-                320,
+                260,
 
               md:
-                315,
+                245,
 
               lg:
-                300,
+                235,
 
               xl:
-                295,
+                230,
             },
           }}
         >
@@ -1740,16 +1673,16 @@ function ProductionTrendChart({
               }
               margin={{
                 top:
-                  16,
+                  7,
 
                 right:
-                  30,
+                  26,
 
                 left:
                   0,
 
                 bottom:
-                  4,
+                  0,
               }}
               barCategoryGap={
                 aggregation ===
@@ -1855,7 +1788,15 @@ function ProductionTrendChart({
 
               <Tooltip
                 content={
-                  <CustomTooltip />
+                  <ProductionTrendTooltip
+                    aggregation={
+                      aggregation
+                    }
+                    language={
+                      language
+                    }
+                    t={t}
+                  />
                 }
                 cursor={{
                   fill:

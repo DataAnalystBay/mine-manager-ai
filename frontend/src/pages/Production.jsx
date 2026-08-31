@@ -2,12 +2,19 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Stack,
   Typography,
@@ -16,24 +23,38 @@ import {
 import {
   FiActivity,
   FiArrowDownRight,
+  FiArrowLeft,
+  FiArrowRight,
   FiArrowUpRight,
   FiBarChart2,
   FiCalendar,
   FiCheck,
+  FiClock,
   FiMinus,
   FiRefreshCw,
+  FiShield,
+  FiSlash,
   FiTarget,
   FiTrendingUp,
-  FiTruck,
 } from "react-icons/fi";
+
+import AddIcon from "@mui/icons-material/Add";
 
 import ProductionTrendChart
   from "../components/ProductionTrendChart";
+
+import ExecutiveActionDialog
+  from "../components/executive/ExecutiveActionDialog";
 
 import {
   getProductionTrend,
   getTodayProduction,
 } from "../api/productionApi";
+
+import {
+  createExecutiveAction,
+  getExecutiveActions,
+} from "../api/executiveActionsApi";
 
 import {
   useLanguage,
@@ -867,52 +888,6 @@ function getRangeTitle(
 }
 
 
-function getRangeAverageLabel(
-  range,
-  language
-) {
-  const en = {
-    "30D":
-      "30-Day Average",
-
-    "90D":
-      "90-Day Average",
-
-    "1Y":
-      "1-Year Average",
-
-    "3Y":
-      "3-Year Average",
-
-    "5Y":
-      "5-Year Average",
-  };
-
-  const mn = {
-    "30D":
-      "30 хоногийн дундаж",
-
-    "90D":
-      "90 хоногийн дундаж",
-
-    "1Y":
-      "1 жилийн дундаж",
-
-    "3Y":
-      "3 жилийн дундаж",
-
-    "5Y":
-      "5 жилийн дундаж",
-  };
-
-  return (
-    language === "MN"
-      ? mn[range]
-      : en[range]
-  ) || range;
-}
-
-
 function getPeriodUnitLabel(
   aggregation,
   language
@@ -1006,8 +981,8 @@ function getRecentTrendCopy(
 
       description:
         language === "MN"
-          ? "Сүүлийн 4 долоо хоногийн дундаж үйлдвэрлэлийг өмнөх 4 долоо хоногтой харьцуулсан өөрчлөлт."
-          : "Change in average production across the latest four weeks versus the previous four.",
+          ? "Өмнөх 4 долоо хоногтой харьцуулсан."
+          : "Compared with previous 4 weeks.",
     };
   }
 
@@ -1022,8 +997,8 @@ function getRecentTrendCopy(
 
       description:
         language === "MN"
-          ? "Сүүлийн 3 сарын дундаж үйлдвэрлэлийг өмнөх 3 сартай харьцуулсан өөрчлөлт."
-          : "Change in average production across the latest three months versus the previous three.",
+          ? "Өмнөх 3 сартай харьцуулсан."
+          : "Compared with previous 3 months.",
     };
   }
 
@@ -1035,212 +1010,9 @@ function getRecentTrendCopy(
 
     description:
       language === "MN"
-        ? "Сүүлийн 7 хоногийн дундаж үйлдвэрлэлийг өмнөх 7 хоногтой харьцуулсан өөрчлөлт."
-        : "Change in average production across the latest seven days versus the previous seven.",
+        ? "Өмнөх 7 хоногтой харьцуулсан."
+        : "Compared with previous 7 days.",
   };
-}
-
-
-/* ============================================================
-   Small UI components
-   ============================================================ */
-
-function PerformanceBadge({
-  performance,
-  t,
-}) {
-  const tone =
-    getPerformanceTone(
-      performance
-    );
-
-  return (
-    <span
-      className={
-        `production-status-badge ` +
-        `production-status-badge--${tone}`
-      }
-    >
-      <span
-        className="production-status-dot"
-      />
-
-      {getPerformanceStatus(
-        performance,
-        t
-      )}
-    </span>
-  );
-}
-
-
-function DailyMetric({
-  eyebrow,
-  title,
-  actual,
-  plan,
-  variance,
-  performance,
-  icon,
-  accent,
-  language,
-  targetLabel,
-  unit,
-}) {
-  const tone =
-    getPerformanceTone(
-      performance
-    );
-
-  const percentageVariance =
-    performance -
-    100;
-
-  return (
-    <div
-      className={
-        `production-daily-metric ` +
-        `production-daily-metric--${accent}`
-      }
-    >
-      <div className="production-daily-metric-main">
-        <div
-          className={
-            `production-daily-icon ` +
-            `production-daily-icon--${accent}`
-          }
-        >
-          {icon}
-        </div>
-
-        <div className="production-daily-copy">
-          <div className="production-daily-eyebrow">
-            {eyebrow}
-          </div>
-
-          <div className="production-daily-title">
-            {title}
-          </div>
-
-          <div className="production-daily-value">
-            {formatProductionValue(
-              actual,
-              language,
-              unit
-            )}
-          </div>
-
-          <div className="production-daily-plan">
-            {targetLabel}:{" "}
-
-            <strong>
-              {formatProductionValue(
-                plan,
-                language,
-                unit
-              )}
-            </strong>
-          </div>
-        </div>
-      </div>
-
-
-      <div
-        className={
-          `production-daily-variance ` +
-          `production-daily-variance--${tone}`
-        }
-      >
-        <span>
-          {getVarianceIcon(
-            Number(
-              variance || 0
-            )
-          )}
-
-          {formatSignedProductionValue(
-            variance,
-            language,
-            unit
-          )}
-        </span>
-
-        <strong>
-          {formatSignedPercent(
-            percentageVariance
-          )}
-        </strong>
-      </div>
-    </div>
-  );
-}
-
-
-function CompletionMetric({
-  performance,
-  completionLabel,
-  title,
-  targetLabel,
-}) {
-  const tone =
-    getPerformanceTone(
-      performance
-    );
-
-  const variance =
-    performance -
-    100;
-
-  return (
-    <div className="production-daily-metric production-daily-metric--blue">
-      <div className="production-daily-metric-main">
-        <div className="production-daily-icon production-daily-icon--blue">
-          <FiTarget />
-        </div>
-
-        <div className="production-daily-copy">
-          <div className="production-daily-eyebrow">
-            {completionLabel}
-          </div>
-
-          <div className="production-daily-title">
-            {title}
-          </div>
-
-          <div className="production-daily-value">
-            {performance.toFixed(
-              1
-            )}%
-          </div>
-
-          <div className="production-daily-plan">
-            {targetLabel}:{" "}
-            <strong>
-              100.0%
-            </strong>
-          </div>
-        </div>
-      </div>
-
-
-      <div
-        className={
-          `production-daily-variance ` +
-          `production-daily-variance--${tone}`
-        }
-      >
-        <span>
-          {getVarianceIcon(
-            variance
-          )}
-
-          {formatSignedPercent(
-            variance
-          )}
-        </span>
-      </div>
-    </div>
-  );
 }
 
 
@@ -1288,6 +1060,9 @@ function SummaryRow({
    ============================================================ */
 
 function Production() {
+  const navigate =
+    useNavigate();
+
   const {
     language,
     t,
@@ -1337,8 +1112,65 @@ function Production() {
   );
 
   const [
-    trendError,
+    ,
     setTrendError,
+  ] = useState(
+    ""
+  );
+
+  const initialTranslationRef =
+    useRef(
+      t
+    );
+
+
+  const [
+    selectedAiRecommendation,
+    setSelectedAiRecommendation,
+  ] = useState(
+    null
+  );
+
+  const [
+    actionDialogOpen,
+    setActionDialogOpen,
+  ] = useState(
+    false
+  );
+
+
+  const [
+    savingAction,
+    setSavingAction,
+  ] = useState(
+    false
+  );
+
+  const [
+    actionSaveError,
+    setActionSaveError,
+  ] = useState(
+    ""
+  );
+
+
+  const [
+    relatedExecutiveActions,
+    setRelatedExecutiveActions,
+  ] = useState(
+    []
+  );
+
+  const [
+    relatedActionsLoading,
+    setRelatedActionsLoading,
+  ] = useState(
+    false
+  );
+
+  const [
+    relatedActionsError,
+    setRelatedActionsError,
   ] = useState(
     ""
   );
@@ -1698,21 +1530,10 @@ function Production() {
      Initial page load
      ============================================================ */
 
-  const loadProduction =
-    useCallback(
-      async () => {
-        setLoading(
-          true
-        );
-
-        setError(
-          ""
-        );
-
-        setTrendError(
-          ""
-        );
-
+  useEffect(
+    () => {
+      const loadInitialProduction =
+        async () => {
         try {
           const [
             todayData,
@@ -1722,7 +1543,7 @@ function Production() {
               getTodayProduction(),
 
               getProductionTrend(
-                selectedRange
+                PRODUCTION_RANGES[0]
               ),
             ]);
 
@@ -1746,7 +1567,7 @@ function Production() {
           setError(
             requestError
               ?.message ||
-            t(
+            initialTranslationRef.current(
               "production.unableToLoadAnalytics"
             )
           );
@@ -1755,25 +1576,9 @@ function Production() {
             false
           );
         }
-      },
-      [
-        t,
-        selectedRange,
-      ]
-    );
+      };
 
-
-  /*
-   * Initial page load only.
-   *
-   * Range changes are handled separately so today's
-   * KPI cards are not reloaded.
-   */
-
-  useEffect(
-    () => {
-      loadProduction();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      loadInitialProduction();
     },
     []
   );
@@ -1955,24 +1760,6 @@ function Production() {
     );
 
 
-  const wastePerformance =
-    useMemo(
-      () =>
-        calculatePerformance(
-          today
-            ?.waste_actual,
-          today
-            ?.waste_plan
-        ),
-      [
-        today
-          ?.waste_actual,
-        today
-          ?.waste_plan,
-      ]
-    );
-
-
   const combinedPerformance =
     useMemo(
       () => {
@@ -2089,81 +1876,1008 @@ function Production() {
     );
 
 
-  const averageLabel =
-    getRangeAverageLabel(
-      selectedRange,
-      language
+  /* ============================================================
+     Step 2 — AI Executive Insight + Recommended Actions
+     Uses only the production metrics already available on this page.
+     Operational causes are presented as items to verify, not confirmed
+     root causes.
+     ============================================================ */
+
+  const aiPriorityTone =
+    combinedPerformance < 95 ||
+    trendSummary.recentTrendTone ===
+      "negative"
+      ? "high"
+      : combinedPerformance < 100
+        ? "medium"
+        : "normal";
+
+
+  const aiPriorityLabel =
+    language === "MN"
+      ? aiPriorityTone === "high"
+        ? "ӨНДӨР"
+        : aiPriorityTone === "medium"
+          ? "ДУНД"
+          : "ХЭВИЙН"
+      : aiPriorityTone === "high"
+        ? "HIGH"
+        : aiPriorityTone === "medium"
+          ? "MEDIUM"
+          : "NORMAL";
+
+
+  const aiInsight =
+    useMemo(
+      () => {
+        const performanceGap =
+          combinedPerformance -
+          100;
+
+        const recentChange =
+          trendSummary
+            .recentTrendPercent;
+
+        const happening =
+          language === "MN"
+            ? combinedPerformance < 100
+              ? `${
+                  isSxewOperation
+                    ? "Катодын зэсийн үйлдвэрлэл"
+                    : "Нийт үйлдвэрлэлийн гүйцэтгэл"
+                } төлөвлөгөөний ${combinedPerformance.toFixed(
+                  1
+                )}%-д хүрч, ${Math.abs(
+                  performanceGap
+                ).toFixed(
+                  1
+                )}%-ийн зөрүүтэй байна.${
+                  recentChange !== null
+                    ? ` Сүүлийн хугацааны өөрчлөлт ${formatSignedPercent(
+                        recentChange
+                      )}.`
+                    : ""
+                }`
+              : `${
+                  isSxewOperation
+                    ? "Катодын зэсийн үйлдвэрлэл"
+                    : "Нийт үйлдвэрлэлийн гүйцэтгэл"
+                } төлөвлөгөөний ${combinedPerformance.toFixed(
+                  1
+                )}%-д хүрсэн байна.${
+                  recentChange !== null
+                    ? ` Сүүлийн хугацааны өөрчлөлт ${formatSignedPercent(
+                        recentChange
+                      )}.`
+                    : ""
+                }`
+            : combinedPerformance < 100
+              ? `${
+                  isSxewOperation
+                    ? "Cathode production"
+                    : "Total production performance"
+                } is at ${combinedPerformance.toFixed(
+                  1
+                )}% of plan, leaving a ${Math.abs(
+                  performanceGap
+                ).toFixed(
+                  1
+                )}% performance gap.${
+                  recentChange !== null
+                    ? ` Recent production changed ${formatSignedPercent(
+                        recentChange
+                      )}.`
+                    : ""
+                }`
+              : `${
+                  isSxewOperation
+                    ? "Cathode production"
+                    : "Total production performance"
+                } is at ${combinedPerformance.toFixed(
+                  1
+                )}% of plan.${
+                  recentChange !== null
+                    ? ` Recent production changed ${formatSignedPercent(
+                        recentChange
+                      )}.`
+                    : ""
+                }`;
+
+        const why =
+          language === "MN"
+            ? combinedPerformance < 100
+              ? isSxewOperation
+                ? "Төлөвлөгөөнөөс тогтвортой доогуур үйлдвэрлэл нь сарын катодын зэсийн хэмжээг бууруулж, тогтмол зардлыг цөөн тонн бүтээгдэхүүнд хуваарилах эрсдэлтэй."
+                : "Төлөвлөгөөнөөс тогтвортой доогуур үйлдвэрлэл нь сарын хүдрийн олборлолт болон хөрс хуулалтын төлөвлөгөөг тасалдуулж, уурхайн дараагийн үе шатны гүйцэтгэлд дарамт үүсгэх эрсдэлтэй."
+              : "Төлөвлөгөөний түвшинд тогтвортой ажиллах нь сарын үйлдвэрлэлийн төлөвлөгөө болон зардлын гүйцэтгэлийг хамгаална."
+            : combinedPerformance < 100
+              ? isSxewOperation
+                ? "Sustained production below plan reduces monthly cathode volume and can increase unit-cost pressure when fixed costs are spread across fewer tonnes."
+                : "Sustained production below plan puts monthly ore and waste delivery at risk and can constrain downstream mining and processing performance."
+              : "Sustaining production at or above plan protects monthly volume delivery and cost performance.";
+
+        const contributors = [
+          {
+            label:
+              language === "MN"
+                ? "Төлөвлөгөөтэй харьцуулсан үйлдвэрлэлийн зөрүү"
+                : "Production gap versus plan",
+            confidence:
+              combinedPerformance < 95
+                ? (
+                    language === "MN"
+                      ? "Өндөр"
+                      : "High"
+                  )
+                : (
+                    language === "MN"
+                      ? "Дунд"
+                      : "Medium"
+                  ),
+            tone:
+              combinedPerformance < 95
+                ? "high"
+                : "medium",
+          },
+          {
+            label:
+              language === "MN"
+                ? "Сүүлийн үйлдвэрлэлийн чиг хандлага"
+                : "Recent production trend",
+            confidence:
+              trendSummary
+                .recentTrendTone ===
+              "negative"
+                ? (
+                    language === "MN"
+                      ? "Өндөр"
+                      : "High"
+                  )
+                : (
+                    language === "MN"
+                      ? "Дунд"
+                      : "Medium"
+                  ),
+            tone:
+              trendSummary
+                .recentTrendTone ===
+              "negative"
+                ? "high"
+                : "medium",
+          },
+          {
+            label:
+              language === "MN"
+                ? isSxewOperation
+                  ? "Процесс / тоног төхөөрөмжийн хязгаарлалт"
+                  : "Олборлолт / тээвэр / тоног төхөөрөмжийн хязгаарлалт"
+                : isSxewOperation
+                  ? "Process / equipment constraints"
+                  : "Mining / haulage / equipment constraints",
+            confidence:
+              language === "MN"
+                ? "Шалгах"
+                : "Verify",
+            tone:
+              "verify",
+          },
+        ];
+
+        const priority =
+          language === "MN"
+            ? combinedPerformance < 100
+              ? isSxewOperation
+                ? "Өдөр тутмын үйлдвэрлэлийг тогтворжуулж, төлөвлөгөөний зөрүү давтагдаж буй шалтгааныг баталгаажуулан сэргээх арга хэмжээг хариуцагчтайгаар хэрэгжүүлэх."
+                : "Өдөр тутмын хүдэр болон хөрс хуулалтын гүйцэтгэлийг тогтворжуулж, төлөвлөгөөний зөрүү давтагдаж буй шалтгааныг баталгаажуулан сэргээх арга хэмжээг хариуцагчтайгаар хэрэгжүүлэх."
+              : "Төлөвлөгөөний гүйцэтгэлийг хадгалж, сөрөг чиг хандлага үүсэж байгаа эсэхийг үргэлжлүүлэн хянах."
+            : combinedPerformance < 100
+              ? isSxewOperation
+                ? "Stabilize daily cathode output, confirm the recurring causes of the gap to plan, and assign recovery actions before the shortfall compounds."
+                : "Stabilize daily ore and waste delivery, confirm the recurring causes of the gap to plan, and assign recovery actions before the shortfall compounds."
+              : "Maintain plan performance and continue monitoring for early signs of deterioration.";
+
+        return {
+          happening,
+          why,
+          contributors,
+          priority,
+        };
+      },
+      [
+        combinedPerformance,
+        trendSummary
+          .recentTrendPercent,
+        trendSummary
+          .recentTrendTone,
+        isSxewOperation,
+        language,
+      ]
     );
 
 
-  /* ============================================================
-     Status narrative
-     ============================================================ */
+  const aiRecommendedActions =
+    useMemo(
+      () => {
+        if (
+          combinedPerformance <
+          100
+        ) {
+          return [
+            {
+              id:
+                "production_gap",
 
-  const statusNarrative =
-    isSxewOperation
-      ? language === "MN"
-        ? combinedPerformance >=
-          100
-          ? `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл төлөвлөгөөнөөс ${formatSignedPercent(
-              combinedVariance
-            )}-иар давсан байна.`
-          : combinedPerformance >=
-              95
-            ? `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл төлөвлөгөөний ${combinedPerformance.toFixed(
-                1
-              )}%-д хүрсэн байна.`
-            : `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл төлөвлөгөөнөөс ${Math.abs(
-                combinedVariance
-              ).toFixed(
-                1
-              )}%-иар доогуур байна.`
-        : combinedPerformance >=
-            100
-          ? `Cathode production performance is ${formatSignedPercent(
-              combinedVariance
-            )} above plan.`
-          : combinedPerformance >=
-              95
-            ? `Cathode production performance is at ${combinedPerformance.toFixed(
-                1
-              )}% of plan.`
-            : `Cathode production performance is ${Math.abs(
-                combinedVariance
-              ).toFixed(
-                1
-              )}% below plan.`
-      : language === "MN"
-        ? combinedPerformance >=
-          100
-          ? `Өнөөдрийн нийт олборлолтын гүйцэтгэл төлөвлөгөөнөөс ${formatSignedPercent(
-              combinedVariance
-            )}-иар давсан байна.`
-          : combinedPerformance >=
-              95
-            ? `Өнөөдрийн нийт олборлолтын гүйцэтгэл төлөвлөгөөний ${combinedPerformance.toFixed(
-                1
-              )}%-д хүрсэн байна.`
-            : `Өнөөдрийн нийт олборлолтын гүйцэтгэл төлөвлөгөөнөөс ${Math.abs(
-                combinedVariance
-              ).toFixed(
-                1
-              )}%-иар доогуур байна.`
-        : combinedPerformance >=
-            100
-          ? `Today's total production performance is ${formatSignedPercent(
-              combinedVariance
-            )} above plan.`
-          : combinedPerformance >=
-              95
-            ? `Today's total production performance is at ${combinedPerformance.toFixed(
-                1
-              )}% of plan.`
-            : `Today's total production performance is ${Math.abs(
-                combinedVariance
-              ).toFixed(
-                1
-              )}% below plan.`;
+              canonicalTitle:
+                "Investigate production loss versus plan",
+
+              title:
+                language === "MN"
+                  ? "Үйлдвэрлэлийн зөрүүний шалтгааныг шалгах"
+                  : "Investigate production loss versus plan",
+
+              priorityValue:
+                "High",
+
+              priority:
+                language === "MN"
+                  ? "Өндөр"
+                  : "High",
+              tone:
+                "high",
+              text:
+                language === "MN"
+                  ? "Төлөвлөгөөнөөс хамгийн их зөрсөн өдрүүдийг шалгаж, тухайн үеийн үйл ажиллагааны шалтгааныг баталгаажуулах."
+                  : "Review the largest daily production losses versus plan and confirm the operational cause for those periods.",
+            },
+            isSxewOperation
+              ? {
+                  id:
+                    "ew_constraints",
+
+                  canonicalTitle:
+                    "Review EW process constraints",
+
+                  title:
+                    language === "MN"
+                      ? "EW процессын хязгаарлалтыг шалгах"
+                      : "Review EW process constraints",
+
+                  priorityValue:
+                    "Medium",
+
+                  priority:
+                    language === "MN"
+                      ? "Дунд"
+                      : "Medium",
+                  tone:
+                    "medium",
+                  text:
+                    language === "MN"
+                      ? "EW availability, current efficiency болон rectifier downtime үзүүлэлтүүдийг зөрүүтэй хугацаанд шалгах."
+                      : "Check EW availability, current efficiency, and rectifier downtime across the underperforming periods.",
+                }
+              : {
+                  id:
+                    "mining_constraints",
+
+                  canonicalTitle:
+                    "Review mining and haulage constraints",
+
+                  title:
+                    language === "MN"
+                      ? "Олборлолт, тээврийн хязгаарлалтыг шалгах"
+                      : "Review mining and haulage constraints",
+
+                  priorityValue:
+                    "Medium",
+
+                  priority:
+                    language === "MN"
+                      ? "Дунд"
+                      : "Medium",
+                  tone:
+                    "medium",
+                  text:
+                    language === "MN"
+                      ? "Төлөвлөгөөнөөс доогуур гүйцэтгэлтэй хугацаанд олборлолтын бүтээмж, автотээврийн бэлэн байдал болон тоног төхөөрөмжийн саатлыг шалгах."
+                      : "Check mining productivity, haulage availability, and equipment delays across the underperforming periods.",
+                },
+            {
+              id:
+                "production_recovery",
+
+              canonicalTitle:
+                "Define production recovery action",
+
+              title:
+                language === "MN"
+                  ? "Үйлдвэрлэл сэргээх арга хэмжээ тодорхойлох"
+                  : "Define production recovery action",
+
+              priorityValue:
+                "Medium",
+
+              priority:
+                language === "MN"
+                  ? "Дунд"
+                  : "Medium",
+              tone:
+                "medium",
+              text:
+                language === "MN"
+                  ? "Дараагийн тайлант хугацааны үйлдвэрлэл сэргээх арга хэмжээ, хариуцагч болон хугацааг тодорхой болгох."
+                  : "Assign an owner, recovery action, and due date for the next reporting period.",
+            },
+          ];
+        }
+
+        return [
+          {
+            id:
+              "preserve_conditions",
+
+            canonicalTitle:
+              "Confirm plan-attainment conditions",
+
+            title:
+              language === "MN"
+                ? "Төлөвлөгөө биелүүлэх нөхцөлийг баталгаажуулах"
+                : "Confirm plan-attainment conditions",
+
+            priorityValue:
+              "Medium",
+
+            priority:
+              language === "MN"
+                ? "Дунд"
+                : "Medium",
+            tone:
+              "medium",
+            text:
+              language === "MN"
+                ? "Төлөвлөгөөнөөс давсан гүйцэтгэлийг бий болгосон үйл ажиллагааны нөхцөлийг баталгаажуулж, хадгалах."
+                : "Confirm the operating conditions supporting plan attainment and preserve them.",
+          },
+          {
+            id:
+              "early_negative_trend",
+
+            canonicalTitle:
+              "Monitor for early negative trend",
+
+            title:
+              language === "MN"
+                ? "Сөрөг чиг хандлагыг эрт хянах"
+                : "Monitor for early negative trend",
+
+            priorityValue:
+              "Medium",
+
+            priority:
+              language === "MN"
+                ? "Дунд"
+                : "Medium",
+            tone:
+              "medium",
+            text:
+              language === "MN"
+                ? "Сөрөг чиг хандлага эрт үүсэж байгаа эсэхийг өдөр тутмын үйлдвэрлэлийн мэдээллээр хянах."
+                : "Monitor daily production for early signs of a negative trend.",
+          },
+          {
+            id:
+              "capture_lessons",
+
+            canonicalTitle:
+              "Capture stable conditions and lessons",
+
+            title:
+              language === "MN"
+                ? "Тогтвортой нөхцөл ба сургамжийг тэмдэглэх"
+                : "Capture stable conditions and lessons",
+
+            priorityValue:
+              "Medium",
+
+            priority:
+              language === "MN"
+                ? "Хэвийн"
+                : "Normal",
+            tone:
+              "normal",
+            text:
+              language === "MN"
+                ? "Гүйцэтгэлийн хэвийн нөхцөл болон гол сургамжийг дараагийн удирдлагын тоймд тэмдэглэх."
+                : "Capture stable operating conditions and key lessons for the next management review.",
+          },
+        ];
+      },
+      [
+        combinedPerformance,
+        isSxewOperation,
+        language,
+      ]
+    );
+
+
+  const selectedAiActionDraft =
+    useMemo(
+      () => {
+        if (
+          !selectedAiRecommendation
+        ) {
+          return null;
+        }
+
+        return {
+          action_title:
+            selectedAiRecommendation
+              .title,
+
+          description:
+            selectedAiRecommendation
+              .text,
+
+          priority:
+            selectedAiRecommendation
+              .priorityValue ||
+            selectedAiRecommendation
+              .priority,
+
+          status:
+            "Open",
+
+          category:
+            "Production",
+
+          source:
+            "AI",
+
+          owner_name:
+            "",
+
+          due_date:
+            "",
+        };
+      },
+      [
+        selectedAiRecommendation,
+      ]
+    );
+
+
+  const buildAiActionKey =
+    useCallback(
+      (
+        recommendation
+      ) => {
+        const reportDate =
+          today?.report_date ||
+          "unknown_date";
+
+        return [
+          "production_ai",
+          reportDate,
+          recommendation?.id ||
+            "recommendation",
+        ].join(
+          "_"
+        );
+      },
+      [
+        today?.report_date,
+      ]
+    );
+
+
+  const handleViewExecutiveAction =
+    useCallback(
+      (
+        executiveAction
+      ) => {
+        const actionId =
+          executiveAction?.id ||
+          executiveAction?.action_id;
+
+        if (
+          actionId
+        ) {
+          navigate(
+            `/executive-actions?action_id=${encodeURIComponent(
+              actionId
+            )}`
+          );
+
+          return;
+        }
+
+        navigate(
+          "/executive-actions"
+        );
+      },
+      [
+        navigate,
+      ]
+    );
+
+
+  const relatedActionsReportDate =
+    today?.report_date;
+
+
+  const loadRelatedExecutiveActions =
+    useCallback(
+      async () => {
+        if (
+          !relatedActionsReportDate
+        ) {
+          return;
+        }
+
+        setRelatedActionsLoading(
+          true
+        );
+
+        setRelatedActionsError(
+          ""
+        );
+
+        try {
+          const response =
+            await getExecutiveActions({
+              skip: 0,
+              limit: 100,
+            });
+
+          const allActions =
+            Array.isArray(
+              response
+            )
+              ? response
+              : response?.items ||
+                response?.actions ||
+                response?.data ||
+                [];
+
+          const prefix =
+            `production_ai_${relatedActionsReportDate}_`;
+
+          const canonicalTitles =
+            new Set(
+              aiRecommendedActions.map(
+                (
+                  recommendation
+                ) =>
+                  recommendation
+                    .canonicalTitle
+              )
+            );
+
+          const productionActions =
+            allActions.filter(
+              (
+                action
+              ) => {
+                const actionKey =
+                  String(
+                    action
+                      ?.action_key ||
+                    ""
+                  );
+
+                if (
+                  actionKey.startsWith(
+                    prefix
+                  )
+                ) {
+                  return true;
+                }
+
+                /*
+                 * Backward compatibility for the Step 5 action
+                 * created before deterministic action_key support.
+                 */
+                const source =
+                  String(
+                    action?.source ||
+                    ""
+                  )
+                    .trim()
+                    .toLowerCase();
+
+                const category =
+                  String(
+                    action?.category ||
+                    ""
+                  )
+                    .trim()
+                    .toLowerCase();
+
+                const title =
+                  String(
+                    action?.title ||
+                    action?.action_title ||
+                    ""
+                  ).trim();
+
+                return (
+                  actionKey.startsWith(
+                    "manual_action_"
+                  ) &&
+                  source === "ai" &&
+                  category ===
+                    "production" &&
+                  canonicalTitles.has(
+                    title
+                  )
+                );
+              }
+            );
+
+          setRelatedExecutiveActions(
+            productionActions
+          );
+        } catch (
+          requestError
+        ) {
+          console.error(
+            "Unable to load related executive actions:",
+            requestError
+          );
+
+          setRelatedExecutiveActions(
+            []
+          );
+
+          setRelatedActionsError(
+            requestError
+              ?.userMessage ||
+            requestError
+              ?.response
+              ?.data
+              ?.detail ||
+            requestError
+              ?.message ||
+            (
+              language === "MN"
+                ? "Холбогдох удирдлагын арга хэмжээг ачаалж чадсангүй."
+                : "Unable to load related executive actions."
+            )
+          );
+        } finally {
+          setRelatedActionsLoading(
+            false
+          );
+        }
+      },
+      [
+        language,
+        relatedActionsReportDate,
+        aiRecommendedActions,
+      ]
+    );
+
+
+  useEffect(
+    () => {
+      if (
+        relatedActionsReportDate
+      ) {
+        const timeoutId =
+          window.setTimeout(
+            loadRelatedExecutiveActions,
+            0
+          );
+
+        return () => {
+          window.clearTimeout(
+            timeoutId
+          );
+        };
+      }
+    },
+    [
+      relatedActionsReportDate,
+      loadRelatedExecutiveActions,
+    ]
+  );
+
+
+  useEffect(
+    () => {
+      const refreshRelatedActions =
+        () => {
+          if (
+            document.visibilityState ===
+              "visible" &&
+            relatedActionsReportDate
+          ) {
+            loadRelatedExecutiveActions();
+          }
+        };
+
+      window.addEventListener(
+        "focus",
+        refreshRelatedActions
+      );
+
+      document.addEventListener(
+        "visibilitychange",
+        refreshRelatedActions
+      );
+
+      return () => {
+        window.removeEventListener(
+          "focus",
+          refreshRelatedActions
+        );
+
+        document.removeEventListener(
+          "visibilitychange",
+          refreshRelatedActions
+        );
+      };
+    },
+    [
+      relatedActionsReportDate,
+      loadRelatedExecutiveActions,
+    ]
+  );
+
+
+  const relatedActionSummary =
+    useMemo(
+      () => {
+        const normalizeStatus =
+          (
+            value
+          ) =>
+            String(
+              value || ""
+            )
+              .trim()
+              .toLowerCase()
+              .replace(
+                /\s+/g,
+                "_"
+              );
+
+        const open =
+          relatedExecutiveActions.filter(
+            (
+              action
+            ) =>
+              normalizeStatus(
+                action?.status
+              ) === "open"
+          ).length;
+
+        const inProgress =
+          relatedExecutiveActions.filter(
+            (
+              action
+            ) =>
+              normalizeStatus(
+                action?.status
+              ) ===
+                "in_progress"
+          ).length;
+
+        const completed =
+          relatedExecutiveActions.filter(
+            (
+              action
+            ) =>
+              normalizeStatus(
+                action?.status
+              ) ===
+                "completed"
+          ).length;
+
+        const blocked =
+          relatedExecutiveActions.filter(
+            (
+              action
+            ) =>
+              normalizeStatus(
+                action?.status
+              ) ===
+                "blocked"
+          ).length;
+
+        const total =
+          relatedExecutiveActions.length;
+
+        const completion =
+          total > 0
+            ? (
+                completed /
+                total
+              ) * 100
+            : 0;
+
+        return {
+          open,
+          inProgress,
+          completed,
+          blocked,
+          total,
+          completion,
+        };
+      },
+      [
+        relatedExecutiveActions,
+      ]
+    );
+
+
+  const handleCreateActionFromRecommendation =
+    useCallback(
+      (
+        recommendation
+      ) => {
+        setActionSaveError(
+          ""
+        );
+
+        setSelectedAiRecommendation(
+          recommendation
+        );
+
+        setActionDialogOpen(
+          true
+        );
+      },
+      []
+    );
+
+
+  const handleCloseActionDialog =
+    useCallback(
+      () => {
+        setActionDialogOpen(
+          false
+        );
+
+        setSelectedAiRecommendation(
+          null
+        );
+      },
+      []
+    );
+
+
+  const handleSaveAiAction =
+    useCallback(
+      async (
+        payload
+      ) => {
+        if (
+          !selectedAiRecommendation
+        ) {
+          return;
+        }
+
+        const actionKey =
+          buildAiActionKey(
+            selectedAiRecommendation
+          );
+
+        const alreadyExists =
+          relatedExecutiveActions.some(
+            (
+              action
+            ) =>
+              action
+                ?.action_key ===
+                actionKey ||
+              (
+                String(
+                  action?.source ||
+                  ""
+                )
+                  .trim()
+                  .toLowerCase() ===
+                  "ai" &&
+                String(
+                  action?.category ||
+                  ""
+                )
+                  .trim()
+                  .toLowerCase() ===
+                  "production" &&
+                String(
+                  action?.title ||
+                  action?.action_title ||
+                  ""
+                ).trim() ===
+                  selectedAiRecommendation
+                    .canonicalTitle
+              )
+          );
+
+        if (
+          alreadyExists
+        ) {
+          setActionDialogOpen(
+            false
+          );
+
+          setSelectedAiRecommendation(
+            null
+          );
+
+          await loadRelatedExecutiveActions();
+
+          return;
+        }
+
+        setSavingAction(
+          true
+        );
+
+        setActionSaveError(
+          ""
+        );
+
+        try {
+          await createExecutiveAction({
+              ...payload,
+
+              action_key:
+                actionKey,
+
+              source:
+                "AI",
+
+              category:
+                "Production",
+          });
+
+          await loadRelatedExecutiveActions();
+
+          setActionDialogOpen(
+            false
+          );
+
+          setSelectedAiRecommendation(
+            null
+          );
+        } catch (
+          requestError
+        ) {
+          console.error(
+            "Unable to create AI executive action:",
+            requestError
+          );
+
+          setActionSaveError(
+            requestError
+              ?.response
+              ?.data
+              ?.detail ||
+            requestError
+              ?.message ||
+            (
+              language === "MN"
+                ? "Арга хэмжээг үүсгэж чадсангүй."
+                : "Unable to create executive action."
+            )
+          );
+        } finally {
+          setSavingAction(
+            false
+          );
+        }
+      },
+      [
+        language,
+        selectedAiRecommendation,
+        buildAiActionKey,
+        relatedExecutiveActions,
+        loadRelatedExecutiveActions,
+      ]
+    );
 
 
   /* ============================================================
@@ -2202,89 +2916,61 @@ function Production() {
           Page Header
           ====================================================== */}
 
-      <Stack
-        direction={{
-          xs:
-            "column",
-          md:
-            "row",
-        }}
-        justifyContent="space-between"
-        alignItems={{
-          xs:
-            "flex-start",
-          md:
-            "center",
-        }}
-        spacing={2}
+      <Box
         className="production-page-header"
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "minmax(0, 1fr) auto",
+          },
+          alignItems: "center",
+          columnGap: 2,
+          rowGap: 1.5,
+        }}
       >
-        <Box>
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-            className="production-page-eyebrow"
-          >
-            <FiBarChart2 />
-
-            <span>
-              {t(
-                "production.operationalIntelligence"
+        <Typography
+          component="h1"
+          className="production-page-title"
+        >
+          {isSxewOperation
+            ? copy.pageTitle
+            : t(
+                "production.productionPerformance"
               )}
-            </span>
-
-            {isSxewOperation && (
-              <span
-                style={{
-                  marginLeft:
-                    8,
-
-                  fontSize:
-                    10,
-
-                  fontWeight:
-                    800,
-
-                  color:
-                    "#0f766e",
-                }}
-              >
-                SX-EW Copper Operation
-              </span>
-            )}
-          </Stack>
-
-
-          <Typography
-            component="h1"
-            className="production-page-title"
-          >
-            {isSxewOperation
-              ? copy.pageTitle
-              : t(
-                  "production.productionPerformance"
-                )}
-          </Typography>
-
-
-          <Typography
-            className="production-page-subtitle"
-          >
-            {isSxewOperation
-              ? copy.pageSubtitle
-              : t(
-                  "production.pageSubtitle"
-                )}
-          </Typography>
-        </Box>
-
+        </Typography>
 
         <Stack
           direction="row"
           spacing={1}
           alignItems="center"
+          justifyContent={{
+            xs: "flex-start",
+            md: "flex-end",
+          }}
+          className="production-header-controls"
         >
+          <button
+            type="button"
+            className="production-back-button"
+            onClick={() =>
+              navigate("/")
+            }
+            aria-label={
+              language === "MN"
+                ? "Хяналтын самбар руу буцах"
+                : "Back to Dashboard"
+            }
+          >
+            <FiArrowLeft />
+
+            <span>
+              {language === "MN"
+                ? "Хяналтын самбар"
+                : "Back to Dashboard"}
+            </span>
+          </button>
+
           <Box className="production-reporting-date">
             <FiCalendar />
 
@@ -2306,7 +2992,6 @@ function Production() {
             </Box>
           </Box>
 
-
           <button
             type="button"
             className="production-refresh-button"
@@ -2323,7 +3008,7 @@ function Production() {
             <FiRefreshCw />
           </button>
         </Stack>
-      </Stack>
+      </Box>
 
 
       {/* ======================================================
@@ -2357,153 +3042,315 @@ function Production() {
 
 
       {/* ======================================================
-          Combined Daily Production Performance
+          Executive KPI Strip
           ====================================================== */}
 
       {!error && (
         <section
           className={
-            `production-daily-overview ` +
-            `production-daily-overview--${overallTone}`
+            `production-kpi-overview ` +
+            `production-kpi-overview--${overallTone}`
           }
         >
-          <div className="production-daily-overview-header">
-            <div className="production-daily-status">
-              <div
-                className={
-                  `production-daily-status-icon ` +
-                  `production-daily-status-icon--${overallTone}`
-                }
-              >
-                <FiCheck />
-              </div>
-
-              <div>
-                <div className="production-daily-overview-eyebrow">
-                  {copy.dailyPerformance}
-                </div>
-
-                <h2>
-                  {overallStatus}
-                </h2>
-
-                <p>
-                  {statusNarrative}
-                </p>
-              </div>
+          {/* Production Status */}
+          <div className="production-kpi-cell production-kpi-cell--status">
+            <div
+              className={
+                `production-kpi-icon ` +
+                `production-kpi-icon--${overallTone}`
+              }
+            >
+              {combinedPerformance >= 100
+                ? <FiArrowUpRight />
+                : combinedPerformance >= 95
+                  ? <FiMinus />
+                  : <FiArrowDownRight />}
             </div>
 
+            <div className="production-kpi-content">
+              <div className="production-kpi-label">
+                {language === "MN"
+                  ? "ҮЙЛДВЭРЛЭЛИЙН ТӨЛӨВ"
+                  : "PRODUCTION STATUS"}
+              </div>
 
-            <PerformanceBadge
-              performance={
-                combinedPerformance
-              }
-              t={t}
-            />
+              <div
+                className={
+                  `production-kpi-value ` +
+                  `production-kpi-value--${overallTone}`
+                }
+              >
+                {overallStatus}
+              </div>
+
+              <div className="production-kpi-supporting">
+                {language === "MN"
+                  ? combinedVariance > 0
+                    ? `Төлөвлөгөөнөөс ${Math.abs(
+                        combinedVariance
+                      ).toFixed(
+                        1
+                      )}% дээгүүр`
+                    : combinedVariance < 0
+                      ? `Төлөвлөгөөнөөс ${Math.abs(
+                          combinedVariance
+                        ).toFixed(
+                          1
+                        )}% доогуур`
+                      : "Төлөвлөгөөтэй тэнцүү"
+                  : combinedVariance > 0
+                    ? `${Math.abs(
+                        combinedVariance
+                      ).toFixed(
+                        1
+                      )}% above plan`
+                    : combinedVariance < 0
+                      ? `${Math.abs(
+                          combinedVariance
+                        ).toFixed(
+                          1
+                        )}% below plan`
+                      : "On plan"}
+              </div>
+            </div>
           </div>
 
 
-          <div className="production-daily-grid">
+          {/* Cathode / Primary Production */}
+          <div className="production-kpi-cell">
+            <div className="production-kpi-icon production-kpi-icon--positive">
+              <FiActivity />
+            </div>
 
-            <DailyMetric
-              eyebrow={
-                isSxewOperation
-                  ? copy.deliveryEyebrow
-                  : t(
-                      "production.productionDelivery"
+            <div className="production-kpi-content">
+              <div className="production-kpi-label">
+                {isSxewOperation
+                  ? (
+                      language === "MN"
+                        ? "КАТОДЫН ЗЭСИЙН ҮЙЛДВЭРЛЭЛ"
+                        : "CATHODE PRODUCTION"
                     )
-              }
-              title={
-                copy.oreDelivery
-              }
-              actual={
-                today
-                  ?.ore_actual
-              }
-              plan={
-                today
-                  ?.ore_plan
-              }
-              variance={
-                today
-                  ?.ore_variance
-              }
-              performance={
-                orePerformance
-              }
-              icon={
-                <FiActivity />
-              }
-              accent="green"
-              language={
-                language
-              }
-              targetLabel={
-                copy.target
-              }
-              unit={
-                productionUnit
-              }
-            />
+                  : (
+                      language === "MN"
+                        ? "ХҮДРИЙН ҮЙЛДВЭРЛЭЛ"
+                        : "ORE PRODUCTION"
+                    )}
+              </div>
 
-
-            {wasteApplicable && (
-              <DailyMetric
-                eyebrow={t(
-                  "production.materialMovement"
-                )}
-                title={
+              <div className="production-kpi-value production-kpi-value--neutral">
+                {formatProductionValue(
                   today
-                    ?.waste_label ||
-                  copy.wasteDelivery
-                }
-                actual={
-                  today
-                    ?.waste_actual
-                }
-                plan={
-                  today
-                    ?.waste_plan
-                }
-                variance={
-                  today
-                    ?.waste_variance
-                }
-                performance={
-                  wastePerformance
-                }
-                icon={
-                  <FiTruck />
-                }
-                accent="orange"
-                language={
-                  language
-                }
-                targetLabel={
-                  copy.target
-                }
-                unit={
+                    ?.ore_actual,
+                  language,
                   productionUnit
+                )}
+              </div>
+
+              <div className="production-kpi-supporting">
+                {copy.target}:{" "}
+                <strong>
+                  {formatProductionValue(
+                    today
+                      ?.ore_plan,
+                    language,
+                    productionUnit
+                  )}
+                </strong>
+              </div>
+
+              <div
+                className={
+                  `production-kpi-detail ` +
+                  `production-kpi-detail--${getPerformanceTone(
+                    orePerformance
+                  )}`
                 }
-              />
-            )}
+              >
+                {getVarianceIcon(
+                  Number(
+                    today
+                      ?.ore_variance ||
+                    0
+                  )
+                )}
+
+                <span>
+                  {formatSignedProductionValue(
+                    today
+                      ?.ore_variance,
+                    language,
+                    productionUnit
+                  )}
+                  {" "}
+                  (
+                  {formatSignedPercent(
+                    orePerformance -
+                    100
+                  )}
+                  )
+                </span>
+              </div>
+            </div>
+          </div>
 
 
-            <CompletionMetric
-              performance={
-                combinedPerformance
+          {/* Plan Attainment */}
+          <div className="production-kpi-cell">
+            <div
+              className={
+                `production-kpi-icon ` +
+                `production-kpi-icon--${overallTone}`
               }
-              completionLabel={
-                copy.overallAttainment
-              }
-              title={
-                copy.planAttainment
-              }
-              targetLabel={
-                copy.target
-              }
-            />
+            >
+              <FiTarget />
+            </div>
 
+            <div className="production-kpi-content">
+              <div className="production-kpi-label">
+                {language === "MN"
+                  ? "ТӨЛӨВЛӨГӨӨНИЙ БИЕЛЭЛТ"
+                  : "PLAN ATTAINMENT"}
+              </div>
+
+              <div
+                className={
+                  `production-kpi-value ` +
+                  `production-kpi-value--${overallTone}`
+                }
+              >
+                {combinedPerformance.toFixed(
+                  1
+                )}%
+              </div>
+
+              <div className="production-kpi-supporting">
+                {copy.target}:{" "}
+                <strong>
+                  100.0%
+                </strong>
+              </div>
+
+              <div
+                className={
+                  `production-kpi-detail ` +
+                  `production-kpi-detail--${overallTone}`
+                }
+              >
+                {getVarianceIcon(
+                  combinedVariance
+                )}
+
+                <span>
+                  {formatSignedPercent(
+                    combinedVariance
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+
+
+          {/* Recent Change */}
+          <div className="production-kpi-cell">
+            <div
+              className={
+                `production-kpi-icon ` +
+                `production-kpi-icon--${
+                  trendSummary
+                    .recentTrendTone === "positive"
+                    ? "positive"
+                    : trendSummary
+                        .recentTrendTone === "negative"
+                      ? "negative"
+                      : "neutral"
+                }`
+              }
+            >
+              {trendSummary
+                .recentTrendTone === "positive"
+                ? <FiArrowUpRight />
+                : trendSummary
+                    .recentTrendTone === "negative"
+                  ? <FiArrowDownRight />
+                  : <FiMinus />}
+            </div>
+
+            <div className="production-kpi-content">
+              <div className="production-kpi-label">
+                {trendAggregation === "daily"
+                  ? (
+                      language === "MN"
+                        ? "7 ХОНОГИЙН ӨӨРЧЛӨЛТ"
+                        : "7-DAY CHANGE"
+                    )
+                  : trendAggregation === "weekly"
+                    ? (
+                        language === "MN"
+                          ? "4 ДОЛОО ХОНОГИЙН ӨӨРЧЛӨЛТ"
+                          : "4-WEEK CHANGE"
+                      )
+                    : (
+                        language === "MN"
+                          ? "3 САРЫН ӨӨРЧЛӨЛТ"
+                          : "3-MONTH CHANGE"
+                      )}
+              </div>
+
+              <div
+                className={
+                  `production-kpi-value ` +
+                  `production-kpi-value--${
+                    trendSummary
+                      .recentTrendTone === "positive"
+                      ? "positive"
+                      : trendSummary
+                          .recentTrendTone === "negative"
+                        ? "negative"
+                        : "neutral"
+                  }`
+                }
+              >
+                {trendSummary
+                  .recentTrendPercent === null
+                  ? "—"
+                  : formatSignedPercent(
+                      trendSummary
+                        .recentTrendPercent
+                    )}
+              </div>
+
+              <div className="production-kpi-supporting">
+                {recentTrendTitle}
+              </div>
+            </div>
+          </div>
+
+
+          {/* AI Confidence */}
+          <div className="production-kpi-cell production-kpi-cell--confidence">
+            <div className="production-kpi-icon production-kpi-icon--positive">
+              <FiShield />
+            </div>
+
+            <div className="production-kpi-content production-confidence">
+              <div className="production-kpi-label">
+                {language === "MN"
+                  ? "AI ИТГЭЛЦҮҮР"
+                  : "AI CONFIDENCE"}
+              </div>
+
+              <div className="production-kpi-value production-kpi-value--positive">
+                {language === "MN"
+                  ? "Өндөр"
+                  : "High"}
+              </div>
+
+              <div className="production-kpi-supporting">
+                {language === "MN"
+                  ? "Боломжит өгөгдөлд үндэслэв"
+                  : "Based on available data"}
+              </div>
+            </div>
           </div>
         </section>
       )}
@@ -2519,219 +3366,6 @@ function Production() {
           <div className="production-trend-card">
 
             {/* -----------------------------------------------
-                Trend toolbar + historical range selector
-                ----------------------------------------------- */}
-
-            <Box
-              sx={{
-                display:
-                  "flex",
-
-                flexDirection: {
-                  xs:
-                    "column",
-                  md:
-                    "row",
-                },
-
-                alignItems: {
-                  xs:
-                    "stretch",
-                  md:
-                    "center",
-                },
-
-                justifyContent:
-                  "space-between",
-
-                gap:
-                  2,
-
-                mb:
-                  2,
-              }}
-            >
-              <Box>
-                <Typography
-                  sx={{
-                    fontSize:
-                      "0.95rem",
-
-                    fontWeight:
-                      800,
-
-                    color:
-                      "#172033",
-                  }}
-                >
-                  {copy.trendTitle}
-                </Typography>
-
-                <Typography
-                  sx={{
-                    mt:
-                      0.25,
-
-                    fontSize:
-                      "0.78rem",
-
-                    fontWeight:
-                      500,
-
-                    color:
-                      "#7b8497",
-                  }}
-                >
-                  {copy.trendSubtitle}
-                </Typography>
-              </Box>
-
-
-              <Box
-                role="group"
-                aria-label={
-                  language === "MN"
-                    ? "Үйлдвэрлэлийн хугацааны сонголт"
-                    : "Production trend range"
-                }
-                sx={{
-                  display:
-                    "inline-flex",
-
-                  alignItems:
-                    "center",
-
-                  alignSelf: {
-                    xs:
-                      "flex-start",
-                    md:
-                      "center",
-                  },
-
-                  gap:
-                    "4px",
-
-                  p:
-                    "4px",
-
-                  border:
-                    "1px solid #e5e9f0",
-
-                  borderRadius:
-                    "10px",
-
-                  backgroundColor:
-                    "#f7f9fc",
-                }}
-              >
-                {PRODUCTION_RANGES.map(
-                  (
-                    range
-                  ) => {
-                    const active =
-                      selectedRange ===
-                      range;
-
-                    return (
-                      <button
-                        key={
-                          range
-                        }
-                        type="button"
-                        disabled={
-                          trendLoading
-                        }
-                        onClick={() =>
-                          handleRangeChange(
-                            range
-                          )
-                        }
-                        aria-pressed={
-                          active
-                        }
-                        style={{
-                          minWidth:
-                            46,
-
-                          height:
-                            30,
-
-                          padding:
-                            "0 10px",
-
-                          border:
-                            "none",
-
-                          borderRadius:
-                            7,
-
-                          cursor:
-                            trendLoading
-                              ? "wait"
-                              : "pointer",
-
-                          fontFamily:
-                            "inherit",
-
-                          fontSize:
-                            12,
-
-                          fontWeight:
-                            800,
-
-                          lineHeight:
-                            1,
-
-                          color:
-                            active
-                              ? "#ffffff"
-                              : "#667085",
-
-                          background:
-                            active
-                              ? "#16794a"
-                              : "transparent",
-
-                          boxShadow:
-                            active
-                              ? "0 2px 6px rgba(22, 121, 74, 0.20)"
-                              : "none",
-
-                          transition:
-                            "all 0.18s ease",
-
-                          opacity:
-                            trendLoading &&
-                            !active
-                              ? 0.65
-                              : 1,
-                        }}
-                      >
-                        {getRangeLabel(
-                          range,
-                          language
-                        )}
-                      </button>
-                    );
-                  }
-                )}
-              </Box>
-            </Box>
-
-
-            {trendError && (
-              <Alert
-                severity="error"
-                sx={{
-                  mb: 2,
-                }}
-              >
-                {trendError}
-              </Alert>
-            )}
-
-
-            {/* -----------------------------------------------
                 Trend chart
                 ----------------------------------------------- */}
 
@@ -2741,7 +3375,7 @@ function Production() {
                 <Box
                   sx={{
                     minHeight:
-                      300,
+                      245,
 
                     display:
                       "flex",
@@ -2785,178 +3419,136 @@ function Production() {
                   data={
                     trend
                   }
+                  headerActions={
+                    <Box
+  role="group"
+  aria-label={
+    language === "MN"
+      ? "Үйлдвэрлэлийн хугацааны сонголт"
+      : "Production trend range"
+  }
+  sx={{
+    display:
+      "inline-flex",
+
+    alignItems:
+      "center",
+
+    gap:
+      "4px",
+
+    p:
+      "4px",
+
+    border:
+      "1px solid #e5e9f0",
+
+    borderRadius:
+      "10px",
+
+    backgroundColor:
+      "#f7f9fc",
+  }}
+>
+  {PRODUCTION_RANGES.map(
+    (
+      range
+    ) => {
+      const active =
+        selectedRange ===
+        range;
+
+      return (
+        <button
+          key={
+            range
+          }
+          type="button"
+          disabled={
+            trendLoading
+          }
+          onClick={() =>
+            handleRangeChange(
+              range
+            )
+          }
+          aria-pressed={
+            active
+          }
+          style={{
+            minWidth:
+              46,
+
+            height:
+              30,
+
+            padding:
+              "0 10px",
+
+            border:
+              "none",
+
+            borderRadius:
+              7,
+
+            cursor:
+              trendLoading
+                ? "wait"
+                : "pointer",
+
+            fontFamily:
+              "inherit",
+
+            fontSize:
+              12,
+
+            fontWeight:
+              800,
+
+            lineHeight:
+              1,
+
+            color:
+              active
+                ? "#ffffff"
+                : "#667085",
+
+            background:
+              active
+                ? "#16794a"
+                : "transparent",
+
+            boxShadow:
+              active
+                ? "0 2px 6px rgba(22, 121, 74, 0.20)"
+                : "none",
+
+            transition:
+              "all 0.18s ease",
+
+            opacity:
+              trendLoading &&
+              !active
+                ? 0.65
+                : 1,
+          }}
+        >
+          {getRangeLabel(
+            range,
+            language
+          )}
+        </button>
+      );
+    }
+  )}
+</Box>
+                  }
                 />
               )}
 
             </div>
 
 
-            {/* -----------------------------------------------
-                Trend KPI mini cards
-                ----------------------------------------------- */}
-
-            <div className="production-trend-mini-grid">
-
-              <div className="production-trend-mini-card">
-                <div className="production-trend-mini-icon production-trend-mini-icon--green">
-                  <FiTrendingUp />
-                </div>
-
-                <div>
-                  <span>
-                    {averageLabel}
-                  </span>
-
-                  <strong>
-                    {trendSummary
-                      .averageActual ===
-                    null
-                      ? "—"
-                      : formatProductionValue(
-                          trendSummary
-                            .averageActual,
-                          language,
-                          productionUnit
-                        )}
-                  </strong>
-
-                  <small
-                    className={
-                      trendSummary
-                        .averagePerformance ===
-                      null
-                        ? ""
-                        : trendSummary
-                              .averagePerformance >=
-                            100
-                          ? "production-text--positive"
-                          : "production-text--negative"
-                    }
-                  >
-                    {trendSummary
-                      .averagePerformance ===
-                    null
-                      ? "—"
-                      : `${formatSignedPercent(
-                          trendSummary
-                            .averagePerformance -
-                            100
-                        )} (${copy.planAttainment.toLowerCase()})`}
-                  </small>
-                </div>
-              </div>
-
-
-              <div className="production-trend-mini-card">
-                <div className="production-trend-mini-icon production-trend-mini-icon--blue">
-                  <FiTarget />
-                </div>
-
-                <div>
-                  <span>
-                    {language === "MN"
-                      ? (
-                          trendAggregation ===
-                          "daily"
-                            ? copy.dailyTarget
-                            : trendAggregation ===
-                              "weekly"
-                              ? "7 хоногийн дундаж зорилт"
-                              : "Сарын дундаж зорилт"
-                        )
-                      : (
-                          trendAggregation ===
-                          "daily"
-                            ? copy.dailyTarget
-                            : trendAggregation ===
-                              "weekly"
-                              ? "Average Weekly Target"
-                              : "Average Monthly Target"
-                        )}
-                  </span>
-
-                  <strong>
-                    {trendSummary
-                      .averagePlan ===
-                    null
-                      ? formatProductionValue(
-                          today
-                            ?.ore_plan,
-                          language,
-                          productionUnit
-                        )
-                      : formatProductionValue(
-                          trendSummary
-                            .averagePlan,
-                          language,
-                          productionUnit
-                        )}
-                  </strong>
-
-                  <small>
-                    {copy.target}
-                  </small>
-                </div>
-              </div>
-
-
-              <div className="production-trend-mini-card production-trend-mini-card--progress">
-                <div className="production-trend-mini-icon production-trend-mini-icon--purple">
-                  <FiCalendar />
-                </div>
-
-                <div className="production-trend-mini-progress-copy">
-                  <span>
-                    {periodsAboveLabel}
-                  </span>
-
-                  <div className="production-trend-mini-progress-value">
-                    <strong>
-                      {trendSummary
-                        .abovePlanPeriods}
-
-                      {" / "}
-
-                      {trendSummary
-                        .totalPeriods}
-                    </strong>
-
-                    <small>
-                      {trendSummary
-                        .totalPeriods >
-                      0
-                        ? `${abovePlanPercent.toFixed(
-                            0
-                          )}%`
-                        : "—"}
-                    </small>
-                  </div>
-
-                  <div
-                    className="production-trend-progress-track"
-                    aria-label={
-                      `${periodsAboveLabel}: ${abovePlanPercent.toFixed(
-                        0
-                      )}%`
-                    }
-                  >
-                    <span
-                      style={{
-                        width:
-                          `${Math.min(
-                            Math.max(
-                              abovePlanPercent,
-                              0
-                            ),
-                            100
-                          )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-            </div>
           </div>
 
 
@@ -2971,6 +3563,12 @@ function Production() {
             </div>
 
 
+            <div className="production-summary-section-label">
+              {language === "MN"
+                ? "ТӨЛӨВЛӨГӨӨНИЙ ГҮЙЦЭТГЭЛ"
+                : "PLAN DELIVERY"}
+            </div>
+
             <div className="production-summary-primary">
 
               <SummaryRow
@@ -2979,15 +3577,12 @@ function Production() {
                   periodsAboveLabel
                 }
                 value={
-                  `${trendSummary.abovePlanPeriods} ${periodUnitLabel}`
-                }
-                secondary={
                   trendSummary.totalPeriods >
                   0
-                    ? `${abovePlanPercent.toFixed(
+                    ? `${trendSummary.abovePlanPeriods} ${periodUnitLabel} (${abovePlanPercent.toFixed(
                         0
-                      )}%`
-                    : null
+                      )}%)`
+                    : `${trendSummary.abovePlanPeriods} ${periodUnitLabel}`
                 }
               />
 
@@ -2998,18 +3593,15 @@ function Production() {
                   periodsBelowLabel
                 }
                 value={
-                  `${trendSummary.belowPlanPeriods} ${periodUnitLabel}`
-                }
-                secondary={
                   trendSummary.totalPeriods >
                   0
-                    ? `${(
+                    ? `${trendSummary.belowPlanPeriods} ${periodUnitLabel} (${(
                         100 -
                         abovePlanPercent
                       ).toFixed(
                         0
-                      )}%`
-                    : null
+                      )}%)`
+                    : `${trendSummary.belowPlanPeriods} ${periodUnitLabel}`
                 }
               />
 
@@ -3035,6 +3627,11 @@ function Production() {
 
             <div className="production-summary-divider" />
 
+            <div className="production-summary-section-label production-summary-section-label--secondary">
+              {language === "MN"
+                ? "ХЭЛБЭЛЗЛИЙН ХЯЗГААР"
+                : "EXTREMES"}
+            </div>
 
             <div className="production-summary-extremes">
 
@@ -3123,10 +3720,6 @@ function Production() {
                     {recentTrendTitle}
                   </strong>
 
-                  <p>
-                    {recentTrendCopy.description}
-                  </p>
-
                   <span>
                     {trendSummary
                       .recentTrendPercent ===
@@ -3137,6 +3730,10 @@ function Production() {
                             .recentTrendPercent
                         )}
                   </span>
+
+                  <p>
+                    {recentTrendCopy.description}
+                  </p>
                 </div>
 
               </div>
@@ -3149,39 +3746,798 @@ function Production() {
 
 
       {/* ======================================================
-          Footer Metadata
+          Step 2 — AI Executive Insight + Recommended Actions
           ====================================================== */}
 
       {!error && (
-        <footer className="production-data-footer">
-          <div>
-            <FiActivity />
+        <section className="production-ai-layout">
 
-            <span>
-              {copy.dataSource}
-            </span>
+          <article className="production-ai-insight-card">
+            <div className="production-ai-card-header">
+              <div className="production-ai-card-heading">
+                <div className="production-ai-heading-icon production-ai-heading-icon--blue">
+                  <FiActivity />
+                </div>
 
-            <span className="production-data-footer-separator">
-              •
-            </span>
+                <div>
+                  <h2>
+                    {language === "MN"
+                      ? "AI УДИРДЛАГЫН ДҮГНЭЛТ"
+                      : "AI EXECUTIVE INSIGHT"}
+                  </h2>
 
-            <span>
-              {copy.lastUpdated}:{" "}
+                  <p>
+                    {language === "MN"
+                      ? "Боломжит үйлдвэрлэлийн өгөгдөлд үндэслэсэн удирдлагын түвшний дүгнэлт."
+                      : "Management-level interpretation based on available production data."}
+                  </p>
+                </div>
+              </div>
 
-              {formatReportingDate(
-                today
-                  ?.report_date,
-                language,
-                t
+              <span
+                className={
+                  `production-ai-priority-badge ` +
+                  `production-ai-priority-badge--${aiPriorityTone}`
+                }
+              >
+                {language === "MN"
+                  ? `Анхаарах түвшин: ${aiPriorityLabel}`
+                  : `Priority: ${aiPriorityLabel}`}
+              </span>
+            </div>
+
+
+            <div className="production-ai-insight-grid">
+
+              <div className="production-ai-insight-item">
+                <div className="production-ai-insight-label">
+                  <FiBarChart2 />
+
+                  <span>
+                    {language === "MN"
+                      ? "ЮУ БОЛЖ БАЙНА?"
+                      : "WHAT'S HAPPENING?"}
+                  </span>
+                </div>
+
+                <p>
+                  {aiInsight.happening}
+                </p>
+              </div>
+
+
+              <div className="production-ai-insight-item">
+                <div className="production-ai-insight-label">
+                  <FiShield />
+
+                  <span>
+                    {language === "MN"
+                      ? "ЯАГААД ЧУХАЛ ВЭ?"
+                      : "WHY DOES IT MATTER?"}
+                  </span>
+                </div>
+
+                <p>
+                  {aiInsight.why}
+                </p>
+              </div>
+
+
+              <div className="production-ai-insight-item">
+                <div className="production-ai-insight-label">
+                  <FiTarget />
+
+                  <span>
+                    {language === "MN"
+                      ? "БОЛОМЖИТ НӨЛӨӨЛӨГЧИД"
+                      : "LIKELY CONTRIBUTORS"}
+                  </span>
+                </div>
+
+                <div className="production-ai-contributor-list">
+                  {aiInsight
+                    .contributors
+                    .map(
+                      (
+                        contributor
+                      ) => (
+                        <div
+                          key={
+                            contributor
+                              .label
+                          }
+                          className="production-ai-contributor-row"
+                        >
+                          <span>
+                            {contributor.label}
+                          </span>
+
+                          <small
+                            className={
+                              `production-ai-confidence-tag ` +
+                              `production-ai-confidence-tag--${contributor.tone}`
+                            }
+                          >
+                            {contributor
+                              .confidence}
+                          </small>
+                        </div>
+                      )
+                    )}
+                </div>
+
+                <div className="production-ai-evidence-note">
+                  {language === "MN"
+                    ? "Процесс болон тоног төхөөрөмжийн шалтгааныг холбогдох үйл ажиллагааны өгөгдлөөр баталгаажуулна."
+                    : "Process and equipment causes require confirmation from the relevant operational data."}
+                </div>
+              </div>
+
+
+              <div className="production-ai-insight-item">
+                <div className="production-ai-insight-label">
+                  <FiCheck />
+
+                  <span>
+                    {language === "MN"
+                      ? "УДИРДЛАГЫН ТЭРГҮҮЛЭХ ЧИГЛЭЛ"
+                      : "MANAGEMENT PRIORITY"}
+                  </span>
+                </div>
+
+                <p>
+                  {aiInsight.priority}
+                </p>
+              </div>
+
+            </div>
+
+
+            <div className="production-ai-priority-callout">
+              <div className="production-ai-priority-callout-icon">
+                <FiTarget />
+              </div>
+
+              <div>
+                <span>
+                  {language === "MN"
+                    ? "ЗӨВЛӨМЖ БОЛГОХ УДИРДЛАГЫН ЧИГЛЭЛ"
+                    : "RECOMMENDED MANAGEMENT PRIORITY"}
+                </span>
+
+                <strong>
+                  {aiInsight.priority}
+                </strong>
+              </div>
+            </div>
+          </article>
+
+
+          <aside className="production-ai-actions-card">
+            <div className="production-ai-card-header production-ai-card-header--actions">
+              <div className="production-ai-card-heading">
+                <div className="production-ai-heading-icon production-ai-heading-icon--green">
+                  <FiCheck />
+                </div>
+
+                <div>
+                  <h2>
+                    {language === "MN"
+                      ? "AI ЗӨВЛӨМЖИТ АРГА ХЭМЖЭЭ"
+                      : "AI RECOMMENDED ACTIONS"}
+                  </h2>
+
+                  <p>
+                    {language === "MN"
+                      ? "Удирдлагын анхаарлыг бодит арга хэмжээ болгон хөрвүүлэх."
+                      : "Convert management attention into executable follow-up."}
+                  </p>
+                </div>
+              </div>
+
+              <span className="production-ai-action-count">
+                {aiRecommendedActions.length}{" "}
+                {language === "MN"
+                  ? "арга хэмжээ"
+                  : "actions"}
+              </span>
+            </div>
+
+
+            <div className="production-ai-action-list">
+              {aiRecommendedActions.map(
+                (
+                  action,
+                  index
+                ) => {
+                  const recommendationActionKey =
+                    buildAiActionKey(
+                      action
+                    );
+
+                  const existingAction =
+                    relatedExecutiveActions.find(
+                      (
+                        executiveAction
+                      ) =>
+                        executiveAction
+                          ?.action_key ===
+                          recommendationActionKey ||
+                        (
+                          String(
+                            executiveAction
+                              ?.source ||
+                            ""
+                          )
+                            .trim()
+                            .toLowerCase() ===
+                            "ai" &&
+                          String(
+                            executiveAction
+                              ?.category ||
+                            ""
+                          )
+                            .trim()
+                            .toLowerCase() ===
+                            "production" &&
+                          String(
+                            executiveAction
+                              ?.title ||
+                            executiveAction
+                              ?.action_title ||
+                            ""
+                          ).trim() ===
+                            action
+                              .canonicalTitle
+                        )
+                    );
+
+                  const existingActionStatus =
+                    String(
+                      existingAction
+                        ?.status ||
+                      "open"
+                    )
+                      .trim()
+                      .toLowerCase()
+                      .replace(
+                        /\s+/g,
+                        "_"
+                      );
+
+                  const actionStatusConfig = {
+                    open: {
+                      label:
+                        language === "MN"
+                          ? "Нээлттэй"
+                          : "Open",
+                      color:
+                        "#64748b",
+                    },
+
+                    in_progress: {
+                      label:
+                        language === "MN"
+                          ? "Хэрэгжиж байна"
+                          : "In Progress",
+                      color:
+                        "#2563eb",
+                    },
+
+                    completed: {
+                      label:
+                        language === "MN"
+                          ? "Дууссан"
+                          : "Completed",
+                      color:
+                        "#15803d",
+                    },
+
+                    blocked: {
+                      label:
+                        language === "MN"
+                          ? "Саатсан"
+                          : "Blocked",
+                      color:
+                        "#dc2626",
+                    },
+                  };
+
+                  const actionStatus =
+                    actionStatusConfig[
+                      existingActionStatus
+                    ] ||
+                    actionStatusConfig.open;
+
+                  return (
+                    <div
+                      key={
+                        action.id
+                      }
+                      className="production-ai-action-row"
+                    >
+                      <div className="production-ai-action-number">
+                        {index + 1}
+                      </div>
+
+                      <div className="production-ai-action-icon">
+                        {index === 0
+                          ? <FiActivity />
+                          : index === 1
+                            ? <FiTarget />
+                            : <FiCheck />}
+                      </div>
+
+                      <p>
+                        {action.text}
+                      </p>
+
+                      <span
+                        className={
+                          `production-ai-action-priority ` +
+                          `production-ai-action-priority--${action.tone}`
+                        }
+                      >
+                        {action.priority}
+                      </span>
+
+                      <Box
+                        className="production-ai-action-control"
+                      >
+                        {existingAction
+                          ? (
+                              <Box
+                                sx={{
+                                  display:
+                                    "flex",
+                                  alignItems:
+                                    "center",
+                                  justifyContent:
+                                    "flex-end",
+                                  gap: 0.5,
+                                  flexShrink: 0,
+                                  whiteSpace:
+                                    "nowrap",
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display:
+                                      "inline-flex",
+                                    alignItems:
+                                      "center",
+                                    gap: 0.4,
+                                    color:
+                                      actionStatus.color,
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    whiteSpace:
+                                      "nowrap",
+                                  }}
+                                >
+                                  {existingActionStatus ===
+                                  "completed" ? (
+                                    <FiCheck />
+                                  ) : existingActionStatus ===
+                                    "blocked" ? (
+                                    <FiSlash />
+                                  ) : existingActionStatus ===
+                                    "in_progress" ? (
+                                    <FiTrendingUp />
+                                  ) : (
+                                    <FiClock />
+                                  )}
+
+                                  {actionStatus.label}
+                                </Box>
+
+                                <Button
+                                  type="button"
+                                  variant="text"
+                                  size="small"
+                                  endIcon={
+                                    <FiArrowRight />
+                                  }
+                                  onClick={() =>
+                                    handleViewExecutiveAction(
+                                      existingAction
+                                    )
+                                  }
+                                  sx={{
+                                    minWidth:
+                                      "auto",
+                                    px: 0.5,
+                                    py: 0.5,
+                                    color:
+                                      "#2563eb",
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    textTransform:
+                                      "none",
+                                    whiteSpace:
+                                      "nowrap",
+
+                                    "&:hover": {
+                                      bgcolor:
+                                        "#eff6ff",
+                                    },
+                                  }}
+                                >
+                                  {language === "MN"
+                                    ? "Харах"
+                                    : "View Action"}
+                                </Button>
+                              </Box>
+                            )
+                          : (
+                              <Button
+                                type="button"
+                                variant="text"
+                                size="small"
+                                startIcon={
+                                  <AddIcon
+                                    fontSize="small"
+                                  />
+                                }
+                                disabled={
+                                  relatedActionsLoading
+                                }
+                                onClick={() =>
+                                  handleCreateActionFromRecommendation(
+                                    action
+                                  )
+                                }
+                                aria-label={
+                                  language === "MN"
+                                    ? "Арга хэмжээ үүсгэх"
+                                    : "Create Action"
+                                }
+                                sx={{
+                                  flexShrink: 0,
+                                  minWidth:
+                                    "auto",
+                                  px: 0.75,
+                                  py: 0.5,
+                                  borderRadius:
+                                    "7px",
+                                  color:
+                                    "#2563eb",
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  textTransform:
+                                    "none",
+                                  whiteSpace:
+                                    "nowrap",
+
+                                  "&:hover": {
+                                    bgcolor:
+                                      "#eff6ff",
+                                  },
+
+                                  "& .MuiButton-startIcon":
+                                    {
+                                      mr: 0.35,
+                                    },
+                                }}
+                              >
+                                {language === "MN"
+                                  ? "Арга хэмжээ үүсгэх"
+                                  : "Create Action"}
+                              </Button>
+                            )}
+                      </Box>
+                    </div>
+                  );
+                }
               )}
-            </span>
+            </div>
+
+          </aside>
+
+        </section>
+      )}
+
+
+      {/* ======================================================
+          Step 3 — Related Executive Actions
+          ====================================================== */}
+
+      {!error && (
+        <section className="production-related-actions-card">
+
+          <div className="production-related-actions-header">
+            <div className="production-related-actions-heading">
+              <div className="production-related-actions-heading-icon">
+                <FiCheck />
+              </div>
+
+              <div>
+                <h2>
+                  {language === "MN"
+                    ? "ХОЛБОГДОХ УДИРДЛАГЫН АРГА ХЭМЖЭЭ"
+                    : "RELATED EXECUTIVE ACTIONS"}
+                </h2>
+
+                <p>
+                  {language === "MN"
+                    ? "Үйлдвэрлэлийн зөвлөмжөөс үүсгэсэн удирдлагын арга хэмжээний хэрэгжилтийг хянах."
+                    : "Track management actions created from production recommendations."}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/executive-actions"
+              className="production-related-actions-link"
+            >
+              <span>
+                {language === "MN"
+                  ? "Action Center нээх"
+                  : "Open Action Center"}
+              </span>
+
+              <FiArrowRight />
+            </Link>
           </div>
 
-          <span>
-            {copy.timezone}
-          </span>
-        </footer>
+
+          {relatedActionsLoading ? (
+            <Box
+              sx={{
+                minHeight: 150,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Stack
+                spacing={1.25}
+                alignItems="center"
+              >
+                <CircularProgress
+                  size={28}
+                />
+
+                <Typography
+                  color="text.secondary"
+                  fontSize={13}
+                  fontWeight={700}
+                >
+                  {language === "MN"
+                    ? "Холбогдох удирдлагын арга хэмжээг ачаалж байна..."
+                    : "Loading related executive actions..."}
+                </Typography>
+              </Stack>
+            </Box>
+          ) : relatedActionsError ? (
+            <Alert
+              severity="error"
+              sx={{
+                mt: 2,
+                borderRadius:
+                  "10px",
+              }}
+            >
+              {relatedActionsError}
+            </Alert>
+          ) : (
+            <>
+              <div className="production-related-actions-grid">
+
+            <div className="production-related-action-metric">
+              <div className="production-related-action-icon production-related-action-icon--open">
+                <FiClock />
+              </div>
+
+              <div>
+                <span>
+                  {language === "MN"
+                    ? "Нээлттэй"
+                    : "Open"}
+                </span>
+
+                <strong>
+                  {relatedActionSummary.open}
+                </strong>
+
+                <small>
+                  {language === "MN"
+                    ? "Эхлээгүй"
+                    : "Not started"}
+                </small>
+              </div>
+            </div>
+
+
+            <div className="production-related-action-metric">
+              <div className="production-related-action-icon production-related-action-icon--progress">
+                <FiActivity />
+              </div>
+
+              <div>
+                <span>
+                  {language === "MN"
+                    ? "Хэрэгжиж буй"
+                    : "In Progress"}
+                </span>
+
+                <strong>
+                  {relatedActionSummary.inProgress}
+                </strong>
+
+                <small>
+                  {language === "MN"
+                    ? "Хэрэгжүүлж байна"
+                    : "Being executed"}
+                </small>
+              </div>
+            </div>
+
+
+            <div className="production-related-action-metric">
+              <div className="production-related-action-icon production-related-action-icon--completed">
+                <FiCheck />
+              </div>
+
+              <div>
+                <span>
+                  {language === "MN"
+                    ? "Дууссан"
+                    : "Completed"}
+                </span>
+
+                <strong>
+                  {relatedActionSummary.completed}
+                </strong>
+
+                <small>
+                  {language === "MN"
+                    ? "Амжилттай хаасан"
+                    : "Successfully closed"}
+                </small>
+              </div>
+            </div>
+
+
+            <div className="production-related-action-metric">
+              <div className="production-related-action-icon production-related-action-icon--blocked">
+                <FiSlash />
+              </div>
+
+              <div>
+                <span>
+                  {language === "MN"
+                    ? "Саатсан"
+                    : "Blocked"}
+                </span>
+
+                <strong>
+                  {relatedActionSummary.blocked}
+                </strong>
+
+                <small>
+                  {language === "MN"
+                    ? "Анхаарал шаардлагатай"
+                    : "Requires intervention"}
+                </small>
+              </div>
+            </div>
+
+
+            <div className="production-related-action-metric production-related-action-metric--completion">
+              <div className="production-related-action-icon production-related-action-icon--completion">
+                <FiTrendingUp />
+              </div>
+
+              <div>
+                <span>
+                  {language === "MN"
+                    ? "Хэрэгжилт"
+                    : "Completion"}
+                </span>
+
+                <strong>
+                  {`${relatedActionSummary.completion.toFixed(
+                    0
+                  )}%`}
+                </strong>
+
+                <small>
+                  {language === "MN"
+                    ? "Нийт гүйцэтгэл"
+                    : "Overall completion"}
+                </small>
+              </div>
+            </div>
+
+              </div>
+
+
+              <div className="production-related-actions-progress">
+                <div className="production-related-actions-progress-copy">
+                  <div>
+                    <span>
+                      {language === "MN"
+                        ? "Удирдлагын арга хэмжээний хэрэгжилт"
+                        : "Executive Action Completion"}
+                    </span>
+
+                    <small>
+                      {language === "MN"
+                        ? `${relatedActionSummary.total} арга хэмжээнээс ${relatedActionSummary.completed} дууссан`
+                        : `${relatedActionSummary.completed} of ${relatedActionSummary.total} actions completed`}
+                    </small>
+                  </div>
+
+                  <strong>
+                    {`${relatedActionSummary.completion.toFixed(
+                      0
+                    )}%`}
+                  </strong>
+                </div>
+
+                <div
+                  className="production-related-actions-progress-track"
+                  aria-label={
+                    language === "MN"
+                      ? `Удирдлагын арга хэмжээний хэрэгжилт ${relatedActionSummary.completion.toFixed(
+                          0
+                        )} хувь`
+                      : `Executive action completion ${relatedActionSummary.completion.toFixed(
+                          0
+                        )} percent`
+                  }
+                >
+                  <span
+                    style={{
+                      width:
+                        `${relatedActionSummary.completion}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+        </section>
       )}
+
+
+      {actionSaveError && (
+        <Alert
+          severity="error"
+          sx={{
+            mt: 1.5,
+            borderRadius:
+              "10px",
+          }}
+        >
+          {actionSaveError}
+        </Alert>
+      )}
+
+
+      <ExecutiveActionDialog
+        open={
+          actionDialogOpen
+        }
+        action={
+          selectedAiActionDraft
+        }
+        onClose={
+          handleCloseActionDialog
+        }
+        onSave={
+          handleSaveAiAction
+        }
+        saving={
+          savingAction
+        }
+        primaryColor={
+          "#2563eb"
+        }
+      />
+
 
     </Box>
   );

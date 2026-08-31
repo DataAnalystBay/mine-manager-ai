@@ -76,7 +76,7 @@ A safe example is:
 
 # Application
 APP_ENV=development
-APP_VERSION=1.0.0
+APP_VERSION=1.0.3
 DEBUG=false
 
 # Database
@@ -489,7 +489,7 @@ Displays or reports the deployed application version.
 Recommended:
 
 ```dotenv
-APP_VERSION=1.0.0
+APP_VERSION=1.0.3
 ```
 
 The value should match the approved release.
@@ -841,7 +841,7 @@ recommended configuration remains without a trailing slash.
 
 ```dotenv
 APP_ENV=pilot
-APP_VERSION=1.0.0
+APP_VERSION=1.0.3
 DEBUG=false
 
 DB_HOST=example-postgresql.postgres.database.azure.com
@@ -879,7 +879,7 @@ VITE_API_BASE_URL=https://api-pilot.example.com
 
 ```dotenv
 APP_ENV=development
-APP_VERSION=1.0.0
+APP_VERSION=1.0.3
 DEBUG=true
 
 DB_HOST=127.0.0.1

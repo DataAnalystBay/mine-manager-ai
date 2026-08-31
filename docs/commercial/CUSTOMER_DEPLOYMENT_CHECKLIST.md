@@ -2,7 +2,7 @@
 
 
 
-Version: 1.0.0
+Version: 1.0.3
 
 Commercial Branch: commercial/v1.0-pilot
 
@@ -52,7 +52,7 @@ Purpose: Customer pilot and production-readiness deployment
 
 
 
-\- \[ ] `APP\_VERSION=1.0.0`
+\- \[ ] `APP\_VERSION=1.0.3`
 
 \- \[ ] `APP\_ENV=production`
 
@@ -80,7 +80,7 @@ Purpose: Customer pilot and production-readiness deployment
 
 \- \[ ] `VITE\_APP\_NAME` configured
 
-\- \[ ] `VITE\_APP\_VERSION=1.0.0`
+\- \[ ] `VITE\_APP\_VERSION=1.0.3`
 
 \- \[ ] `VITE\_API\_BASE\_URL` configured
 

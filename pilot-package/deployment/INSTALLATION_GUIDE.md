@@ -433,7 +433,7 @@ Minimum required variables:
 
 ```dotenv
 APP_ENV=pilot
-APP_VERSION=1.0.0
+APP_VERSION=1.0.3
 DEBUG=false
 
 DB_HOST=your-postgresql-host

@@ -1,4 +1,5 @@
-import React, {
+import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
@@ -6,19 +7,33 @@ import React, {
 } from "react";
 
 import { getFullConfig } from "../api/configApi";
+import { useAuth } from "./AuthContext";
+
 
 const ConfigContext = createContext();
 
+
+const EMPTY_CONFIG = {
+  company: null,
+  mine: null,
+  kpi_targets: [],
+  alert_thresholds: [],
+  shift_patterns: [],
+};
+
+
 export const ConfigProvider = ({ children }) => {
-  const [config, setConfig] = useState({
-    company: null,
-    mine: null,
-    kpi_targets: [],
-    alert_thresholds: [],
-    shift_patterns: [],
-  });
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
+
+  const [config, setConfig] = useState(
+    EMPTY_CONFIG
+  );
 
   const [loading, setLoading] = useState(true);
+
 
   /*
    * Language
@@ -26,12 +41,11 @@ export const ConfigProvider = ({ children }) => {
    * "en" = English
    * "mn" = Mongolian
    *
-   * We keep it in localStorage so the user's language
-   * remains selected after refresh/login.
+   * Persist the selected UI language between sessions.
    */
   const [language, setLanguageState] = useState(() => {
     const storedLanguage = localStorage.getItem(
-      "mine_manager_language",
+      "mine_manager_language"
     );
 
     if (
@@ -43,6 +57,7 @@ export const ConfigProvider = ({ children }) => {
 
     return "en";
   });
+
 
   const setLanguage = (newLanguage) => {
     if (
@@ -56,50 +71,107 @@ export const ConfigProvider = ({ children }) => {
 
     localStorage.setItem(
       "mine_manager_language",
-      newLanguage,
+      newLanguage
     );
   };
+
 
   const toggleLanguage = () => {
     setLanguage(
-      language === "en" ? "mn" : "en",
+      language === "en" ? "mn" : "en"
     );
   };
 
-  const loadConfiguration = async () => {
+
+  const loadConfiguration = useCallback(async () => {
+    /*
+     * Configuration is tenant-specific and therefore must
+     * only be loaded after authentication has completed.
+     */
+    if (!user) {
+      setConfig(EMPTY_CONFIG);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const data = await getFullConfig();
 
       setConfig({
-        company: data?.company || null,
-        mine: data?.mine || null,
+        company:
+          data?.company || null,
+
+        mine:
+          data?.mine || null,
+
         kpi_targets:
           data?.kpi_targets || [],
+
         alert_thresholds:
           data?.alert_thresholds || [],
+
         shift_patterns:
           data?.shift_patterns || [],
       });
     } catch (error) {
       console.error(
         "Failed to load configuration:",
-        error,
+        error
       );
+
+      /*
+       * Never retain the previous tenant's configuration
+       * after a failed reload or account change.
+       */
+      setConfig(EMPTY_CONFIG);
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    user,
+  ]);
+
 
   useEffect(() => {
-    loadConfiguration();
-  }, []);
+    /*
+     * Wait until AuthProvider has restored the user/token.
+     *
+     * Then reload configuration whenever the authenticated
+     * user changes. This prevents the initial-login race
+     * where Dashboard previously fell back to:
+     *
+     *   Mine Manager AI
+     *   Demo Mine
+     */
+    if (authLoading) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(
+      loadConfiguration,
+      0
+    );
+
+    return () => {
+      window.clearTimeout(
+        timeoutId
+      );
+    };
+  }, [
+    authLoading,
+    loadConfiguration,
+  ]);
+
 
   return (
     <ConfigContext.Provider
       value={{
         ...config,
 
-        loading,
+        loading:
+          authLoading || loading,
 
         language,
         setLanguage,
@@ -114,12 +186,17 @@ export const ConfigProvider = ({ children }) => {
   );
 };
 
+
+// Keep the established context API in one module for existing consumers.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useConfig = () => {
-  const context = useContext(ConfigContext);
+  const context = useContext(
+    ConfigContext
+  );
 
   if (!context) {
     throw new Error(
-      "useConfig must be used inside ConfigProvider",
+      "useConfig must be used inside ConfigProvider"
     );
   }
 

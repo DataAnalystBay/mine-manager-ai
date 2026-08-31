@@ -1,4 +1,4 @@
-import React, {
+import {
   Suspense,
   lazy,
 } from "react";
@@ -8,10 +8,6 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
-
-import {
-  AuthProvider,
-} from "./context/AuthContext";
 
 import ProtectedRoute
   from "./components/ProtectedRoute";
@@ -240,7 +236,6 @@ function AdminRoute({
 
 function App() {
   return (
-    <AuthProvider>
       <BrowserRouter>
         <Suspense
           fallback={
@@ -417,7 +412,6 @@ function App() {
           </Routes>
         </Suspense>
       </BrowserRouter>
-    </AuthProvider>
   );
 }
 

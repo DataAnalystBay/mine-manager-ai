@@ -429,17 +429,29 @@ function ExecutiveActionDialog({
       return;
     }
 
-    setForm(
-      getInitialForm(action)
-    );
+    const timeoutId =
+      window.setTimeout(
+        () => {
+          setForm(
+            getInitialForm(action)
+          );
 
-    setErrors({});
+          setErrors({});
 
-    setLocalizedFieldEdits({
-      action_title: false,
-      description: false,
-      owner_name: false,
-    });
+          setLocalizedFieldEdits({
+            action_title: false,
+            description: false,
+            owner_name: false,
+          });
+        },
+        0
+      );
+
+    return () => {
+      window.clearTimeout(
+        timeoutId
+      );
+    };
   }, [open, action]);
 
 
@@ -631,10 +643,8 @@ function ExecutiveActionDialog({
           form.category,
 
         source:
-          isEditMode
-            ? form.source ||
-              "Manual"
-            : "Manual",
+          form.source ||
+          "Manual",
       };
 
       await onSave(payload);
@@ -1304,7 +1314,13 @@ function ExecutiveActionDialog({
               </>
             )}
 
-          {!isEditMode && (
+          {!isEditMode &&
+            String(
+              form.source || ""
+            )
+              .trim()
+              .toLowerCase() !==
+              "ai" && (
             <Box
               sx={{
                 p: 2,

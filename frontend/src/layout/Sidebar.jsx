@@ -1,7 +1,12 @@
 import {
   Box,
+  Collapse,
   Typography,
 } from "@mui/material";
+
+import {
+  useState,
+} from "react";
 
 import {
   NavLink,
@@ -60,6 +65,18 @@ import SecurityIcon
 
 import SettingsIcon
   from "@mui/icons-material/Settings";
+
+import LanguageIcon
+  from "@mui/icons-material/Language";
+
+import LogoutIcon
+  from "@mui/icons-material/Logout";
+
+import KeyboardArrowDownIcon
+  from "@mui/icons-material/KeyboardArrowDown";
+
+import KeyboardArrowUpIcon
+  from "@mui/icons-material/KeyboardArrowUp";
 
 
 import {
@@ -260,6 +277,11 @@ const navItems = [
    ============================================================ */
 
 function Sidebar() {
+  const [
+    accountOpen,
+    setAccountOpen,
+  ] = useState(false);
+
   const {
     company,
     mine,
@@ -267,10 +289,12 @@ function Sidebar() {
 
   const {
     user,
+    logout,
   } = useAuth();
 
   const {
     language,
+    setLanguage,
     t,
   } = useLanguage();
 
@@ -310,11 +334,6 @@ function Sidebar() {
     );
 
 
-  const primaryColor =
-    company?.primary_color ||
-    "#16A34A";
-
-
   /*
    * Application shell colors
    *
@@ -322,6 +341,7 @@ function Sidebar() {
    * customers. Customer branding remains available through the company
    * logo, company name, mine name, and configured brand colors elsewhere.
    */
+
   const sidebarBackground =
     "#1B1917";
 
@@ -410,10 +430,16 @@ function Sidebar() {
       : "Commercial MVP";
 
 
-  const platformDescription =
-    language === "MN"
-      ? "Уурхайн удирдлагын мэдээлэл, шинжилгээний платформ"
-      : "Executive operations intelligence platform";
+  /* ==========================================================
+     Logout
+     ========================================================== */
+
+  const handleLogout = () => {
+    logout();
+
+    window.location.href =
+      "/login";
+  };
 
 
   /* ==========================================================
@@ -860,7 +886,7 @@ function Sidebar() {
 
 
       {/* ====================================================
-          MVP Status
+          Collapsible Account / Status Panel
           ==================================================== */}
 
       <Box
@@ -869,67 +895,126 @@ function Sidebar() {
             "auto",
 
           pt:
-            4,
+            3,
         }}
       >
 
         <Box
           sx={{
-            p:
-              2,
-
             borderRadius:
               "18px",
 
             bgcolor:
-              "rgba(255, 255, 255, 0.06)",
+              "#171717",
 
             border:
-              "1px solid rgba(249, 115, 22, 0.28)",
+              "1px solid rgba(255, 255, 255, 0.18)",
+
+            boxShadow:
+              "0 12px 30px rgba(0, 0, 0, 0.22)",
+
+            overflow:
+              "hidden",
           }}
         >
 
+          {/* =================================================
+              User Profile Trigger
+              ================================================= */}
+
           <Box
+            component="button"
+
+            type="button"
+
+            onClick={() =>
+              setAccountOpen(
+                (open) => !open
+              )
+            }
+
+            aria-expanded={
+              accountOpen
+            }
+
+            aria-controls=
+              "sidebar-account-panel"
+
             sx={{
+              width:
+                "100%",
+
+              minHeight:
+                60,
+
+              px:
+                1.25,
+
+              py:
+                1,
+
+              border:
+                0,
+
+              bgcolor:
+                "transparent",
+
+              color:
+                "inherit",
+
               display:
                 "flex",
 
               alignItems:
                 "center",
 
-              justifyContent:
-                "space-between",
+              minWidth:
+                0,
 
               gap:
-                1,
+                0.7,
+
+              fontFamily:
+                "inherit",
+
+              textAlign:
+                "left",
+
+              cursor:
+                "pointer",
+
+              boxSizing:
+                "border-box",
+
+              transition:
+                "background-color 0.18s ease",
+
+
+              "&:hover":
+                {
+                  bgcolor:
+                    "rgba(255, 255, 255, 0.038)",
+                },
+
+
+              "&:focus-visible":
+                {
+                  outline:
+                    `2px solid ${sidebarAccent}`,
+
+                  outlineOffset:
+                    "-2px",
+                },
             }}
           >
-
-            <Typography
-              sx={{
-                fontSize:
-                  13,
-
-                fontWeight:
-                  800,
-
-                color:
-                  sidebarText,
-              }}
-            >
-              {
-                commercialMvpLabel
-              }
-            </Typography>
-
 
             <Box
               sx={{
                 width:
-                  9,
+                  31,
 
                 height:
-                  9,
+                  31,
 
                 flexShrink:
                   0,
@@ -937,69 +1022,644 @@ function Sidebar() {
                 borderRadius:
                   "50%",
 
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
                 bgcolor:
-                  sidebarAccent,
-
-                boxShadow:
-                  "0 0 0 4px rgba(249, 115, 22, 0.12)",
-              }}
-            />
-
-          </Box>
-
-
-          <Typography
-            sx={{
-              mt:
-                0.75,
-
-              fontSize:
-                11.5,
-
-              lineHeight:
-                1.5,
-
-              color:
-                sidebarSubtleText,
-            }}
-          >
-            {
-              platformDescription
-            }
-          </Typography>
-
-
-          <Box
-            sx={{
-              mt:
-                1.5,
-
-              pt:
-                1.5,
-
-              borderTop:
-                "1px solid rgba(255, 255, 255, 0.08)",
-            }}
-          >
-
-            <Typography
-              sx={{
-                fontSize:
-                  11,
-
-                fontWeight:
-                  700,
+                  "#16A34A",
 
                 color:
-                  sidebarMutedText,
+                  "#ffffff",
+
+                fontSize:
+                  12,
+
+                fontWeight:
+                  900,
+
+                lineHeight:
+                  1,
+
+                boxShadow:
+                  "inset 0 0 0 1px rgba(255, 255, 255, 0.08)",
               }}
             >
               {
-                `Mine Manager AI · Version ${APP_VERSION}`
+                user?.full_name
+                  ?.trim()
+                  ?.charAt(0)
+                  ?.toUpperCase() ||
+                "U"
               }
-            </Typography>
+            </Box>
+
+
+            <Box
+              sx={{
+                flex:
+                  1,
+
+                minWidth:
+                  0,
+              }}
+            >
+
+              <Typography
+                title={
+                  user?.full_name ||
+                  (
+                    language === "MN"
+                      ? "Хэрэглэгч"
+                      : "User"
+                  )
+                }
+
+                sx={{
+                  fontSize:
+                    11.2,
+
+                  fontWeight:
+                    900,
+
+                  lineHeight:
+                    1.2,
+
+                  color:
+                    sidebarText,
+
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {
+                  user?.full_name ||
+                  (
+                    language === "MN"
+                      ? "Хэрэглэгч"
+                      : "User"
+                  )
+                }
+              </Typography>
+
+
+              <Typography
+                title={
+                  user?.role ||
+                  (
+                    language === "MN"
+                      ? "Үзэгч"
+                      : "Viewer"
+                  )
+                }
+
+                sx={{
+                  mt:
+                    0.25,
+
+                  fontSize:
+                    9.7,
+
+                  fontWeight:
+                    500,
+
+                  lineHeight:
+                    1.2,
+
+                  color:
+                    sidebarSubtleText,
+
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {
+                  user?.role ||
+                  (
+                    language === "MN"
+                      ? "Үзэгч"
+                      : "Viewer"
+                  )
+                }
+              </Typography>
+
+            </Box>
+
+
+            {
+              accountOpen
+                ? (
+                  <KeyboardArrowUpIcon
+                    aria-hidden="true"
+
+                    sx={{
+                      flexShrink:
+                        0,
+
+                      fontSize:
+                        18,
+
+                      color:
+                        "#D1D5DB",
+                    }}
+                  />
+                )
+                : (
+                  <KeyboardArrowDownIcon
+                    aria-hidden="true"
+
+                    sx={{
+                      flexShrink:
+                        0,
+
+                      fontSize:
+                        18,
+
+                      color:
+                        "#D1D5DB",
+                    }}
+                  />
+                )
+            }
 
           </Box>
+
+
+          <Collapse
+            in={
+              accountOpen
+            }
+
+            timeout="auto"
+
+            unmountOnExit
+          >
+
+            <Box
+              id="sidebar-account-panel"
+
+              sx={{
+                px:
+                  1.4,
+
+                pb:
+                  1.4,
+              }}
+            >
+
+
+              <Box
+                sx={{
+                  mb:
+                    1.35,
+
+                  height:
+                    "1px",
+
+                  bgcolor:
+                    "rgba(255, 255, 255, 0.075)",
+                }}
+              />
+
+
+              {/* Commercial MVP / Version / Online Status */}
+
+              <Box
+                sx={{
+                  minHeight:
+                    22,
+
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "center",
+
+                  minWidth:
+                    0,
+                }}
+              >
+
+                <Typography
+                  sx={{
+                    flex:
+                      1,
+
+                    minWidth:
+                      0,
+
+                    fontSize:
+                      12.2,
+
+                    fontWeight:
+                      900,
+
+                    lineHeight:
+                      1.2,
+
+                    color:
+                      sidebarText,
+
+                    whiteSpace:
+                      "nowrap",
+
+                    overflow:
+                      "hidden",
+
+                    textOverflow:
+                      "ellipsis",
+
+                    letterSpacing:
+                      "0.05px",
+                  }}
+                >
+                  {
+                    commercialMvpLabel
+                  }
+                </Typography>
+
+
+                <Typography
+                  sx={{
+                    ml:
+                      0.7,
+
+                    flexShrink:
+                      0,
+
+                    fontSize:
+                      10.2,
+
+                    fontWeight:
+                      700,
+
+                    lineHeight:
+                      1,
+
+                    color:
+                      "#8993A1",
+                  }}
+                >
+                  {
+                    `v${APP_VERSION}`
+                  }
+                </Typography>
+
+
+                <Box
+                  title={
+                    language === "MN"
+                      ? "Систем онлайн"
+                      : "System online"
+                  }
+
+                  aria-label={
+                    language === "MN"
+                      ? "Систем онлайн"
+                      : "System online"
+                  }
+
+                  sx={{
+                    width:
+                      8,
+
+                    height:
+                      8,
+
+                    ml:
+                      1,
+
+                    flexShrink:
+                      0,
+
+                    borderRadius:
+                      "50%",
+
+                    bgcolor:
+                      "#22C55E",
+
+                    boxShadow:
+                      "0 0 0 3px rgba(34, 197, 94, 0.10)",
+                  }}
+                />
+
+              </Box>
+
+
+              {/* Language Selector */}
+
+              <Box
+                sx={{
+                  mt:
+                    1.25,
+
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "minmax(0, 1fr) minmax(0, 1fr)",
+
+                  gap:
+                    0.85,
+                }}
+              >
+
+                {
+                  [
+                    {
+                      value: "EN",
+                      label: "EN",
+                    },
+                    {
+                      value: "MN",
+                      label: "МОН",
+                    },
+                  ].map(
+                    (option) => (
+                      <Box
+                        key={
+                          option.value
+                        }
+
+                        component="button"
+
+                        type="button"
+
+                        onClick={() =>
+                          setLanguage(
+                            option.value
+                          )
+                        }
+
+                        aria-pressed={
+                          language ===
+                          option.value
+                        }
+
+                        sx={{
+                          width:
+                            "100%",
+
+                          minWidth:
+                            0,
+
+                          height:
+                            38,
+
+                          px:
+                            0.8,
+
+                          border:
+                            language === option.value
+                              ? `1px solid ${sidebarAccent}`
+                              : "1px solid rgba(255, 255, 255, 0.10)",
+
+                          borderRadius:
+                            "10px",
+
+                          bgcolor:
+                            language === option.value
+                              ? "rgba(249, 115, 22, 0.07)"
+                              : "rgba(255, 255, 255, 0.018)",
+
+                          color:
+                            language === option.value
+                              ? sidebarAccent
+                              : "#A5ABB5",
+
+                          display:
+                            "flex",
+
+                          alignItems:
+                            "center",
+
+                          justifyContent:
+                            "center",
+
+                          gap:
+                            0.6,
+
+                          fontFamily:
+                            "inherit",
+
+                          cursor:
+                            "pointer",
+
+                          boxSizing:
+                            "border-box",
+
+                          transition:
+                            "background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease",
+
+
+                          "&:hover":
+                            {
+                              bgcolor:
+                                language === option.value
+                                  ? "rgba(249, 115, 22, 0.11)"
+                                  : "rgba(255, 255, 255, 0.05)",
+
+                              borderColor:
+                                language === option.value
+                                  ? sidebarAccent
+                                  : "rgba(255, 255, 255, 0.17)",
+                            },
+
+
+                          "&:focus-visible":
+                            {
+                              outline:
+                                `2px solid ${sidebarAccent}`,
+
+                              outlineOffset:
+                                "2px",
+                            },
+                        }}
+                      >
+
+                        <LanguageIcon
+                          sx={{
+                            fontSize:
+                              16,
+                          }}
+                        />
+
+
+                        <Box
+                          component="span"
+
+                          sx={{
+                            fontSize:
+                              11,
+
+                            fontWeight:
+                              900,
+
+                            lineHeight:
+                              1,
+
+                            letterSpacing:
+                              "0.2px",
+                          }}
+                        >
+                          {
+                            option.label
+                          }
+                        </Box>
+
+                      </Box>
+                    )
+                  )
+                }
+
+              </Box>
+
+
+              <Box
+                sx={{
+                  my:
+                    1.35,
+
+                  height:
+                    "1px",
+
+                  bgcolor:
+                    "rgba(255, 255, 255, 0.075)",
+                }}
+              />
+
+
+              {/* Logout */}
+
+              <Box
+                component="button"
+
+                type="button"
+
+                onClick={
+                  handleLogout
+                }
+
+                sx={{
+                  width:
+                    "100%",
+
+                  minHeight:
+                    38,
+
+                  px:
+                    1.1,
+
+                  border:
+                    "1px solid rgba(255, 255, 255, 0.075)",
+
+                  borderRadius:
+                    "11px",
+
+                  bgcolor:
+                    "rgba(255, 255, 255, 0.018)",
+
+                  color:
+                    "#EF5A61",
+
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "center",
+
+                  gap:
+                    0.8,
+
+                  fontFamily:
+                    "inherit",
+
+                  fontSize:
+                    10.8,
+
+                  fontWeight:
+                    800,
+
+                  textAlign:
+                    "left",
+
+                  cursor:
+                    "pointer",
+
+                  boxSizing:
+                    "border-box",
+
+                  transition:
+                    "background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease",
+
+
+                  "&:hover":
+                    {
+                      bgcolor:
+                        "rgba(239, 68, 68, 0.07)",
+
+                      borderColor:
+                        "rgba(239, 68, 68, 0.25)",
+
+                      color:
+                        "#FF5963",
+                    },
+
+
+                  "&:focus-visible":
+                    {
+                      outline:
+                        "2px solid #ef4444",
+
+                      outlineOffset:
+                        "2px",
+                    },
+                }}
+              >
+
+                <LogoutIcon
+                  sx={{
+                    flexShrink:
+                      0,
+
+                    fontSize:
+                      16,
+                  }}
+                />
+
+
+                <Box
+                  component="span"
+                >
+                  {
+                    t(
+                      "navigation.logout"
+                    )
+                  }
+                </Box>
+
+              </Box>
+
+            </Box>
+
+          </Collapse>
 
         </Box>
 
