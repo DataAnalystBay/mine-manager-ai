@@ -143,32 +143,4 @@ export const getSharedAnalytics = async (
   }
 };
 
-export const getKpiDetail = async (
-  mineName,
-  kpiName,
-  days = 7
-) => {
-  try {
-    const response = await dashboardClient.get(
-      "/kpi-detail",
-      {
-        params: {
-          mine_name: mineName,
-          kpi_name: kpiName,
-          days,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Failed to load KPI detail:",
-      error
-    );
-
-    throw error;
-  }
-};
-
 export default dashboardClient;

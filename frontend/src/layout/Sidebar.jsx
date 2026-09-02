@@ -1166,7 +1166,7 @@ function Sidebar() {
             {
               accountOpen
                 ? (
-                  <KeyboardArrowUpIcon
+                  <KeyboardArrowDownIcon
                     aria-hidden="true"
 
                     sx={{
@@ -1182,7 +1182,7 @@ function Sidebar() {
                   />
                 )
                 : (
-                  <KeyboardArrowDownIcon
+                  <KeyboardArrowUpIcon
                     aria-hidden="true"
 
                     sx={{

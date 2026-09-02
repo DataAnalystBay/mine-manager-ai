@@ -31,9 +31,19 @@ const BELOW_TARGET_COLOR = "#dc2626";
 const TARGET_COLOR = "#2563eb";
 
 
+function toFiniteMetric(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+
 function PlantTrendChart({
   data = [],
   recoveryTarget = 90,
+  periodDescription,
+  headerActions,
+  aggregation = "daily",
 }) {
   const { t, language } = useLanguage();
 
@@ -41,7 +51,7 @@ function PlantTrendChart({
     useState("throughput");
 
   const tonnesUnit =
-    language === "mn" ? "тн" : "t";
+    language === "MN" ? "тн" : "t";
 
 
   const handleModeChange = (
@@ -59,20 +69,26 @@ function PlantTrendChart({
       return [];
     }
 
-    return data.map((item) => {
-      const throughputPlan = Number(
-        item?.throughput_plan ?? 0
-      );
+    const chronologicalData = [...data].sort((left, right) => {
+      const leftTime = new Date(left?.report_date).getTime();
+      const rightTime = new Date(right?.report_date).getTime();
+      const normalizedLeftTime = Number.isNaN(leftTime)
+        ? Number.NEGATIVE_INFINITY
+        : leftTime;
+      const normalizedRightTime = Number.isNaN(rightTime)
+        ? Number.NEGATIVE_INFINITY
+        : rightTime;
 
-      const throughputActual = Number(
-        item?.throughput_actual ?? 0
-      );
+      return normalizedLeftTime - normalizedRightTime;
+    });
 
-      const recovery = Number(
-        item?.recovery ?? 0
-      );
+    return chronologicalData.map((item) => {
+      const throughputPlan = toFiniteMetric(item?.throughput_plan);
+      const throughputActual = toFiniteMetric(item?.throughput_actual);
+      const recovery = toFiniteMetric(item?.recovery);
 
       if (mode === "throughput") {
+        if (throughputPlan === null || throughputActual === null) return null;
         const variance =
           throughputActual -
           throughputPlan;
@@ -99,6 +115,8 @@ function PlantTrendChart({
         };
       }
 
+      if (recovery === null) return null;
+
       const variance =
         recovery -
         recoveryTarget;
@@ -122,7 +140,7 @@ function PlantTrendChart({
             : recovery,
         variance,
       };
-    });
+    }).filter(Boolean);
   }, [
     data,
     mode,
@@ -139,7 +157,9 @@ function PlantTrendChart({
       String(value);
 
     return normalized.length >= 10
-      ? normalized.slice(5, 10)
+      ? aggregation === "monthly"
+        ? normalized.slice(0, 7)
+        : normalized.slice(5, 10)
       : normalized;
   };
 
@@ -430,42 +450,57 @@ function PlantTrendChart({
               }}
             >
               {metricLabel}:{" "}
-              {t("plant.chartActualAgainstTarget")}
+              {periodDescription || t("plant.chartActualAgainstTarget")}
             </Typography>
           </Box>
 
-          <ToggleButtonGroup
-            value={mode}
-            exclusive
-            onChange={
-              handleModeChange
-            }
-            size="small"
+          <Box
             sx={{
-              "& .MuiToggleButton-root":
-                {
-                  minWidth: 78,
-                  px: 1.4,
-                  py: 0.55,
-                  textTransform:
-                    "none",
-                  fontSize: 10,
-                  fontWeight: 800,
-                },
+              display: "flex",
+              alignItems: "center",
+              justifyContent: {
+                xs: "flex-start",
+                md: "flex-end",
+              },
+              flexWrap: "wrap",
+              gap: 1,
             }}
           >
-            <ToggleButton
-              value="throughput"
+            <ToggleButtonGroup
+              value={mode}
+              exclusive
+              onChange={
+                handleModeChange
+              }
+              size="small"
+              sx={{
+                "& .MuiToggleButton-root":
+                  {
+                    minWidth: 78,
+                    px: 1.4,
+                    py: 0.55,
+                    textTransform:
+                      "none",
+                    fontSize: 10,
+                    fontWeight: 800,
+                  },
+              }}
             >
-              {t("plant.throughput")}
-            </ToggleButton>
+              <ToggleButton
+                value="throughput"
+              >
+                {t("plant.throughput")}
+              </ToggleButton>
 
-            <ToggleButton
-              value="recovery"
-            >
-              {t("plant.recovery")}
-            </ToggleButton>
-          </ToggleButtonGroup>
+              <ToggleButton
+                value="recovery"
+              >
+                {t("plant.recovery")}
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            {headerActions}
+          </Box>
         </Box>
 
         <Box
@@ -633,9 +668,7 @@ function PlantTrendChart({
               />
 
               <Tooltip
-                content={
-                  <CustomTooltip />
-                }
+                content={CustomTooltip}
                 cursor={{
                   fill:
                     "rgba(148, 163, 184, 0.08)",

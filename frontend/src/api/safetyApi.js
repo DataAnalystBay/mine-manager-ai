@@ -69,23 +69,48 @@ export async function getTodaySafety() {
       getErrorMessage(
         error,
         "Unable to load today's safety data."
-      )
+      ),
+      { cause: error }
     );
   }
 }
 
 
 export async function getSafetyTrend(
-  days = 30
+  period = 30
 ) {
+  const supportedRanges = [
+    "30D",
+    "90D",
+    "1Y",
+    "3Y",
+    "5Y",
+  ];
+  const isLegacyDays =
+    typeof period === "number";
+  const range = String(
+    period || "30D"
+  )
+    .trim()
+    .toUpperCase();
+
+  if (
+    !isLegacyDays &&
+    !supportedRanges.includes(range)
+  ) {
+    throw new Error(
+      "Unsupported Safety trend range."
+    );
+  }
+
   try {
     const response =
       await safetyClient.get(
         "/trend",
         {
-          params: {
-            days,
-          },
+          params: isLegacyDays
+            ? { days: period }
+            : { range },
         }
       );
 
@@ -99,7 +124,8 @@ export async function getSafetyTrend(
       getErrorMessage(
         error,
         "Unable to load safety trend."
-      )
+      ),
+      { cause: error }
     );
   }
 }

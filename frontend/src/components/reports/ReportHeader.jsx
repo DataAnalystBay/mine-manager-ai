@@ -84,7 +84,7 @@ function ReportHeader() {
                 lineHeight: 1.2,
               }}
             >
-              EXECUTIVE INTELLIGENCE
+              {t("reports.executiveIntelligence")}
             </Typography>
 
             <Box
@@ -106,7 +106,7 @@ function ReportHeader() {
                 lineHeight: 1.2,
               }}
             >
-              REPORTING CENTER
+              {t("reports.reportingCenter")}
             </Typography>
           </Stack>
 
@@ -203,7 +203,7 @@ function ReportHeader() {
                   lineHeight: 1.2,
                 }}
               >
-                REPORTING DATE
+                {t("reports.reportingDate")}
               </Typography>
 
               <Typography
@@ -222,7 +222,7 @@ function ReportHeader() {
 
           {/* Refresh */}
           <IconButton
-            aria-label="Refresh executive reports"
+            aria-label={t("reports.refreshExecutiveReports")}
             sx={{
               width: 42,
               height: 42,
