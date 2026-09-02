@@ -139,7 +139,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
     }
 
     return generatedDate.toLocaleString(
-      language === "mn" ? "mn-MN" : "en-US",
+      language === "MN" ? "mn-MN" : "en-US",
       {
         year: "numeric",
         month: "short",
@@ -322,7 +322,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
                   letterSpacing: "0.04em",
                 }}
               >
-                {history.length} REPORTS
+                {history.length} {t("reports.reportsLabel")}
               </Typography>
             </Box>
           )}

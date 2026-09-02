@@ -1519,26 +1519,26 @@ setKpiDialogOpen(false);
     navigate("/reports");
   }, [navigate]);
  
-  const handleOpenOre = useCallback(() => openKpiDetail("ore"), [openKpiDetail]);
+  const handleOpenOre = useCallback(() => navigate("/production"), [navigate]);
   const handleOpenWaste = useCallback(
-    () => openKpiDetail("waste"),
-    [openKpiDetail]
+    () => navigate("/production"),
+    [navigate]
   );
   const handleOpenFleet = useCallback(
-    () => openKpiDetail("fleet"),
-    [openKpiDetail]
+    () => navigate("/fleet"),
+    [navigate]
   );
   const handleOpenPlant = useCallback(
-    () => openKpiDetail("plant"),
-    [openKpiDetail]
+    () => navigate("/plant"),
+    [navigate]
   );
   const handleOpenRecovery = useCallback(
-    () => openKpiDetail("recovery"),
-    [openKpiDetail]
+    () => navigate("/plant"),
+    [navigate]
   );
   const handleOpenSafety = useCallback(
-    () => openKpiDetail("safety"),
-    [openKpiDetail]
+    () => navigate("/safety"),
+    [navigate]
   );
   const handleOpenMineHealth = useCallback(
     () => openKpiDetail("mine_health"),
@@ -1985,7 +1985,7 @@ setKpiDialogOpen(false);
               accent="#16a34a"
               soft="#dcfce7"
               onClick={handleOpenOre}
-              analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+              analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", {
                 title: operationLabels.production,
               })}
               targetLabel={t("dashboard.target")}
@@ -2004,7 +2004,7 @@ setKpiDialogOpen(false);
                 accent="#f97316"
                 soft="#ffedd5"
                 onClick={handleOpenWaste}
-                analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", {
                   title: t("dashboard.wasteMovement"),
                 })}
                 targetLabel={t("dashboard.target")}
@@ -2035,7 +2035,7 @@ setKpiDialogOpen(false);
                 accent="#2563eb"
                 soft="#dbeafe"
                 onClick={handleOpenFleet}
-                analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", {
                   title: t("dashboard.fleetPerformance"),
                 })}
                 targetLabel={t("dashboard.target")}
@@ -2067,7 +2067,7 @@ setKpiDialogOpen(false);
               accent="#7c3aed"
               soft="#ede9fe"
               onClick={handleOpenPlant}
-              analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+              analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", {
                 title: operationLabels.plant,
               })}
               targetLabel={t("dashboard.target")}
@@ -2086,7 +2086,7 @@ setKpiDialogOpen(false);
                 accent="#0f766e"
                 soft="#ccfbf1"
                 onClick={handleOpenRecovery}
-                analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+                analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", {
                   title: operationLabels.recovery,
                 })}
                 targetLabel={t("dashboard.target")}
@@ -2113,7 +2113,7 @@ setKpiDialogOpen(false);
               accent="#ef4444"
               soft="#fee2e2"
               onClick={handleOpenSafety}
-              analysisAriaLabel={translateTemplate(t, "dashboard.openKpiAnalysis", {
+              analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", {
                 title: operationLabels.safety,
               })}
               targetLabel={t("dashboard.target")}

@@ -21,7 +21,13 @@ import {
 
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import ShowChartOutlinedIcon from "@mui/icons-material/ShowChartOutlined";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import FactoryOutlinedIcon from "@mui/icons-material/FactoryOutlined";
+import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
+import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -56,6 +62,34 @@ const STATUS_OPTIONS = [
     symbol: "⊘",
   },
 ];
+
+const ACTION_ICON_CONFIG = {
+  production: {
+    Icon: ShowChartOutlinedIcon,
+    backgroundColor: "#eff6ff",
+    color: "#2563eb",
+  },
+  fleet: {
+    Icon: LocalShippingOutlinedIcon,
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
+  },
+  plant: {
+    Icon: FactoryOutlinedIcon,
+    backgroundColor: "#f0fdf4",
+    color: "#15803d",
+  },
+  safety: {
+    Icon: ShieldOutlinedIcon,
+    backgroundColor: "#fff7ed",
+    color: "#c2410c",
+  },
+  operations: {
+    Icon: AssignmentTurnedInOutlinedIcon,
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
+  },
+};
 
 function normalizeValue(value) {
   return String(value || "")
@@ -671,7 +705,236 @@ function StatusMenuButton({
   );
 }
 
-function LoadingRows() {
+
+function getOperationalPerformanceLabel(value, t) {
+  const normalizedValue = normalizeValue(value);
+
+  if (
+    [
+      "production",
+      "production_performance",
+      "ore",
+      "ore_performance",
+      "ore_production",
+      "waste",
+      "waste_movement",
+      "waste_performance",
+    ].includes(normalizedValue)
+  ) {
+    return t("production.productionPerformance");
+  }
+
+  if (["fleet", "fleet_performance"].includes(normalizedValue)) {
+    return t("dynamicKpiNames.fleetPerformance");
+  }
+
+  if (
+    [
+      "plant",
+      "plant_performance",
+      "recovery",
+      "cu_recovery",
+      "throughput",
+      "throughput_performance",
+    ].includes(normalizedValue)
+  ) {
+    return t("dynamicKpiNames.plantPerformance");
+  }
+
+  if (
+    ["safety", "safety_performance", "safety_score", "safety_incidents"].includes(
+      normalizedValue
+    )
+  ) {
+    return t("dynamicKpiNames.safetyPerformance");
+  }
+
+  if (["mine_health", "mine_health_score"].includes(normalizedValue)) {
+    return t("dynamicKpiNames.mineHealth");
+  }
+
+  return "";
+}
+
+
+function getActionVisualCategory(action) {
+  const categoryCandidates = [
+    action?.kpi_key,
+    action?.kpi_name,
+    action?.kpi_label,
+    action?.category,
+    action?.action_category,
+  ]
+    .filter(Boolean)
+    .map(normalizeValue);
+
+  if (
+    categoryCandidates.some((value) =>
+      [
+        "production",
+        "production_performance",
+        "ore",
+        "ore_performance",
+        "ore_production",
+        "waste",
+        "waste_movement",
+        "waste_performance",
+      ].includes(value)
+    )
+  ) {
+    return "production";
+  }
+
+  if (
+    categoryCandidates.some((value) =>
+      ["fleet", "fleet_performance"].includes(value)
+    )
+  ) {
+    return "fleet";
+  }
+
+  if (
+    categoryCandidates.some((value) =>
+      [
+        "plant",
+        "plant_performance",
+        "recovery",
+        "cu_recovery",
+        "throughput",
+        "throughput_performance",
+      ].includes(value)
+    )
+  ) {
+    return "plant";
+  }
+
+  if (
+    categoryCandidates.some((value) =>
+      ["safety", "safety_performance", "safety_score", "safety_incidents"].includes(
+        value
+      )
+    )
+  ) {
+    return "safety";
+  }
+
+  return "operations";
+}
+
+
+function getCustomerFacingActionMetadata(action, t) {
+  const sourceCandidates = [
+    action?.kpi_name,
+    action?.kpi_label,
+    action?.kpi_key,
+    action?.category,
+    action?.action_category,
+  ].filter(Boolean);
+
+  for (const candidate of sourceCandidates) {
+    const operationalLabel = getOperationalPerformanceLabel(candidate, t);
+
+    if (operationalLabel) {
+      return operationalLabel;
+    }
+  }
+
+  const businessCategory = [
+    action?.category,
+    action?.action_category,
+    action?.kpi_name,
+    action?.kpi_label,
+  ].find((value) => {
+    const rawValue = String(value || "").trim();
+    const normalizedValue = normalizeValue(rawValue);
+
+    return rawValue &&
+      !rawValue.includes("_") &&
+      !rawValue.includes("-") &&
+      !["manual", "ai", "system", "ai_recommended_actions"].includes(
+        normalizedValue
+      );
+  });
+
+  return businessCategory
+    ? translateDynamicExecutiveActionCategory(businessCategory, t)
+    : "";
+}
+
+
+function ActionMenuButton({
+  action,
+  disabled,
+  onEdit,
+  onDelete,
+}) {
+  const { t } = useLanguage();
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const closeMenu = () => setAnchorEl(null);
+
+  return (
+    <>
+      <Tooltip title={t("executiveActionTable.columns.actions")}>
+        <span>
+          <IconButton
+            size="small"
+            disabled={disabled}
+            onClick={(event) => setAnchorEl(event.currentTarget)}
+            sx={{
+              width: 34,
+              height: 34,
+              color: "#475569",
+              border: "1px solid #e2e8f0",
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <MoreHorizIcon sx={{ fontSize: 19 }} />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={closeMenu}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.5,
+              minWidth: 160,
+              borderRadius: "10px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 12px 28px rgba(15, 23, 42, 0.12)",
+            },
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            closeMenu();
+            onEdit?.(action);
+          }}
+          sx={{ gap: 1, fontSize: 13.5 }}
+        >
+          <EditOutlinedIcon sx={{ fontSize: 18 }} />
+          {t("executiveActionTable.editAction")}
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            closeMenu();
+            onDelete?.(action);
+          }}
+          sx={{ gap: 1, color: "#b91c1c", fontSize: 13.5 }}
+        >
+          <DeleteIcon sx={{ fontSize: 18 }} />
+          {t("executiveActionTable.deleteAction")}
+        </MenuItem>
+      </Menu>
+    </>
+  );
+}
+
+function LoadingRows({ compact = false }) {
   return Array.from({
     length: 5,
   }).map((_, index) => (
@@ -689,13 +952,15 @@ function LoadingRows() {
         />
       </TableCell>
 
-      <TableCell>
-        <Skeleton
-          variant="rounded"
-          width={90}
-          height={28}
-        />
-      </TableCell>
+      {!compact && (
+        <TableCell>
+          <Skeleton
+            variant="rounded"
+            width={90}
+            height={28}
+          />
+        </TableCell>
+      )}
 
       <TableCell>
         <Skeleton
@@ -753,11 +1018,11 @@ function LoadingRows() {
   ));
 }
 
-function EmptyState({ t }) {
+function EmptyState({ t, columnCount = 7 }) {
   return (
     <TableRow>
       <TableCell
-        colSpan={7}
+        colSpan={columnCount}
         sx={{
           py: 9,
           textAlign: "center",
@@ -819,6 +1084,8 @@ function ExecutiveActionTable({
   onDelete,
   onStatusChange,
   updatingStatusId = null,
+  compact = false,
+  showFooter = true,
 }) {
   const { language, t } =
     useLanguage();
@@ -826,12 +1093,14 @@ function ExecutiveActionTable({
   const tableHeadings = [
     {
       key: "action",
-      label: t(
-        "executiveActionTable.columns.action"
-      ),
+      label: compact
+        ? language === "MN"
+          ? "АРГА ХЭМЖЭЭ / ЭХ ҮҮСВЭР"
+          : "ACTION / SOURCE"
+        : t("executiveActionTable.columns.action"),
       align: "left",
     },
-    {
+    !compact && {
       key: "category",
       label: t(
         "executiveActionTable.columns.category"
@@ -873,7 +1142,7 @@ function ExecutiveActionTable({
       ),
       align: "right",
     },
-  ];
+  ].filter(Boolean);
 
   const normalizedActions =
     useMemo(
@@ -888,7 +1157,7 @@ function ExecutiveActionTable({
     <Paper
       elevation={0}
       sx={{
-        mt: 2,
+        mt: compact ? 0 : 2,
         overflow: "hidden",
         borderRadius: "16px",
         border:
@@ -904,7 +1173,7 @@ function ExecutiveActionTable({
       >
         <Table
           sx={{
-            minWidth: 1120,
+            minWidth: compact ? 900 : 1120,
           }}
         >
           <TableHead>
@@ -944,10 +1213,10 @@ function ExecutiveActionTable({
 
           <TableBody>
             {loading ? (
-              <LoadingRows />
+              <LoadingRows compact={compact} />
             ) : normalizedActions.length ===
               0 ? (
-              <EmptyState t={t} />
+              <EmptyState t={t} columnCount={tableHeadings.length} />
             ) : (
               normalizedActions.map(
                 (
@@ -965,11 +1234,12 @@ function ExecutiveActionTable({
                       t
                     );
 
-                  const actionDescription =
-                    getActionDescription(
-                      action,
-                      t
-                    );
+                  const actionDescription = compact
+                    ? getCustomerFacingActionMetadata(action, t)
+                    : getActionDescription(
+                        action,
+                        t
+                      );
 
                   const priorityStyles =
                     getPriorityStyles(
@@ -986,6 +1256,14 @@ function ExecutiveActionTable({
                       action,
                       t
                     );
+
+                  const actionIconConfig =
+                    ACTION_ICON_CONFIG[
+                      getActionVisualCategory(action)
+                    ] || ACTION_ICON_CONFIG.operations;
+
+                  const ActionCategoryIcon =
+                    actionIconConfig.Icon;
 
                   const overdue =
                     isOverdue(
@@ -1034,46 +1312,36 @@ function ExecutiveActionTable({
                             display:
                               "flex",
                             alignItems:
-                              "flex-start",
+                              "center",
                             gap: 1.25,
                           }}
                         >
                           <Box
                             sx={{
-                              width: 34,
-                              height: 34,
+                              width: 32,
+                              height: 32,
                               flexShrink: 0,
                               borderRadius:
-                                "10px",
+                                "9px",
                               backgroundColor:
-                                source ===
-                                "ai"
-                                  ? "#eef2ff"
-                                  : "#f1f5f9",
+                                actionIconConfig.backgroundColor,
                               color:
-                                source ===
-                                "ai"
-                                  ? "#4f46e5"
-                                  : "#475569",
+                                actionIconConfig.color,
                               display:
                                 "flex",
                               alignItems:
                                 "center",
                               justifyContent:
                                 "center",
-                              fontSize:
-                                source ===
-                                "ai"
-                                  ? 11
-                                  : 13,
-                              fontWeight:
-                                900,
+                              border:
+                                "1px solid rgba(148, 163, 184, 0.2)",
                             }}
                           >
-                            {source ===
-                            "ai"
-                              ? "AI"
-                              : "M"}
+                            <ActionCategoryIcon
+                              sx={{
+                                fontSize: 17,
+                              }}
+                            />
                           </Box>
 
                           <Box
@@ -1099,7 +1367,9 @@ function ExecutiveActionTable({
                                   fontSize:
                                     14,
                                   fontWeight:
-                                    800,
+                                    compact
+                                      ? 700
+                                      : 800,
                                   lineHeight:
                                     1.4,
                                 }}
@@ -1109,7 +1379,8 @@ function ExecutiveActionTable({
                                 }
                               </Typography>
 
-                              <Chip
+                              {(!compact || source === "ai") && (
+                                <Chip
                                 size="small"
                                 label={
                                   source ===
@@ -1140,7 +1411,8 @@ function ExecutiveActionTable({
                                     px: 0.85,
                                   },
                                 }}
-                              />
+                                />
+                              )}
                             </Box>
 
                             {actionDescription && (
@@ -1175,7 +1447,8 @@ function ExecutiveActionTable({
                         </Box>
                       </TableCell>
 
-                      <TableCell
+                      {!compact && (
+                        <TableCell
                         sx={{
                           py: 2,
                           borderColor:
@@ -1216,7 +1489,8 @@ function ExecutiveActionTable({
                             }
                           </Typography>
                         )}
-                      </TableCell>
+                        </TableCell>
+                      )}
 
                       <TableCell
                         sx={{
@@ -1355,98 +1629,12 @@ function ExecutiveActionTable({
                             "nowrap",
                         }}
                       >
-                        <Tooltip
-                          title={t(
-                            "executiveActionTable.editAction"
-                          )}
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                onEdit?.(
-                                  action
-                                )
-                              }
-                              disabled={
-                                isUpdating
-                              }
-                              sx={{
-                                width: 34,
-                                height: 34,
-                                mr: 0.75,
-                                color:
-                                  "#475569",
-                                border:
-                                  "1px solid #e2e8f0",
-                                backgroundColor:
-                                  "#ffffff",
-
-                                "&:hover": {
-                                  color:
-                                    "#1d4ed8",
-                                  borderColor:
-                                    "#bfdbfe",
-                                  backgroundColor:
-                                    "#eff6ff",
-                                },
-                              }}
-                            >
-                              <EditOutlinedIcon
-                                sx={{
-                                  fontSize:
-                                    18,
-                                }}
-                              />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-
-                        <Tooltip
-                          title={t(
-                            "executiveActionTable.deleteAction"
-                          )}
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                onDelete?.(
-                                  action
-                                )
-                              }
-                              disabled={
-                                isUpdating
-                              }
-                              sx={{
-                                width: 34,
-                                height: 34,
-                                color:
-                                  "#64748b",
-                                border:
-                                  "1px solid #e2e8f0",
-                                backgroundColor:
-                                  "#ffffff",
-
-                                "&:hover": {
-                                  color:
-                                    "#dc2626",
-                                  borderColor:
-                                    "#fecaca",
-                                  backgroundColor:
-                                    "#fef2f2",
-                                },
-                              }}
-                            >
-                              <DeleteIcon
-                                sx={{
-                                  fontSize:
-                                    18,
-                                }}
-                              />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                        <ActionMenuButton
+                          action={action}
+                          disabled={isUpdating}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                        />
                       </TableCell>
                     </TableRow>
                   );
@@ -1457,7 +1645,8 @@ function ExecutiveActionTable({
         </Table>
       </TableContainer>
 
-      {!loading &&
+      {showFooter &&
+        !loading &&
         normalizedActions.length >
           0 && (
           <Box

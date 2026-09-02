@@ -69,22 +69,37 @@ export async function getTodayPlant() {
       getErrorMessage(
         error,
         "Unable to load today's plant data."
-      )
+      ),
+      { cause: error }
     );
   }
 }
 
 
 export async function getPlantTrend(
-  days = 30
+  range = "30D"
 ) {
+  const supportedRanges = [
+    "30D",
+    "90D",
+    "1Y",
+    "3Y",
+    "5Y",
+  ];
+
+  const normalizedRange = String(range || "30D").trim().toUpperCase();
+
+  if (!supportedRanges.includes(normalizedRange)) {
+    throw new RangeError(`Unsupported Plant trend range: ${range}`);
+  }
+
   try {
     const response =
       await plantClient.get(
         "/trend",
         {
           params: {
-            days,
+            range: normalizedRange,
           },
         }
       );
@@ -99,7 +114,8 @@ export async function getPlantTrend(
       getErrorMessage(
         error,
         "Unable to load plant trend."
-      )
+      ),
+      { cause: error }
     );
   }
 }

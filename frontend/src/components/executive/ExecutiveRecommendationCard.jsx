@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useMemo,
   useRef,
@@ -1462,7 +1462,7 @@ export default function ExecutiveRecommendationCard({
             <h4>
               {loadingActions
                 ? t(
-                    "executiveRecommendationCard.loadingExecutiveActions",
+                    "executiveRecommendationCard.loadingActions",
                   )
                 : t(
                     "executiveRecommendationCard.noImmediateActions",

@@ -460,7 +460,7 @@ function ExecutiveReports() {
                   "nowrap",
               }}
             >
-              6 REPORT TYPES
+              {t("reports.reportTypesCount")}
             </Typography>
           </Box>
         </Box>
@@ -675,7 +675,7 @@ function ExecutiveReports() {
           >
             <ReportCard
               title="Улирлын гүйцэтгэлийн тайлан"
-              subtitle="Quarterly Performance Report"
+              subtitle={t("reports.quarterlyPerformanceReport")}
               frequency="Улирал бүр"
               format="PDF"
               icon={
@@ -704,7 +704,7 @@ function ExecutiveReports() {
           >
             <ReportCard
               title="Жилийн гүйцэтгэлийн тайлан"
-              subtitle="Annual Performance Report"
+              subtitle={t("reports.annualPerformanceReport")}
               frequency="Жил бүр"
               format="PDF"
               icon={

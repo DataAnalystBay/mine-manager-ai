@@ -57,16 +57,16 @@ function getErrorMessage(
 
 
 export async function getTodayFleet(
-  mineName = "Oyu Tolgoi Surface"
+  mineName
 ) {
   try {
     const response =
       await fleetClient.get(
         "/today",
         {
-          params: {
-            mine_name: mineName,
-          },
+          params: mineName
+            ? { mine_name: mineName }
+            : undefined,
         }
       );
 
@@ -76,25 +76,68 @@ export async function getTodayFleet(
       getErrorMessage(
         error,
         "Unable to load today's fleet data."
-      )
+      ),
+      { cause: error }
     );
   }
 }
 
 
 export async function getFleetTrend(
-  mineName = "Oyu Tolgoi Surface",
-  days = 30
+  period = "30D",
+  legacyDays
 ) {
+  const supportedRanges = [
+    "30D",
+    "90D",
+    "1Y",
+    "3Y",
+    "5Y",
+  ];
+  const isLegacyDaysOnly =
+    typeof period === "number";
+  const isLegacyMineAndDays =
+    typeof legacyDays === "number";
+  const normalizedPeriod = String(
+    period || "30D"
+  ).trim();
+  const normalizedRange =
+    normalizedPeriod.toUpperCase();
+  const looksLikeRange =
+    /^\d+[DYM]$/.test(normalizedRange);
+
+  let params;
+
+  if (isLegacyMineAndDays) {
+    params = {
+      mine_name: normalizedPeriod,
+      days: legacyDays,
+    };
+  } else if (isLegacyDaysOnly) {
+    params = { days: period };
+  } else if (
+    supportedRanges.includes(
+      normalizedRange
+    )
+  ) {
+    params = { range: normalizedRange };
+  } else if (!looksLikeRange) {
+    params = {
+      mine_name: normalizedPeriod,
+      days: 30,
+    };
+  } else {
+    throw new Error(
+      "Unsupported Fleet trend range."
+    );
+  }
+
   try {
     const response =
       await fleetClient.get(
         "/trend",
         {
-          params: {
-            mine_name: mineName,
-            days,
-          },
+          params,
         }
       );
 
@@ -108,7 +151,8 @@ export async function getFleetTrend(
       getErrorMessage(
         error,
         "Unable to load fleet trend."
-      )
+      ),
+      { cause: error }
     );
   }
 }
