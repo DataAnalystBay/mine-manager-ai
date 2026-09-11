@@ -11,6 +11,7 @@ import { API_BASE_URL } from "../config/apiConfig";
 import { getAIBriefing } from "../services/dashboardApi";
 import { useConfig } from "../context/ConfigContext";
 import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDateTime } from "../utils/displayDateTime";
 
 import {
   FaIndustry,
@@ -462,7 +463,7 @@ function UploadReports() {
 
   const mineName =
     mine?.mine_name ||
-    "Achit-Ikht Copper Cathode Operation";
+    "Mining Operation";
 
 
   const storedUser =
@@ -1029,14 +1030,10 @@ function UploadReports() {
             customMessage:
               "",
 
-            uploadedAt:
-              new Date()
-                .toLocaleString(
-                  currentLanguage ===
-                  "MN"
-                    ? "mn-MN"
-                    : "en-US",
-                ),
+            uploadedAt: formatDisplayDateTime(
+              new Date(),
+              currentLanguage,
+            ),
 
             uploadedBy,
           },

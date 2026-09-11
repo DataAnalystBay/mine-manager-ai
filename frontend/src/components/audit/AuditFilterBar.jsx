@@ -11,30 +11,31 @@ import {
 
 import SearchIcon from "@mui/icons-material/Search";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
+import { useLanguage } from "../../context/LanguageContext";
 
 import "./AuditFilterBar.css";
 
 
 const ACTION_OPTIONS = [
-  { value: "", label: "All Actions" },
-  { value: "CREATE_USER", label: "Create User" },
-  { value: "UPDATE_USER", label: "Update User" },
-  { value: "ACTIVATE_USER", label: "Activate User" },
-  { value: "DEACTIVATE_USER", label: "Deactivate User" },
-  { value: "RESET_PASSWORD", label: "Reset Password" },
+  { value: "", labelKey: "allActions" },
+  { value: "CREATE_USER", labelKey: "createUser" },
+  { value: "UPDATE_USER", labelKey: "updateUser" },
+  { value: "ACTIVATE_USER", labelKey: "activateUser" },
+  { value: "DEACTIVATE_USER", labelKey: "deactivateUser" },
+  { value: "RESET_PASSWORD", labelKey: "resetPassword" },
 ];
 
 
 const ENTITY_TYPE_OPTIONS = [
-  { value: "", label: "All Entities" },
-  { value: "User", label: "User" },
+  { value: "", labelKey: "allEntities" },
+  { value: "User", labelKey: "user" },
 ];
 
 
 const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "SUCCESS", label: "Success" },
-  { value: "FAILED", label: "Failed" },
+  { value: "", labelKey: "allStatuses" },
+  { value: "SUCCESS", labelKey: "success" },
+  { value: "FAILED", labelKey: "failed" },
 ];
 
 
@@ -44,6 +45,7 @@ function AuditFilterBar({
   onClearFilters,
   disabled = false,
 }) {
+  const { t } = useLanguage();
   const hasActiveFilters = Boolean(
     filters.search ||
       filters.action ||
@@ -69,8 +71,8 @@ function AuditFilterBar({
         <TextField
           fullWidth
           size="small"
-          label="Search audit records"
-          placeholder="Search user, email, action, entity..."
+          label={t("auditTrail.searchLabel")}
+          placeholder={t("auditTrail.searchPlaceholder")}
           value={filters.search}
           onChange={handleChange("search")}
           disabled={disabled}
@@ -91,12 +93,12 @@ function AuditFilterBar({
           className="audit-filter-field"
         >
           <InputLabel id="audit-action-filter-label">
-            Action
+            {t("auditTrail.action")}
           </InputLabel>
 
           <Select
             labelId="audit-action-filter-label"
-            label="Action"
+            label={t("auditTrail.action")}
             value={filters.action}
             onChange={handleChange("action")}
             disabled={disabled}
@@ -106,7 +108,7 @@ function AuditFilterBar({
                 key={option.value || "all-actions"}
                 value={option.value}
               >
-                {option.label}
+                {t(`auditTrail.${option.labelKey}`)}
               </MenuItem>
             ))}
           </Select>
@@ -117,12 +119,12 @@ function AuditFilterBar({
           className="audit-filter-field"
         >
           <InputLabel id="audit-entity-filter-label">
-            Entity
+            {t("auditTrail.entity")}
           </InputLabel>
 
           <Select
             labelId="audit-entity-filter-label"
-            label="Entity"
+            label={t("auditTrail.entity")}
             value={filters.entityType}
             onChange={handleChange("entityType")}
             disabled={disabled}
@@ -132,7 +134,7 @@ function AuditFilterBar({
                 key={option.value || "all-entities"}
                 value={option.value}
               >
-                {option.label}
+                {t(`auditTrail.${option.labelKey}`)}
               </MenuItem>
             ))}
           </Select>
@@ -143,12 +145,12 @@ function AuditFilterBar({
           className="audit-filter-field"
         >
           <InputLabel id="audit-status-filter-label">
-            Status
+            {t("auditTrail.status")}
           </InputLabel>
 
           <Select
             labelId="audit-status-filter-label"
-            label="Status"
+            label={t("auditTrail.status")}
             value={filters.status}
             onChange={handleChange("status")}
             disabled={disabled}
@@ -158,7 +160,7 @@ function AuditFilterBar({
                 key={option.value || "all-statuses"}
                 value={option.value}
               >
-                {option.label}
+                {t(`auditTrail.${option.labelKey}`)}
               </MenuItem>
             ))}
           </Select>
@@ -167,7 +169,7 @@ function AuditFilterBar({
         <TextField
           fullWidth
           size="small"
-          label="Actor email"
+          label={t("auditTrail.actorEmail")}
           placeholder="admin@company.com"
           value={filters.actorEmail}
           onChange={handleChange("actorEmail")}
@@ -179,7 +181,7 @@ function AuditFilterBar({
           fullWidth
           size="small"
           type="date"
-          label="Start date"
+          label={t("auditTrail.startDate")}
           value={filters.startDate}
           onChange={handleChange("startDate")}
           disabled={disabled}
@@ -195,7 +197,7 @@ function AuditFilterBar({
           fullWidth
           size="small"
           type="date"
-          label="End date"
+          label={t("auditTrail.endDate")}
           value={filters.endDate}
           onChange={handleChange("endDate")}
           disabled={disabled}
@@ -216,7 +218,7 @@ function AuditFilterBar({
           }
           className="audit-filter-clear-button"
         >
-          Clear Filters
+          {t("auditTrail.clearFilters")}
         </Button>
       </Box>
     </Box>

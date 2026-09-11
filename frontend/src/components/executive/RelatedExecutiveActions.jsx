@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 
 import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDate } from "../../utils/displayDateTime";
 import useKpiExecutiveActions from "../../hooks/useKpiExecutiveActions";
 
 import "./RelatedExecutiveActions.css";
@@ -123,22 +124,7 @@ function formatDate(
     );
   }
 
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(dateValue);
-  }
-
-  return date.toLocaleDateString(
-    language === "MN"
-      ? "mn-MN"
-      : "en-US",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    },
-  );
+  return formatDisplayDate(dateValue, language, String(dateValue));
 }
 
 

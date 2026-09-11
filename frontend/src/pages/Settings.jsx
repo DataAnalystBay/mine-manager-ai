@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Box,
@@ -19,7 +19,12 @@ import {
 } from "@mui/material";
 
 import { useConfig } from "../context/ConfigContext";
+import { useLanguage } from "../context/LanguageContext";
 import { API_BASE_URL } from "../config/apiConfig";
+import {
+  resolveCompanyDisplayName,
+  resolveMineDisplayName,
+} from "../utils/customerIdentity";
 
 import {
   updateCompany,
@@ -32,14 +37,15 @@ import {
 
 
 const themePresets = [
-  { name: "Green Theme", primary: "#16A34A", secondary: "#1E293B" },
-  { name: "Blue Theme", primary: "#2563EB", secondary: "#0F172A" },
-  { name: "Orange Theme", primary: "#F97316", secondary: "#1C1917" },
-  { name: "Purple Theme", primary: "#7C3AED", secondary: "#1E1B4B" },
-  { name: "Dark Theme", primary: "#0F172A", secondary: "#020617" },
+  { key: "greenTheme", primary: "#16A34A", secondary: "#1E293B" },
+  { key: "blueTheme", primary: "#2563EB", secondary: "#0F172A" },
+  { key: "orangeTheme", primary: "#F97316", secondary: "#1C1917" },
+  { key: "purpleTheme", primary: "#7C3AED", secondary: "#1E1B4B" },
+  { key: "darkTheme", primary: "#0F172A", secondary: "#020617" },
 ];
 
 function Settings() {
+  const { language, t } = useLanguage();
   const {
     company,
     mine,
@@ -63,6 +69,8 @@ function Settings() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    // These editable forms intentionally mirror each completed config reload.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (company) setCompanyForm(company);
     if (mine) setMineForm(mine);
     if (shift_patterns) setShiftForms(shift_patterns);
@@ -136,6 +144,8 @@ function Settings() {
 
       await updateCompany({
         company_name: companyForm.company_name,
+        company_name_en: companyForm.company_name_en,
+        company_name_mn: companyForm.company_name_mn,
         logo_url: finalLogoUrl,
         primary_color: companyForm.primary_color,
         secondary_color: companyForm.secondary_color,
@@ -145,6 +155,8 @@ function Settings() {
 
       await updateMine({
         mine_name: mineForm.mine_name,
+        mine_name_en: mineForm.mine_name_en,
+        mine_name_mn: mineForm.mine_name_mn,
         site_code: mineForm.site_code,
         location: mineForm.location,
         mine_type: mineForm.mine_type,
@@ -193,7 +205,7 @@ function Settings() {
       setSuccess(true);
     } catch (error) {
       console.error(error);
-      alert("Unable to save configuration.");
+      alert(t("settings.saveError"));
     } finally {
       setSaving(false);
     }
@@ -214,23 +226,23 @@ function Settings() {
   return (
     <Box sx={{ p: 4, bgcolor: "#f8fafc", minHeight: "100vh" }}>
       <Typography sx={{ fontSize: 30, fontWeight: 900, mb: 1 }}>
-        Configuration Center
+        {t("settings.configurationCenter")}
       </Typography>
 
       <Typography sx={{ color: "#64748b", mb: 4 }}>
-        Configure branding, mine setup, KPI targets, shifts, and alert thresholds.
+        {t("settings.pageDescription")}
       </Typography>
 
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <SummaryCard title="Company" value={companyForm.company_name || "-"} subtitle="Organization" status="Configured" />
-        <SummaryCard title="Mine" value={mineForm.mine_name || "-"} subtitle={mineForm.location || "Site location"} status="Active" />
-        <SummaryCard title="Theme" value={companyForm.primary_color || "-"} subtitle="White label color" status="Live" />
-        <SummaryCard title="Alerts" value={`${alertForms.length || 0} configured`} subtitle="Warning and critical limits" status="Live" />
+        <SummaryCard title={t("settings.company")} value={resolveCompanyDisplayName(companyForm, language, "-")} subtitle={t("settings.organization")} status={t("settings.configured")} />
+        <SummaryCard title={t("settings.mine")} value={resolveMineDisplayName(mineForm, language, "-")} subtitle={mineForm.location || t("settings.siteLocation")} status={t("settings.active")} />
+        <SummaryCard title={t("settings.theme")} value={companyForm.primary_color || "-"} subtitle={t("settings.whiteLabelColor")} status={t("settings.live")} />
+        <SummaryCard title={t("settings.alerts")} value={t("settings.configuredCount").replace("{count}", alertForms.length || 0)} subtitle={t("settings.warningCriticalLimits")} status={t("settings.live")} />
       </Grid>
 
       {success && (
         <Alert severity="success" sx={{ mb: 3, borderRadius: 3 }}>
-          Configuration saved successfully.
+          {t("settings.saveSuccess")}
         </Alert>
       )}
 
@@ -249,12 +261,12 @@ function Settings() {
             },
           }}
         >
-          <Tab label="Company" />
-          <Tab label="Mine" />
-          <Tab label="Theme" />
-          <Tab label="Shifts" />
-          <Tab label="KPI Targets" />
-          <Tab label="Alert Thresholds" />
+          <Tab label={t("settings.company")} />
+          <Tab label={t("settings.mine")} />
+          <Tab label={t("settings.theme")} />
+          <Tab label={t("settings.shifts")} />
+          <Tab label={t("settings.kpiTargets")} />
+          <Tab label={t("settings.alertThresholds")} />
         </Tabs>
       </Card>
 
@@ -264,44 +276,62 @@ function Settings() {
             <Card sx={{ borderRadius: 4 }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography sx={{ fontSize: 20, fontWeight: 900, mb: 1 }}>
-                  Company Information
+                  {t("settings.companyInformation")}
                 </Typography>
 
                 <Typography sx={{ color: "#64748b", mb: 3 }}>
-                  Configure organization identity, logo, language, and timezone.
+                  {t("settings.companyDescription")}
                 </Typography>
 
                 <Stack spacing={2.4}>
                   <TextField
-                    label="Company Name"
+                    label={t("settings.companyName")}
                     name="company_name"
                     value={companyForm.company_name || ""}
                     onChange={handleCompanyChange}
                     fullWidth
                   />
 
+                  <TextField
+                    label={t("settings.englishDisplayName")}
+                    name="company_name_en"
+                    value={companyForm.company_name_en || ""}
+                    onChange={handleCompanyChange}
+                    helperText={t("settings.companyEnglishDisplayHelp")}
+                    fullWidth
+                  />
+
+                  <TextField
+                    label={t("settings.mongolianDisplayName")}
+                    name="company_name_mn"
+                    value={companyForm.company_name_mn || ""}
+                    onChange={handleCompanyChange}
+                    helperText={t("settings.companyMongolianDisplayHelp")}
+                    fullWidth
+                  />
+
                   <Box>
                     <Typography sx={{ fontWeight: 900, mb: 1 }}>
-                      Company Logo
+                      {t("settings.companyLogo")}
                     </Typography>
 
                     <Button variant="outlined" component="label" sx={{ borderRadius: 3, fontWeight: 800 }}>
-                      Upload Logo
+                      {t("settings.uploadLogo")}
                       <input hidden type="file" accept=".png,.jpg,.jpeg,.webp" onChange={handleLogoChange} />
                     </Button>
 
                     <Box sx={{ mt: 2, p: 2, borderRadius: 3, border: "1px solid #e5e7eb", bgcolor: "#fff", display: "flex", alignItems: "center", gap: 2 }}>
-                      <Box component="img" src={getLogoSrc()} alt="Company logo preview" sx={{ width: 86, height: 86, objectFit: "contain", borderRadius: 2, border: "1px solid #e5e7eb", p: 1, bgcolor: "#fff" }} />
+                      <Box component="img" src={getLogoSrc()} alt={t("settings.companyLogoPreview")} sx={{ width: 86, height: 86, objectFit: "contain", borderRadius: 2, border: "1px solid #e5e7eb", p: 1, bgcolor: "#fff" }} />
 
                       <Box>
                         <Typography sx={{ fontWeight: 900, color: "#0f172a" }}>
-                          {selectedLogo ? selectedLogo.name : "Current Logo"}
+                          {selectedLogo ? selectedLogo.name : t("settings.currentLogo")}
                         </Typography>
                         <Typography sx={{ fontSize: 13, color: "#64748b", mt: 0.5 }}>
                           {companyForm.logo_url || "/images/logo.png"}
                         </Typography>
                         {selectedLogo && (
-                          <Chip label="New logo selected" size="small" sx={{ mt: 1, bgcolor: "#dcfce7", color: "#166534", fontWeight: 800 }} />
+                          <Chip label={t("settings.newLogoSelected")} size="small" sx={{ mt: 1, bgcolor: "#dcfce7", color: "#166534", fontWeight: 800 }} />
                         )}
                       </Box>
                     </Box>
@@ -310,7 +340,7 @@ function Settings() {
                   <TextField
                     select
                     SelectProps={{ native: true }}
-                    label="Timezone"
+                    label={t("settings.timezone")}
                     name="timezone"
                     value={companyForm.timezone || "Asia/Ulaanbaatar"}
                     onChange={handleCompanyChange}
@@ -325,7 +355,7 @@ function Settings() {
                   <TextField
                     select
                     SelectProps={{ native: true }}
-                    label="Language"
+                    label={t("settings.language")}
                     name="language"
                     value={
                       companyForm.language === "English"
@@ -349,7 +379,7 @@ function Settings() {
           </Grid>
 
           <Grid item xs={12} md={5}>
-            <PreviewCard companyForm={companyForm} mineForm={mineForm} logoSrc={getLogoSrc()} />
+            <PreviewCard companyForm={companyForm} mineForm={mineForm} logoSrc={getLogoSrc()} language={language} t={t} />
           </Grid>
         </Grid>
       )}
@@ -360,26 +390,51 @@ function Settings() {
             <Card sx={{ borderRadius: 4 }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography sx={{ fontSize: 20, fontWeight: 900, mb: 1 }}>
-                  Mine Information
+                  {t("settings.mineInformation")}
                 </Typography>
 
                 <Typography sx={{ color: "#64748b", mb: 3 }}>
-                  Configure mine-specific operating details.
+                  {t("settings.mineDescription")}
                 </Typography>
 
                 <Stack spacing={2.4}>
+                  <TextField
+                    label={t("settings.mineName")}
+                    name="mine_name"
+                    value={mineForm.mine_name || ""}
+                    onChange={handleMineChange}
+                    fullWidth
+                  />
+
+                  <TextField
+                    label={t("settings.englishDisplayName")}
+                    name="mine_name_en"
+                    value={mineForm.mine_name_en || ""}
+                    onChange={handleMineChange}
+                    helperText={t("settings.mineEnglishDisplayHelp")}
+                    fullWidth
+                  />
+
+                  <TextField
+                    label={t("settings.mongolianDisplayName")}
+                    name="mine_name_mn"
+                    value={mineForm.mine_name_mn || ""}
+                    onChange={handleMineChange}
+                    helperText={t("settings.mineMongolianDisplayHelp")}
+                    fullWidth
+                  />
+
                   {[
-                    ["Mine Name", "mine_name"],
-                    ["Site Code", "site_code"],
-                    ["Location", "location"],
-                    ["Mine Type", "mine_type"],
-                    ["Shift Pattern", "shift_pattern"],
-                    ["Operating Hours", "operating_hours"],
-                    ["Calendar Type", "calendar_type"],
-                  ].map(([label, name]) => (
+                    ["siteCode", "site_code"],
+                    ["location", "location"],
+                    ["mineType", "mine_type"],
+                    ["shiftPattern", "shift_pattern"],
+                    ["operatingHours", "operating_hours"],
+                    ["calendarType", "calendar_type"],
+                  ].map(([labelKey, name]) => (
                     <TextField
                       key={name}
-                      label={label}
+                      label={t(`settings.${labelKey}`)}
                       name={name}
                       value={mineForm[name] || ""}
                       onChange={handleMineChange}
@@ -392,7 +447,7 @@ function Settings() {
           </Grid>
 
           <Grid item xs={12} md={5}>
-            <PreviewCard companyForm={companyForm} mineForm={mineForm} logoSrc={getLogoSrc()} />
+            <PreviewCard companyForm={companyForm} mineForm={mineForm} logoSrc={getLogoSrc()} language={language} t={t} />
           </Grid>
         </Grid>
       )}
@@ -401,22 +456,22 @@ function Settings() {
         <Card sx={{ borderRadius: 4 }}>
           <CardContent sx={{ p: 3 }}>
             <Typography sx={{ fontSize: 20, fontWeight: 900, mb: 1 }}>
-              Theme & White Label
+              {t("settings.themeWhiteLabel")}
             </Typography>
 
             <Typography sx={{ color: "#64748b", mb: 3 }}>
-              Select a ready-made theme or fine-tune brand colors visually.
+              {t("settings.themeDescription")}
             </Typography>
 
             <Grid container spacing={3}>
               <Grid item xs={12} md={7}>
                 <Typography sx={{ fontWeight: 900, mb: 1.5 }}>
-                  Theme Presets
+                  {t("settings.themePresets")}
                 </Typography>
 
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   {themePresets.map((preset) => (
-                    <Grid item xs={12} sm={6} key={preset.name}>
+                    <Grid item xs={12} sm={6} key={preset.key}>
                       <Button
                         fullWidth
                         variant="outlined"
@@ -435,7 +490,7 @@ function Settings() {
                         }}
                       >
                         <Box sx={{ width: 18, height: 18, borderRadius: "50%", bgcolor: preset.primary }} />
-                        {preset.name}
+                        {t(`settings.${preset.key}`)}
                       </Button>
                     </Grid>
                   ))}
@@ -444,7 +499,7 @@ function Settings() {
                 <Stack spacing={2.4}>
                   <Stack direction="row" spacing={2}>
                     <TextField
-                      label="Primary Color"
+                      label={t("settings.primaryColor")}
                       name="primary_color"
                       type="color"
                       value={companyForm.primary_color || "#16A34A"}
@@ -456,7 +511,7 @@ function Settings() {
 
                   <Stack direction="row" spacing={2}>
                     <TextField
-                      label="Secondary Color"
+                      label={t("settings.secondaryColor")}
                       name="secondary_color"
                       type="color"
                       value={companyForm.secondary_color || "#1E293B"}
@@ -469,7 +524,7 @@ function Settings() {
               </Grid>
 
               <Grid item xs={12} md={5}>
-                <BrandPreview companyForm={companyForm} mineForm={mineForm} logoSrc={getLogoSrc()} />
+                <BrandPreview companyForm={companyForm} mineForm={mineForm} logoSrc={getLogoSrc()} language={language} t={t} />
               </Grid>
             </Grid>
           </CardContent>
@@ -477,22 +532,22 @@ function Settings() {
       )}
 
       {tab === 3 && (
-        <ConfigurationCards title="Shift Configuration" description="Manage shift names, start times, end times, and active status.">
+        <ConfigurationCards title={t("settings.shiftConfiguration")} description={t("settings.shiftConfigurationDescription")}>
           {shiftForms.map((shift, index) => (
             <Grid item xs={12} md={6} key={shift.id}>
               <Card sx={{ borderRadius: 4, border: "1px solid #e5e7eb", boxShadow: "none" }}>
                 <CardContent sx={{ p: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                    <Typography sx={{ fontSize: 18, fontWeight: 900 }}>{shift.shift_name || "Shift"}</Typography>
-                    <Chip label={shift.is_active ? "Active" : "Inactive"} sx={{ bgcolor: shift.is_active ? "#dcfce7" : "#fee2e2", color: shift.is_active ? "#166534" : "#991b1b", fontWeight: 800 }} />
+                    <Typography sx={{ fontSize: 18, fontWeight: 900 }}>{shift.shift_name || t("settings.shift")}</Typography>
+                    <Chip label={shift.is_active ? t("settings.active") : t("settings.inactive")} sx={{ bgcolor: shift.is_active ? "#dcfce7" : "#fee2e2", color: shift.is_active ? "#166534" : "#991b1b", fontWeight: 800 }} />
                   </Stack>
 
                   <Stack spacing={2.2}>
-                    <TextField label="Shift Name" value={shift.shift_name || ""} onChange={(e) => handleShiftChange(index, "shift_name", e.target.value)} fullWidth />
-                    <TextField label="Start Time" type="time" value={(shift.start_time || "").slice(0, 5)} onChange={(e) => handleShiftChange(index, "start_time", e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
-                    <TextField label="End Time" type="time" value={(shift.end_time || "").slice(0, 5)} onChange={(e) => handleShiftChange(index, "end_time", e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
-                    <TextField label="Shift Type" value={shift.shift_type || ""} onChange={(e) => handleShiftChange(index, "shift_type", e.target.value)} fullWidth />
-                    <FormControlLabel control={<Switch checked={Boolean(shift.is_active)} onChange={(e) => handleShiftChange(index, "is_active", e.target.checked)} />} label="Active Shift" />
+                    <TextField label={t("settings.shiftName")} value={shift.shift_name || ""} onChange={(e) => handleShiftChange(index, "shift_name", e.target.value)} fullWidth />
+                    <TextField label={t("settings.startTime")} type="time" value={(shift.start_time || "").slice(0, 5)} onChange={(e) => handleShiftChange(index, "start_time", e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+                    <TextField label={t("settings.endTime")} type="time" value={(shift.end_time || "").slice(0, 5)} onChange={(e) => handleShiftChange(index, "end_time", e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+                    <TextField label={t("settings.shiftType")} value={shift.shift_type || ""} onChange={(e) => handleShiftChange(index, "shift_type", e.target.value)} fullWidth />
+                    <FormControlLabel control={<Switch checked={Boolean(shift.is_active)} onChange={(e) => handleShiftChange(index, "is_active", e.target.checked)} />} label={t("settings.activeShift")} />
                   </Stack>
                 </CardContent>
               </Card>
@@ -502,22 +557,22 @@ function Settings() {
       )}
 
       {tab === 4 && (
-        <ConfigurationCards title="KPI Target Management" description="Configure operational KPI targets, warning thresholds, and critical thresholds.">
+        <ConfigurationCards title={t("settings.kpiTargetManagement")} description={t("settings.kpiTargetDescription")}>
           {kpiForms.map((kpi, index) => (
             <Grid item xs={12} md={6} key={kpi.id}>
               <Card sx={{ borderRadius: 4, border: "1px solid #e5e7eb", boxShadow: "none" }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography sx={{ fontSize: 18, fontWeight: 900 }}>{kpi.kpi_name || "KPI"}</Typography>
-                  <Typography sx={{ fontSize: 13, color: "#64748b", mb: 2 }}>{kpi.kpi_category || "Category"}</Typography>
+                  <Typography sx={{ fontSize: 13, color: "#64748b", mb: 2 }}>{kpi.kpi_category || t("settings.category")}</Typography>
 
                   <Stack spacing={2.2}>
-                    <TextField label="KPI Name" value={kpi.kpi_name || ""} onChange={(e) => handleKpiChange(index, "kpi_name", e.target.value)} fullWidth />
-                    <TextField label="Category" value={kpi.kpi_category || ""} onChange={(e) => handleKpiChange(index, "kpi_category", e.target.value)} fullWidth />
-                    <TextField label="Target Value" type="number" value={kpi.target_value || ""} onChange={(e) => handleKpiChange(index, "target_value", e.target.value)} fullWidth />
-                    <TextField label="Unit" value={kpi.unit || ""} onChange={(e) => handleKpiChange(index, "unit", e.target.value)} fullWidth />
-                    <TextField label="Warning Threshold" type="number" value={kpi.warning_threshold || ""} onChange={(e) => handleKpiChange(index, "warning_threshold", e.target.value)} fullWidth />
-                    <TextField label="Critical Threshold" type="number" value={kpi.critical_threshold || ""} onChange={(e) => handleKpiChange(index, "critical_threshold", e.target.value)} fullWidth />
-                    <TextField label="Direction" value={kpi.direction || ""} onChange={(e) => handleKpiChange(index, "direction", e.target.value)} fullWidth />
+                    <TextField label={t("settings.kpiName")} value={kpi.kpi_name || ""} onChange={(e) => handleKpiChange(index, "kpi_name", e.target.value)} fullWidth />
+                    <TextField label={t("settings.category")} value={kpi.kpi_category || ""} onChange={(e) => handleKpiChange(index, "kpi_category", e.target.value)} fullWidth />
+                    <TextField label={t("settings.targetValue")} type="number" value={kpi.target_value || ""} onChange={(e) => handleKpiChange(index, "target_value", e.target.value)} fullWidth />
+                    <TextField label={t("settings.unit")} value={kpi.unit || ""} onChange={(e) => handleKpiChange(index, "unit", e.target.value)} fullWidth />
+                    <TextField label={t("settings.warningThreshold")} type="number" value={kpi.warning_threshold || ""} onChange={(e) => handleKpiChange(index, "warning_threshold", e.target.value)} fullWidth />
+                    <TextField label={t("settings.criticalThreshold")} type="number" value={kpi.critical_threshold || ""} onChange={(e) => handleKpiChange(index, "critical_threshold", e.target.value)} fullWidth />
+                    <TextField label={t("settings.direction")} value={kpi.direction || ""} onChange={(e) => handleKpiChange(index, "direction", e.target.value)} fullWidth />
                   </Stack>
                 </CardContent>
               </Card>
@@ -527,21 +582,21 @@ function Settings() {
       )}
 
       {tab === 5 && (
-        <ConfigurationCards title="Alert Threshold Management" description="Configure warning and critical limits used by the risk engine.">
+        <ConfigurationCards title={t("settings.alertThresholdManagement")} description={t("settings.alertThresholdDescription")}>
           {alertForms.map((alert, index) => (
             <Grid item xs={12} md={6} key={alert.id}>
               <Card sx={{ borderRadius: 4, border: "1px solid #e5e7eb", boxShadow: "none" }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Typography sx={{ fontSize: 18, fontWeight: 900 }}>{alert.alert_name || "Alert"}</Typography>
+                  <Typography sx={{ fontSize: 18, fontWeight: 900 }}>{alert.alert_name || t("settings.alert")}</Typography>
                   <Typography sx={{ fontSize: 13, color: "#64748b", mb: 2 }}>{alert.kpi_name || "KPI"}</Typography>
 
                   <Stack spacing={2.2}>
-                    <TextField label="Alert Name" value={alert.alert_name || ""} onChange={(e) => handleAlertChange(index, "alert_name", e.target.value)} fullWidth />
-                    <TextField label="KPI Name" value={alert.kpi_name || ""} onChange={(e) => handleAlertChange(index, "kpi_name", e.target.value)} fullWidth />
-                    <TextField label="Warning Value" type="number" value={alert.warning_value || ""} onChange={(e) => handleAlertChange(index, "warning_value", e.target.value)} fullWidth />
-                    <TextField label="Critical Value" type="number" value={alert.critical_value || ""} onChange={(e) => handleAlertChange(index, "critical_value", e.target.value)} fullWidth />
-                    <TextField label="Unit" value={alert.unit || ""} onChange={(e) => handleAlertChange(index, "unit", e.target.value)} fullWidth />
-                    <TextField label="Alert Level" value={alert.alert_level || ""} onChange={(e) => handleAlertChange(index, "alert_level", e.target.value)} fullWidth />
+                    <TextField label={t("settings.alertName")} value={alert.alert_name || ""} onChange={(e) => handleAlertChange(index, "alert_name", e.target.value)} fullWidth />
+                    <TextField label={t("settings.kpiName")} value={alert.kpi_name || ""} onChange={(e) => handleAlertChange(index, "kpi_name", e.target.value)} fullWidth />
+                    <TextField label={t("settings.warningValue")} type="number" value={alert.warning_value || ""} onChange={(e) => handleAlertChange(index, "warning_value", e.target.value)} fullWidth />
+                    <TextField label={t("settings.criticalValue")} type="number" value={alert.critical_value || ""} onChange={(e) => handleAlertChange(index, "critical_value", e.target.value)} fullWidth />
+                    <TextField label={t("settings.unit")} value={alert.unit || ""} onChange={(e) => handleAlertChange(index, "unit", e.target.value)} fullWidth />
+                    <TextField label={t("settings.alertLevel")} value={alert.alert_level || ""} onChange={(e) => handleAlertChange(index, "alert_level", e.target.value)} fullWidth />
                   </Stack>
                 </CardContent>
               </Card>
@@ -554,7 +609,7 @@ function Settings() {
 
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
         <Button variant="outlined" onClick={handleReset} sx={{ borderRadius: 3, px: 3, py: 1.2, fontWeight: 800 }}>
-          Reset
+          {t("settings.reset")}
         </Button>
 
         <Button
@@ -570,7 +625,7 @@ function Settings() {
             "&:hover": { bgcolor: companyForm.primary_color || "#16A34A" },
           }}
         >
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? t("settings.saving") : t("settings.saveChanges")}
         </Button>
       </Box>
     </Box>
@@ -610,27 +665,30 @@ function ColorBox({ color }) {
   return <Box sx={{ width: 58, height: 58, borderRadius: 3, bgcolor: color, border: "1px solid #e5e7eb" }} />;
 }
 
-function PreviewCard({ companyForm, mineForm, logoSrc }) {
+function PreviewCard({ companyForm, mineForm, logoSrc, language, t }) {
+  const companyName = resolveCompanyDisplayName(companyForm, language, t("settings.companyNameFallback"));
+  const mineName = resolveMineDisplayName(mineForm, language, t("settings.mineNameFallback"));
+
   return (
     <Card sx={{ borderRadius: 4, bgcolor: "#020f1f", color: "#ffffff", height: "100%" }}>
       <CardContent sx={{ p: 3 }}>
-        <Typography sx={{ fontSize: 14, color: "#94a3b8", mb: 2 }}>Live Configuration Preview</Typography>
+        <Typography sx={{ fontSize: 14, color: "#94a3b8", mb: 2 }}>{t("settings.liveConfigurationPreview")}</Typography>
 
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-          <Box component="img" src={logoSrc} alt="Logo preview" sx={{ width: 52, height: 52, bgcolor: "#ffffff", borderRadius: 3, p: 0.7, objectFit: "contain" }} />
+          <Box component="img" src={logoSrc} alt={t("settings.logoPreview")} sx={{ width: 52, height: 52, bgcolor: "#ffffff", borderRadius: 3, p: 0.7, objectFit: "contain" }} />
 
           <Box>
-            <Typography sx={{ fontSize: 22, fontWeight: 900 }}>{companyForm.company_name || "Company Name"}</Typography>
-            <Typography sx={{ fontSize: 13, color: "#94a3b8" }}>{mineForm.mine_name || "Mine Name"}</Typography>
+            <Typography sx={{ fontSize: 22, fontWeight: 900 }}>{companyName}</Typography>
+            <Typography sx={{ fontSize: 13, color: "#94a3b8" }}>{mineName}</Typography>
           </Box>
         </Stack>
 
         <Divider sx={{ borderColor: "rgba(255,255,255,0.12)", my: 2 }} />
 
         <Stack spacing={1.3}>
-          <Chip label={`Timezone: ${companyForm.timezone || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
+          <Chip label={`${t("settings.timezone")}: ${companyForm.timezone || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
           <Chip
-            label={`Language: ${
+            label={`${t("settings.language")}: ${
               companyForm.language === "mn" || companyForm.language === "Монгол"
                 ? "Монгол"
                 : companyForm.language === "zh" || companyForm.language === "中文"
@@ -644,39 +702,41 @@ function PreviewCard({ companyForm, mineForm, logoSrc }) {
               color: "#ffffff",
             }}
           />
-          <Chip label={`Location: ${mineForm.location || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
-          <Chip label={`Mine Type: ${mineForm.mine_type || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
+          <Chip label={`${t("settings.location")}: ${mineForm.location || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
+          <Chip label={`${t("settings.mineType")}: ${mineForm.mine_type || "-"}`} sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "#ffffff" }} />
         </Stack>
       </CardContent>
     </Card>
   );
 }
 
-function BrandPreview({ companyForm, mineForm, logoSrc }) {
+function BrandPreview({ companyForm, mineForm, logoSrc, language, t }) {
   const primary = companyForm.primary_color || "#16A34A";
   const secondary = companyForm.secondary_color || "#1E293B";
+  const companyName = resolveCompanyDisplayName(companyForm, language, t("settings.companyNameFallback"));
+  const mineName = resolveMineDisplayName(mineForm, language, t("settings.mineNameFallback"));
 
   return (
     <Card sx={{ borderRadius: 4, overflow: "hidden", border: "1px solid #e5e7eb" }}>
       <Box sx={{ bgcolor: secondary, p: 3, color: "#ffffff" }}>
         <Stack direction="row" spacing={2} alignItems="center">
-          <Box component="img" src={logoSrc} alt="Brand preview logo" sx={{ width: 56, height: 56, bgcolor: "#ffffff", borderRadius: 3, p: 0.8, objectFit: "contain" }} />
+          <Box component="img" src={logoSrc} alt={t("settings.brandPreviewLogo")} sx={{ width: 56, height: 56, bgcolor: "#ffffff", borderRadius: 3, p: 0.8, objectFit: "contain" }} />
           <Box>
-            <Typography sx={{ fontSize: 22, fontWeight: 900 }}>{companyForm.company_name || "Company"}</Typography>
-            <Typography sx={{ fontSize: 13, color: "#cbd5e1" }}>{mineForm.mine_name || "Mine"}</Typography>
+            <Typography sx={{ fontSize: 22, fontWeight: 900 }}>{companyName}</Typography>
+            <Typography sx={{ fontSize: 13, color: "#cbd5e1" }}>{mineName}</Typography>
           </Box>
         </Stack>
       </Box>
 
       <CardContent sx={{ p: 3 }}>
-        <Typography sx={{ fontWeight: 900, mb: 2 }}>This is how users will see your product</Typography>
+        <Typography sx={{ fontWeight: 900, mb: 2 }}>{t("settings.previewDescription")}</Typography>
 
         <Button fullWidth variant="contained" sx={{ bgcolor: primary, borderRadius: 3, fontWeight: 900, "&:hover": { bgcolor: primary } }}>
-          Primary Action
+          {t("settings.primaryAction")}
         </Button>
 
         <Box sx={{ mt: 2, p: 2, borderRadius: 3, bgcolor: `${primary}18`, color: primary, fontWeight: 900 }}>
-          Active navigation / KPI highlight
+          {t("settings.activeNavigationHighlight")}
         </Box>
       </CardContent>
     </Card>

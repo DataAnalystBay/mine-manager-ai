@@ -54,6 +54,7 @@ import {
 
 import { useConfig } from "../context/ConfigContext";
 import { useLanguage } from "../context/LanguageContext";
+import { resolveCompanyDisplayName } from "../utils/customerIdentity";
 import useAuth from "../hooks/useAuth";
 
 import "./ExecutiveActions.css";
@@ -498,7 +499,7 @@ function ExecutiveActions() {
   const { company } =
     useConfig();
 
-  const { t } =
+  const { language, t } =
     useLanguage();
 
   const { user } =
@@ -1718,7 +1719,7 @@ function ExecutiveActions() {
             {localizeLabel(t, "Turn operational insights into accountable execution.", "Үйл ажиллагааны дүгнэлтийг хариуцлагатай хэрэгжилт болгоно.")}
           </Typography>
           <Typography className="executive-actions-page__context">
-            {company?.company_name || localizeLabel(t, "Mine Manager AI", "Mine Manager AI")} · {localizeLabel(t, "All Operations", "Бүх үйл ажиллагаа")}
+            {resolveCompanyDisplayName(company, language, "Mine Manager AI")} · {localizeLabel(t, "All Operations", "Бүх үйл ажиллагаа")}
           </Typography>
         </div>
 

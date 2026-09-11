@@ -58,6 +58,8 @@ import {
   updateUser,
   updateUserStatus,
 } from "../api/userApi";
+import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDate } from "../utils/displayDateTime";
 
 
 const ROLE_OPTIONS = [
@@ -111,22 +113,16 @@ function getRoleChipColor(role) {
 }
 
 
-function formatDate(value) {
-  if (!value) {
-    return "—";
-  }
+function getRoleLabel(role, t) {
+  const key = {
+    Administrator: "administrator",
+    "General Manager": "generalManager",
+    "Mine Manager": "mineManager",
+    Superintendent: "superintendent",
+    Viewer: "viewer",
+  }[role];
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  }).format(date);
+  return key ? t(`userManagement.${key}`) : role;
 }
 
 
@@ -134,7 +130,7 @@ function validateUserFields({
   full_name,
   email,
   role,
-}) {
+}, t) {
   const validationErrors = {};
 
   const normalizedName =
@@ -145,72 +141,72 @@ function validateUserFields({
 
   if (!normalizedName) {
     validationErrors.full_name =
-      "Full name is required.";
+      t("userManagement.fullNameRequired");
   } else if (normalizedName.length < 2) {
     validationErrors.full_name =
-      "Full name must contain at least 2 characters.";
+      t("userManagement.fullNameMinimum");
   }
 
   if (!normalizedEmail) {
     validationErrors.email =
-      "Email address is required.";
+      t("userManagement.emailRequired");
   } else if (
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
       normalizedEmail
     )
   ) {
     validationErrors.email =
-      "Enter a valid email address.";
+      t("userManagement.emailInvalid");
   }
 
   if (!role) {
     validationErrors.role =
-      "Role is required.";
+      t("userManagement.roleRequired");
   }
 
   return validationErrors;
 }
 
 
-function validateCreateForm(form) {
+function validateCreateForm(form, t) {
   const validationErrors =
-    validateUserFields(form);
+    validateUserFields(form, t);
 
   if (!form.password) {
     validationErrors.password =
-      "Password is required.";
+      t("userManagement.passwordRequired");
   } else if (form.password.length < 8) {
     validationErrors.password =
-      "Password must contain at least 8 characters.";
+      t("userManagement.passwordMinimum");
   }
 
   return validationErrors;
 }
 
 
-function validatePasswordForm(form) {
+function validatePasswordForm(form, t) {
   const validationErrors = {};
 
   if (!form.new_password) {
     validationErrors.new_password =
-      "New password is required.";
+      t("userManagement.newPasswordRequired");
   } else if (form.new_password.length < 8) {
     validationErrors.new_password =
-      "Password must contain at least 8 characters.";
+      t("userManagement.passwordMinimum");
   } else if (form.new_password.length > 128) {
     validationErrors.new_password =
-      "Password must not exceed 128 characters.";
+      t("userManagement.passwordMaximum");
   }
 
   if (!form.confirm_password) {
     validationErrors.confirm_password =
-      "Confirm the new password.";
+      t("userManagement.confirmPasswordRequired");
   } else if (
     form.new_password !==
     form.confirm_password
   ) {
     validationErrors.confirm_password =
-      "Passwords do not match.";
+      t("userManagement.passwordsMismatch");
   }
 
   return validationErrors;
@@ -218,6 +214,7 @@ function validatePasswordForm(form) {
 
 
 function UserManagement() {
+  const { language, t } = useLanguage();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] =
     useState(true);
@@ -378,14 +375,14 @@ function UserManagement() {
       } catch (requestError) {
         setError(
           requestError?.message ||
-            "Unable to load users."
+            t("userManagement.loadError")
         );
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    []
+    [t]
   );
 
 
@@ -447,7 +444,7 @@ function UserManagement() {
 
   const handleCreateUser = async () => {
     const validationErrors =
-      validateCreateForm(createForm);
+      validateCreateForm(createForm, t);
 
     if (
       Object.keys(
@@ -493,7 +490,7 @@ function UserManagement() {
       setShowCreatePassword(false);
 
       setSuccessMessage(
-        `${createdUserName} was created successfully.`
+        t("userManagement.createdSuccess").replace("{name}", createdUserName)
       );
 
       await loadUsers(true);
@@ -501,7 +498,7 @@ function UserManagement() {
       setCreateErrors({
         form:
           requestError?.message ||
-          "Unable to create the user.",
+          t("userManagement.createError"),
       });
     } finally {
       setCreating(false);
@@ -593,7 +590,7 @@ function UserManagement() {
 
   const handleUpdateUser = async () => {
     const validationErrors =
-      validateUserFields(editForm);
+      validateUserFields(editForm, t);
 
     if (
       Object.keys(
@@ -609,7 +606,7 @@ function UserManagement() {
     if (!editForm.id) {
       setEditErrors({
         form:
-          "A valid user was not selected.",
+          t("userManagement.invalidSelection"),
       });
       return;
     }
@@ -647,7 +644,7 @@ function UserManagement() {
       setSelectedUser(null);
 
       setSuccessMessage(
-        `${updatedUserName} was updated successfully.`
+        t("userManagement.updatedSuccess").replace("{name}", updatedUserName)
       );
 
       await loadUsers(true);
@@ -655,7 +652,7 @@ function UserManagement() {
       setEditErrors({
         form:
           requestError?.message ||
-          "Unable to update the user.",
+          t("userManagement.updateError"),
       });
     } finally {
       setUpdating(false);
@@ -693,7 +690,7 @@ function UserManagement() {
     async () => {
       if (!selectedUser) {
         setStatusError(
-          "A valid user was not selected."
+          t("userManagement.invalidSelection")
         );
         return;
       }
@@ -710,16 +707,12 @@ function UserManagement() {
           nextStatus
         );
 
-        const actionText =
-          nextStatus
-            ? "activated"
-            : "deactivated";
-
         const selectedUserName =
           selectedUser.full_name;
 
         setSuccessMessage(
-          `${selectedUserName} was ${actionText} successfully.`
+          t(nextStatus ? "userManagement.activatedSuccess" : "userManagement.deactivatedSuccess")
+            .replace("{name}", selectedUserName)
         );
 
         setStatusDialogOpen(false);
@@ -729,7 +722,7 @@ function UserManagement() {
       } catch (requestError) {
         setStatusError(
           requestError?.message ||
-            "Unable to update the user status."
+            t("userManagement.statusError")
         );
       } finally {
         setStatusUpdating(false);
@@ -798,9 +791,7 @@ function UserManagement() {
 
   const handleResetPassword = async () => {
     const validationErrors =
-      validatePasswordForm(
-        passwordForm
-      );
+      validatePasswordForm(passwordForm, t);
 
     if (
       Object.keys(
@@ -816,7 +807,7 @@ function UserManagement() {
     if (!selectedUser) {
       setPasswordErrors({
         form:
-          "A valid user was not selected.",
+          t("userManagement.invalidSelection"),
       });
       return;
     }
@@ -843,13 +834,13 @@ function UserManagement() {
       setSelectedUser(null);
 
       setSuccessMessage(
-        `${selectedUserName}'s password was reset successfully.`
+        t("userManagement.passwordResetSuccess").replace("{name}", selectedUserName)
       );
     } catch (requestError) {
       setPasswordErrors({
         form:
           requestError?.message ||
-          "Unable to reset the password.",
+          t("userManagement.passwordResetError"),
       });
     } finally {
       setPasswordResetting(false);
@@ -913,16 +904,14 @@ function UserManagement() {
                 lineHeight: 1.2,
               }}
             >
-              User Management
+              {t("userManagement.title")}
             </Typography>
 
             <Typography
               variant="body2"
               color="text.secondary"
             >
-              Manage company users,
-              access roles, and account
-              status.
+              {t("userManagement.subtitle")}
             </Typography>
           </Box>
         </Stack>
@@ -947,7 +936,7 @@ function UserManagement() {
               loadUsers(true)
             }
           >
-            Refresh
+            {t("common.refresh")}
           </Button>
 
           <Button
@@ -959,7 +948,7 @@ function UserManagement() {
               handleOpenCreateDialog
             }
           >
-            New User
+            {t("userManagement.newUser")}
           </Button>
         </Stack>
       </Stack>
@@ -998,7 +987,7 @@ function UserManagement() {
             variant="body2"
             color="text.secondary"
           >
-            Total Users
+            {t("userManagement.totalUsers")}
           </Typography>
 
           <Typography
@@ -1024,7 +1013,7 @@ function UserManagement() {
             variant="body2"
             color="text.secondary"
           >
-            Active Users
+            {t("userManagement.activeUsers")}
           </Typography>
 
           <Typography
@@ -1050,7 +1039,7 @@ function UserManagement() {
             variant="body2"
             color="text.secondary"
           >
-            Inactive Users
+            {t("userManagement.inactiveUsers")}
           </Typography>
 
           <Typography
@@ -1087,15 +1076,14 @@ function UserManagement() {
               fontWeight: 700,
             }}
           >
-            Company Users
+            {t("userManagement.companyUsers")}
           </Typography>
 
           <Typography
             variant="body2"
             color="text.secondary"
           >
-            Users assigned to your
-            current company account.
+            {t("userManagement.companyUsersDescription")}
           </Typography>
         </Box>
 
@@ -1117,7 +1105,7 @@ function UserManagement() {
                 variant="body2"
                 color="text.secondary"
               >
-                Loading users...
+                {t("userManagement.loading")}
               </Typography>
             </Stack>
           </Box>
@@ -1150,7 +1138,7 @@ function UserManagement() {
                     fontWeight: 700,
                   }}
                 >
-                  No users found
+                  {t("userManagement.emptyTitle")}
                 </Typography>
 
                 <Typography
@@ -1160,9 +1148,7 @@ function UserManagement() {
                     mt: 0.5,
                   }}
                 >
-                  Create the first company
-                  user to begin managing
-                  access.
+                  {t("userManagement.emptyDescription")}
                 </Typography>
               </Box>
 
@@ -1175,7 +1161,7 @@ function UserManagement() {
                   handleOpenCreateDialog
                 }
               >
-                Create User
+                {t("userManagement.createUser")}
               </Button>
             </Stack>
           </Box>
@@ -1189,22 +1175,22 @@ function UserManagement() {
               <TableHead>
                 <TableRow>
                   <TableCell>
-                    Name
+                    {t("userManagement.name")}
                   </TableCell>
                   <TableCell>
-                    Email
+                    {t("userManagement.email")}
                   </TableCell>
                   <TableCell>
-                    Role
+                    {t("userManagement.role")}
                   </TableCell>
                   <TableCell>
-                    Status
+                    {t("userManagement.status")}
                   </TableCell>
                   <TableCell>
-                    Created
+                    {t("userManagement.created")}
                   </TableCell>
                   <TableCell align="right">
-                    Actions
+                    {t("userManagement.actions")}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -1229,7 +1215,7 @@ function UserManagement() {
                         variant="caption"
                         color="text.secondary"
                       >
-                        User ID: {user.id}
+                        {t("userManagement.userId")}: {user.id}
                       </Typography>
                     </TableCell>
 
@@ -1239,7 +1225,7 @@ function UserManagement() {
 
                     <TableCell>
                       <Chip
-                        label={user.role}
+                        label={getRoleLabel(user.role, t)}
                         color={getRoleChipColor(
                           user.role
                         )}
@@ -1252,8 +1238,8 @@ function UserManagement() {
                       <Chip
                         label={
                           user.is_active
-                            ? "Active"
-                            : "Inactive"
+                            ? t("userManagement.active")
+                            : t("userManagement.inactive")
                         }
                         color={
                           user.is_active
@@ -1265,15 +1251,16 @@ function UserManagement() {
                     </TableCell>
 
                     <TableCell>
-                      {formatDate(
-                        user.created_at
+                      {formatDisplayDate(
+                        user.created_at,
+                        language
                       )}
                     </TableCell>
 
                     <TableCell align="right">
                       <IconButton
                         size="small"
-                        aria-label={`Manage ${user.full_name}`}
+                        aria-label={t("userManagement.manageUser").replace("{name}", user.full_name)}
                         onClick={(event) =>
                           handleOpenActionMenu(
                             event,
@@ -1320,7 +1307,7 @@ function UserManagement() {
           </ListItemIcon>
 
           <ListItemText>
-            Edit User
+            {t("userManagement.editUser")}
           </ListItemText>
         </MenuItem>
 
@@ -1334,7 +1321,7 @@ function UserManagement() {
           </ListItemIcon>
 
           <ListItemText>
-            Reset Password
+            {t("userManagement.resetPassword")}
           </ListItemText>
         </MenuItem>
 
@@ -1359,8 +1346,8 @@ function UserManagement() {
 
           <ListItemText>
             {selectedUser?.is_active
-              ? "Deactivate User"
-              : "Activate User"}
+              ? t("userManagement.deactivateUser")
+              : t("userManagement.activateUser")}
           </ListItemText>
         </MenuItem>
       </Menu>
@@ -1398,20 +1385,19 @@ function UserManagement() {
                 fontWeight: 700,
               }}
             >
-              Create New User
+              {t("userManagement.createNewUser")}
             </Typography>
 
             <Typography
               variant="body2"
               color="text.secondary"
             >
-              Add a user to the
-              current company account.
+              {t("userManagement.createDescription")}
             </Typography>
           </Box>
 
           <IconButton
-            aria-label="Close create user dialog"
+            aria-label={t("userManagement.closeCreateDialog")}
             onClick={
               handleCloseCreateDialog
             }
@@ -1430,7 +1416,7 @@ function UserManagement() {
             )}
 
             <TextField
-              label="Full Name"
+              label={t("userManagement.fullName")}
               name="full_name"
               value={
                 createForm.full_name
@@ -1452,7 +1438,7 @@ function UserManagement() {
             />
 
             <TextField
-              label="Email Address"
+              label={t("userManagement.emailAddress")}
               name="email"
               type="email"
               value={createForm.email}
@@ -1472,7 +1458,7 @@ function UserManagement() {
             />
 
             <TextField
-              label="Temporary Password"
+              label={t("userManagement.temporaryPassword")}
               name="password"
               type={
                 showCreatePassword
@@ -1490,7 +1476,7 @@ function UserManagement() {
               )}
               helperText={
                 createErrors.password ||
-                "Minimum 8 characters."
+                t("userManagement.minimumCharacters")
               }
               autoComplete="new-password"
               required
@@ -1503,8 +1489,8 @@ function UserManagement() {
                       <IconButton
                         aria-label={
                           showCreatePassword
-                            ? "Hide password"
-                            : "Show password"
+                            ? t("userManagement.hidePassword")
+                            : t("userManagement.showPassword")
                         }
                         onClick={() =>
                           setShowCreatePassword(
@@ -1538,12 +1524,12 @@ function UserManagement() {
               disabled={creating}
             >
               <InputLabel id="create-user-role-label">
-                Role
+                {t("userManagement.role")}
               </InputLabel>
 
               <Select
                 labelId="create-user-role-label"
-                label="Role"
+                label={t("userManagement.role")}
                 name="role"
                 value={createForm.role}
                 onChange={
@@ -1556,7 +1542,7 @@ function UserManagement() {
                       key={role}
                       value={role}
                     >
-                      {role}
+                      {getRoleLabel(role, t)}
                     </MenuItem>
                   )
                 )}
@@ -1570,11 +1556,7 @@ function UserManagement() {
             </FormControl>
 
             <Alert severity="info">
-              The new account will be
-              active immediately. The
-              user can sign in using the
-              email address and temporary
-              password entered above.
+              {t("userManagement.createInfo")}
             </Alert>
           </Stack>
         </DialogContent>
@@ -1592,7 +1574,7 @@ function UserManagement() {
             }
             disabled={creating}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button
@@ -1614,8 +1596,8 @@ function UserManagement() {
             }
           >
             {creating
-              ? "Creating..."
-              : "Create User"}
+              ? t("userManagement.creating")
+              : t("userManagement.createUser")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1653,20 +1635,19 @@ function UserManagement() {
                 fontWeight: 700,
               }}
             >
-              Edit User
+              {t("userManagement.editUser")}
             </Typography>
 
             <Typography
               variant="body2"
               color="text.secondary"
             >
-              Update the user profile
-              and access role.
+              {t("userManagement.editDescription")}
             </Typography>
           </Box>
 
           <IconButton
-            aria-label="Close edit user dialog"
+            aria-label={t("userManagement.closeEditDialog")}
             onClick={
               handleCloseEditDialog
             }
@@ -1685,7 +1666,7 @@ function UserManagement() {
             )}
 
             <TextField
-              label="Full Name"
+              label={t("userManagement.fullName")}
               name="full_name"
               value={
                 editForm.full_name
@@ -1707,7 +1688,7 @@ function UserManagement() {
             />
 
             <TextField
-              label="Email Address"
+              label={t("userManagement.emailAddress")}
               name="email"
               type="email"
               value={editForm.email}
@@ -1735,12 +1716,12 @@ function UserManagement() {
               disabled={updating}
             >
               <InputLabel id="edit-user-role-label">
-                Role
+                {t("userManagement.role")}
               </InputLabel>
 
               <Select
                 labelId="edit-user-role-label"
-                label="Role"
+                label={t("userManagement.role")}
                 name="role"
                 value={editForm.role}
                 onChange={
@@ -1753,7 +1734,7 @@ function UserManagement() {
                       key={role}
                       value={role}
                     >
-                      {role}
+                      {getRoleLabel(role, t)}
                     </MenuItem>
                   )
                 )}
@@ -1767,11 +1748,7 @@ function UserManagement() {
             </FormControl>
 
             <Alert severity="info">
-              Updating this user changes
-              their profile and assigned
-              role. It does not change
-              their password or active
-              status.
+              {t("userManagement.editInfo")}
             </Alert>
           </Stack>
         </DialogContent>
@@ -1789,7 +1766,7 @@ function UserManagement() {
             }
             disabled={updating}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button
@@ -1811,8 +1788,8 @@ function UserManagement() {
             }
           >
             {updating
-              ? "Saving..."
-              : "Save Changes"}
+              ? t("userManagement.saving")
+              : t("userManagement.saveChanges")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1868,16 +1845,15 @@ function UserManagement() {
                 }}
               >
                 {selectedUser?.is_active
-                  ? "Deactivate User"
-                  : "Activate User"}
+                  ? t("userManagement.deactivateUser")
+                  : t("userManagement.activateUser")}
               </Typography>
 
               <Typography
                 variant="body2"
                 color="text.secondary"
               >
-                Confirm the account
-                status change.
+                {t("userManagement.statusDescription")}
               </Typography>
             </Box>
           </Stack>
@@ -1893,18 +1869,14 @@ function UserManagement() {
 
             <Typography variant="body1">
               {selectedUser?.is_active
-                ? `Deactivate ${selectedUser?.full_name}? This user will no longer be able to sign in.`
-                : `Activate ${selectedUser?.full_name}? This user will be able to sign in again.`}
+                ? t("userManagement.deactivateConfirm").replace("{name}", selectedUser?.full_name || "")
+                : t("userManagement.activateConfirm").replace("{name}", selectedUser?.full_name || "")}
             </Typography>
 
             {selectedUser?.role ===
               "Administrator" && (
               <Alert severity="warning">
-                Administrator accounts
-                should only be deactivated
-                when another active
-                administrator can manage
-                the company.
+                {t("userManagement.administratorWarning")}
               </Alert>
             )}
           </Stack>
@@ -1923,7 +1895,7 @@ function UserManagement() {
             }
             disabled={statusUpdating}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button
@@ -1952,10 +1924,10 @@ function UserManagement() {
             }
           >
             {statusUpdating
-              ? "Updating..."
+              ? t("userManagement.updating")
               : selectedUser?.is_active
-                ? "Deactivate"
-                : "Activate"}
+                ? t("userManagement.deactivate")
+                : t("userManagement.activate")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2013,21 +1985,20 @@ function UserManagement() {
                   fontWeight: 700,
                 }}
               >
-                Reset Password
+                {t("userManagement.resetPassword")}
               </Typography>
 
               <Typography
                 variant="body2"
                 color="text.secondary"
               >
-                Set a new temporary
-                password for this user.
+                {t("userManagement.resetDescription")}
               </Typography>
             </Box>
           </Stack>
 
           <IconButton
-            aria-label="Close reset password dialog"
+            aria-label={t("userManagement.closeResetDialog")}
             onClick={
               handleClosePasswordDialog
             }
@@ -2055,12 +2026,11 @@ function UserManagement() {
               {selectedUser?.email
                 ? ` (${selectedUser.email})`
                 : ""}
-              . Share the temporary
-              password securely.
+              . {t("userManagement.shareSecurely")}
             </Alert>
 
             <TextField
-              label="New Temporary Password"
+              label={t("userManagement.newTemporaryPassword")}
               name="new_password"
               type={
                 showNewPassword
@@ -2078,7 +2048,7 @@ function UserManagement() {
               )}
               helperText={
                 passwordErrors.new_password ||
-                "Minimum 8 characters."
+                t("userManagement.minimumCharacters")
               }
               autoComplete="new-password"
               autoFocus
@@ -2094,8 +2064,8 @@ function UserManagement() {
                       <IconButton
                         aria-label={
                           showNewPassword
-                            ? "Hide new password"
-                            : "Show new password"
+                            ? t("userManagement.hideNewPassword")
+                            : t("userManagement.showNewPassword")
                         }
                         onClick={() =>
                           setShowNewPassword(
@@ -2121,7 +2091,7 @@ function UserManagement() {
             />
 
             <TextField
-              label="Confirm New Password"
+              label={t("userManagement.confirmNewPassword")}
               name="confirm_password"
               type={
                 showConfirmPassword
@@ -2153,8 +2123,8 @@ function UserManagement() {
                       <IconButton
                         aria-label={
                           showConfirmPassword
-                            ? "Hide confirmed password"
-                            : "Show confirmed password"
+                            ? t("userManagement.hideConfirmedPassword")
+                            : t("userManagement.showConfirmedPassword")
                         }
                         onClick={() =>
                           setShowConfirmPassword(
@@ -2180,12 +2150,7 @@ function UserManagement() {
             />
 
             <Alert severity="warning">
-              Existing sessions may
-              remain active until their
-              authentication tokens
-              expire. The new password is
-              required for the user's
-              next login.
+              {t("userManagement.sessionWarning")}
             </Alert>
           </Stack>
         </DialogContent>
@@ -2205,7 +2170,7 @@ function UserManagement() {
               passwordResetting
             }
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button
@@ -2229,8 +2194,8 @@ function UserManagement() {
             }
           >
             {passwordResetting
-              ? "Resetting..."
-              : "Reset Password"}
+              ? t("userManagement.resetting")
+              : t("userManagement.resetPassword")}
           </Button>
         </DialogActions>
       </Dialog>

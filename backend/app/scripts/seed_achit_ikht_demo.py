@@ -9,6 +9,7 @@ from app.models.alert_threshold import AlertThreshold
 
 COMPANY_NAME = "Achit-Ikht LLC"
 MINE_NAME = "Achit-Ikht Copper Cathode Operation"
+MINE_NAME_MN = "Ачит-Ихт Зэсийн Катодын Үйлдвэр"
 
 
 KPI_CONFIG = [
@@ -174,11 +175,13 @@ def get_or_create_company(db: Session) -> CompanySettings:
     )
 
     if company:
+        company.company_name_en = COMPANY_NAME
         print(f"Company already exists: {company.company_name}")
         return company
 
     company = CompanySettings(
         company_name=COMPANY_NAME,
+        company_name_en=COMPANY_NAME,
         logo_url=None,
         primary_color="#0F3D5E",
         secondary_color="#16A34A",
@@ -208,12 +211,16 @@ def get_or_create_mine(
     )
 
     if mine:
+        mine.mine_name_en = MINE_NAME
+        mine.mine_name_mn = MINE_NAME_MN
         print(f"Operation already exists: {mine.mine_name}")
         return mine
 
     mine = MineSettings(
         company_id=company.id,
         mine_name=MINE_NAME,
+        mine_name_en=MINE_NAME,
+        mine_name_mn=MINE_NAME_MN,
         site_code="AIK-SXEW",
         location="Mongolia",
         mine_type="Processing Plant / SX-EW",

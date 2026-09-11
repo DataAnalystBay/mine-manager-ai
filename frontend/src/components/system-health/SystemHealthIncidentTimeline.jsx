@@ -12,6 +12,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import HistoryIcon from "@mui/icons-material/History";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDateTime } from "../../utils/displayDateTime";
 
 
 function normalizeIncidentType(type) {
@@ -89,28 +91,20 @@ function getIncidentConfig(type) {
 }
 
 
-function formatIncidentTime(value) {
+function formatIncidentTime(value, language, t) {
   if (!value) {
-    return "Unknown time";
+    return t("systemHealth.unknownTime");
   }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
+  return formatDisplayDateTime(value, language, {
+    seconds: true,
+    fallback: String(value),
+  });
 }
 
 
 function IncidentStatusChip({ type }) {
+  const { t } = useLanguage();
   const config =
     getIncidentConfig(type);
 
@@ -126,7 +120,7 @@ function IncidentStatusChip({ type }) {
           }}
         />
       }
-      label={config.label}
+      label={t(`systemHealth.incident_${normalizeIncidentType(type)}`)}
       sx={{
         height: 25,
         border:
@@ -150,6 +144,7 @@ function IncidentItem({
   incident,
   isLast,
 }) {
+  const { language, t } = useLanguage();
   const config = getIncidentConfig(
     incident?.type
   );
@@ -224,7 +219,7 @@ function IncidentItem({
               }}
             >
               {incident?.title ||
-                "System Health event"}
+                t("systemHealth.healthEvent")}
             </Typography>
 
             <Typography
@@ -235,7 +230,9 @@ function IncidentItem({
               }}
             >
               {formatIncidentTime(
-                incident?.createdAt
+                incident?.createdAt,
+                language,
+                t
               )}
             </Typography>
           </Box>
@@ -270,7 +267,7 @@ function IncidentItem({
           }}
         >
           {incident?.description ||
-            "No additional incident information is available."}
+            t("systemHealth.noIncidentInformation")}
         </Typography>
       </Box>
     </Box>
@@ -283,6 +280,7 @@ export default function SystemHealthIncidentTimeline({
   onClear,
   maxVisible = 8,
 }) {
+  const { t } = useLanguage();
   const incidentItems =
     Array.isArray(incidents)
       ? incidents
@@ -359,7 +357,7 @@ export default function SystemHealthIncidentTimeline({
                   color: "#172033",
                 }}
               >
-                Incident Timeline
+                {t("systemHealth.incidentTimeline")}
               </Typography>
 
               <Typography
@@ -369,8 +367,7 @@ export default function SystemHealthIncidentTimeline({
                   color: "#64748b",
                 }}
               >
-                Recent service status
-                changes and recoveries.
+                {t("systemHealth.incidentTimelineDescription")}
               </Typography>
             </Box>
           </Stack>
@@ -378,7 +375,7 @@ export default function SystemHealthIncidentTimeline({
 
         <Chip
           size="small"
-          label={`${incidentItems.length} events`}
+          label={t("systemHealth.eventsCount").replace("{count}", incidentItems.length)}
           sx={{
             height: 27,
             border:
@@ -426,9 +423,9 @@ export default function SystemHealthIncidentTimeline({
                 color: "#64748b",
               }}
             >
-              Showing the latest{" "}
-              {maxVisible} of{" "}
-              {incidentItems.length} events.
+              {t("systemHealth.showingEvents")
+                .replace("{visible}", maxVisible)
+                .replace("{total}", incidentItems.length)}
             </Typography>
           )}
 
@@ -460,7 +457,7 @@ export default function SystemHealthIncidentTimeline({
                   },
                 }}
               >
-                Clear incident history
+                {t("systemHealth.clearIncidentHistory")}
               </Button>
             </>
           )}
@@ -504,7 +501,7 @@ export default function SystemHealthIncidentTimeline({
               color: "#172033",
             }}
           >
-            No incidents recorded
+            {t("systemHealth.noIncidents")}
           </Typography>
 
           <Typography
@@ -516,10 +513,7 @@ export default function SystemHealthIncidentTimeline({
               color: "#64748b",
             }}
           >
-            Service warnings, critical
-            changes, and recoveries will
-            appear here as monitoring
-            updates are received.
+            {t("systemHealth.noIncidentsDescription")}
           </Typography>
         </Box>
       )}

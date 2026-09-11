@@ -16,6 +16,14 @@ import { useConfig } from "../context/ConfigContext";
 import { useLanguage } from "../context/LanguageContext";
 import useAuth from "../hooks/useAuth";
 import {
+  resolveCompanyDisplayName,
+  resolveMineDisplayName,
+} from "../utils/customerIdentity";
+import {
+  formatDisplayDate,
+  formatDisplayTime,
+} from "../utils/displayDateTime";
+import {
   getExecutiveSummary,
   getSharedAnalytics,
 } from "../services/dashboardApi";
@@ -247,13 +255,14 @@ function generateExecutiveBriefing(
   if (!demoLoaded && isSxew) {
     if (uiLanguage === "MN") {
       return (
-        `${mineName} үйл ажиллагааны Mine Health Score ${values.mineHealthScore}/100 байна. ` +
+        `${mineName}-ийн нэгдсэн гүйцэтгэлийн үнэлгээ ${values.mineHealthScore}/100 байна. ` +
         `Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл ${values.orePerformance}%, ` +
         `үйлдвэрийн гүйцэтгэл ${values.plantPerformance}%, ` +
-        `Cu recovery ${values.recoveryPerformance}%, ` +
+        `зэс авалт ${values.recoveryPerformance}%, ` +
         `аюулгүй ажиллагааны үнэлгээ ${values.safetyScore}% байна. ` +
-        `Удирдлагын гол анхаарах чиглэл: катодын үйлдвэрлэлийн алдагдал, ` +
-        `үйлдвэрийн тогтвортой ажиллагаа, Cu recovery болон аюулгүй ажиллагааны эрсдэлийг хамтад нь хянах.`
+        `Удирдлагын гол анхаарах чиглэл нь катодын үйлдвэрлэлийн алдагдлыг бууруулах, ` +
+        `үйлдвэрийн тогтвортой ажиллагааг хадгалах, зэс авалтыг сайжруулах болон ` +
+        `аюулгүй ажиллагааны эрсдэлийг хянах явдал юм.`
       );
     }
 
@@ -350,6 +359,7 @@ function buildKpiDetail(
   scenario,
   mineName,
   isDemoLoaded,
+  uiLanguage,
   t
 ) {
   const definitions = {
@@ -428,7 +438,11 @@ function buildKpiDetail(
     recovery: {
       kpi_name:
         values.operationProfile === "sxew_copper"
-          ? "Cu Recovery"
+          ? uiLanguage === "MN"
+            ? "Зэс авалт"
+            : "Cu Recovery"
+          : uiLanguage === "MN"
+          ? "Авалт"
           : "Recovery",
       current_value: values.recoveryPerformance,
       target: 77,
@@ -611,8 +625,21 @@ export default function Dashboard() {
  
   const companyName = company?.company_name || "Mine Manager AI";
   const mineName = mine?.mine_name || "Demo Mine";
+
   const timezone = company?.timezone || "Asia/Ulaanbaatar";
   const shiftPattern = mine?.shift_pattern || "Day / Night Shift";
+
+  const displayCompanyName = resolveCompanyDisplayName(
+    company,
+    uiLanguage,
+    companyName
+  );
+
+  const displayMineName = resolveMineDisplayName(
+    mine,
+    uiLanguage,
+    mineName
+  );
  
   const executiveInsightsAllowedRoles = [
     "Superintendent",
@@ -731,26 +758,30 @@ export default function Dashboard() {
     [t]
   );
  
-  const currentDate = useMemo(
-    () =>
-      new Date().toLocaleDateString(uiLanguage === "MN" ? "mn-MN" : "en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    [uiLanguage]
-  );
- 
+  const currentDate = useMemo(() => {
+    const now = new Date();
+
+    if (uiLanguage === "MN") {
+      const mongolianWeekdays = ["Ня", "Да", "Мя", "Лха", "Пү", "Ба", "Бя"];
+      const weekday = mongolianWeekdays[now.getDay()];
+
+      return `${formatDisplayDate(now, uiLanguage)} · ${weekday}`;
+    }
+
+    return now.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [uiLanguage]);
+
   const lastUpdated = useMemo(
     () =>
-      new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    [demoData, executiveSummary, sharedAnalytics, demoScenario]
+      formatDisplayTime(new Date(), uiLanguage),
+    [demoData, executiveSummary, sharedAnalytics, demoScenario, uiLanguage]
   );
- 
+
   const showToast = useCallback((type, title, message) => {
     setToast({ type, title, message });
  
@@ -1182,7 +1213,7 @@ export default function Dashboard() {
       riskMessage:
         baseValues.operationProfile === "sxew_copper"
           ? uiLanguage === "MN"
-            ? "Катодын үйлдвэрлэл, Cu recovery болон аюулгүй ажиллагааны үзүүлэлтүүдэд удирдлагын анхаарал шаардлагатай."
+            ? "Катодын үйлдвэрлэл, зэс авалт болон аюулгүй ажиллагааны үзүүлэлтүүдэд удирдлагын анхаарал шаардлагатай."
             : "Management attention is required on cathode production, Cu recovery, and safety indicators."
           : t("dashboard.scenarioContent.stable.liveRiskMessage"),
       healthStatus: "Stable",
@@ -1248,8 +1279,9 @@ export default function Dashboard() {
               normalizedKpiKey,
               scenarioValues,
               demoScenario,
-              mineName,
+              displayMineName,
               true,
+              uiLanguage,
               t
             )
           : await getKpiDetail({
@@ -1287,12 +1319,14 @@ export default function Dashboard() {
     [
       demoLoaded,
       demoScenario,
+      displayMineName,
       mineName,
       requestedKpiKey,
       scenarioValues,
       searchParams,
       setSearchParams,
       t,
+      uiLanguage,
     ]
   );
 
@@ -1381,7 +1415,7 @@ setKpiDialogOpen(false);
       return {
         production: "Катодын зэсийн үйлдвэрлэл",
         plant: "Үйлдвэрийн гүйцэтгэл",
-        recovery: "Cu Recovery",
+        recovery: "Зэс авалт",
         safety: "Аюулгүй ажиллагааны тохиолдол",
       };
     }
@@ -1415,7 +1449,7 @@ setKpiDialogOpen(false);
           id: "process-plant",
           title:
             uiLanguage === "MN"
-              ? "Үйлдвэрийн тогтвортой ажиллагаа ба Cu recovery-г хянах"
+              ? "Үйлдвэрийн тогтвортой ажиллагаа ба зэс авалтыг хянах"
               : "Review process plant stability and Cu recovery",
           priority: "Medium",
           due: "Due Today",
@@ -1638,9 +1672,9 @@ setKpiDialogOpen(false);
             </div>
  
             <div className="executive-dashboard-breadcrumb">
-              <span>{companyName}</span>
+              <span>{displayCompanyName}</span>
               <span className="context-separator">›</span>
-              <span>{mineName}</span>
+              <span>{displayMineName}</span>
             </div>
  
             <div className="executive-dashboard-scenario">
@@ -1787,7 +1821,7 @@ setKpiDialogOpen(false);
                 fontWeight: 900,
               }}
             >
-              {mineName}
+              {displayMineName}
             </h2>
  
             <div

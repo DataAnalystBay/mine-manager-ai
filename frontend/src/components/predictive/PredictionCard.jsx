@@ -27,6 +27,61 @@ function toDisplayValue(value) {
 }
 
 
+function getPredictionKpiDisplayName(
+  value,
+  uiLanguage,
+  t,
+) {
+  const rawValue = String(value || "").trim();
+  const normalizedValue = rawValue.toLowerCase();
+
+  if (uiLanguage === "MN") {
+    if (
+      normalizedValue === "cathode production" ||
+      normalizedValue === "ore production" ||
+      normalizedValue === "production"
+    ) {
+      return "Катодын зэсийн үйлдвэрлэл";
+    }
+
+    if (
+      normalizedValue === "process plant performance" ||
+      normalizedValue === "plant performance"
+    ) {
+      return "Үйлдвэрийн гүйцэтгэл";
+    }
+
+    if (
+      normalizedValue === "cu recovery" ||
+      normalizedValue === "copper recovery"
+    ) {
+      return "Зэс авалт";
+    }
+
+    if (
+      normalizedValue === "safety performance"
+    ) {
+      return "Аюулгүй ажиллагааны гүйцэтгэл";
+    }
+
+    if (
+      normalizedValue === "mine health" ||
+      normalizedValue === "mine health score"
+    ) {
+      return "Уурхайн нэгдсэн төлөв";
+    }
+  }
+
+  return (
+    translateDynamicKpiName(
+      rawValue,
+      t,
+    ) ||
+    rawValue
+  );
+}
+
+
 function translateTemplate(t, key, variables = {}) {
   let text = t(key);
 
@@ -229,14 +284,18 @@ function PredictionCard({
   prediction,
   isExecutiveFocus = false,
 }) {
-  const { t } = useLanguage();
+  const {
+    language: uiLanguage,
+    t,
+  } = useLanguage();
 
   const safePrediction =
     prediction || {};
 
   const translatedKpiName =
-    translateDynamicKpiName(
+    getPredictionKpiDisplayName(
       safePrediction.kpi_name,
+      uiLanguage,
       t,
     ) ||
     t(

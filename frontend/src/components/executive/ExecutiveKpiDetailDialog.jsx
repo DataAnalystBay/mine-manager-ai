@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   FiAlertCircle,
   FiCheckCircle,
@@ -13,6 +13,10 @@ import { exportExecutiveKpiPdf } from "../../api/executivePdfApi";
 import { useConfig } from "../../context/ConfigContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { translateDynamicKpiName } from "../../i18n/dynamicTranslations";
+import {
+  resolveCompanyDisplayName,
+  resolveMineDisplayName,
+} from "../../utils/customerIdentity";
 
 import ExecutiveAiInsightCard from "./ExecutiveAiInsightCard";
 import ExecutiveKpiSkeleton from "./ExecutiveKpiSkeleton";
@@ -362,14 +366,18 @@ export default function ExecutiveKpiDetailDialog({
   } = useLanguage();
 
   const configuredCompanyName =
-    company?.company_name ||
-    data?.company_name ||
-    "Mine Manager AI";
+    resolveCompanyDisplayName(
+      company,
+      uiLanguage,
+      data?.company_name || "Mine Manager AI"
+    );
 
   const configuredMineName =
-    mine?.mine_name ||
-    data?.mine_name ||
-    t("executiveKpiDetail.configuredMine");
+    resolveMineDisplayName(
+      mine,
+      uiLanguage,
+      data?.mine_name || t("executiveKpiDetail.configuredMine")
+    );
 
   const handleExportPdf = async () => {
     const selectedKpiKey = kpiKey || data?.kpi_key;

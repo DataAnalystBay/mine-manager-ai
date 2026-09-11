@@ -10,20 +10,14 @@ import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import AssessmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
 
 import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDate } from "../../utils/displayDateTime";
 
 function ReportHeader() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   const reportingDate = new Date();
 
-  const formattedDate = reportingDate.toLocaleDateString(
-    "en-US",
-    {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    }
-  );
+  const formattedDate = formatDisplayDate(reportingDate, language);
 
   return (
     <Box

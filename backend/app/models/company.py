@@ -8,6 +8,8 @@ class CompanySettings(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_name = Column(String(255), nullable=False)
+    company_name_en = Column(String(255), nullable=True)
+    company_name_mn = Column(String(255), nullable=True)
     logo_url = Column(Text, nullable=True)
     primary_color = Column(String(20), default="#16A34A")
     secondary_color = Column(String(20), default="#1E293B")

@@ -155,6 +155,8 @@ def get_user_mine(
 
 class CompanyUpdateRequest(BaseModel):
     company_name: Optional[str] = None
+    company_name_en: Optional[str] = None
+    company_name_mn: Optional[str] = None
     logo_url: Optional[str] = None
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
@@ -164,6 +166,8 @@ class CompanyUpdateRequest(BaseModel):
 
 class MineUpdateRequest(BaseModel):
     mine_name: Optional[str] = None
+    mine_name_en: Optional[str] = None
+    mine_name_mn: Optional[str] = None
     site_code: Optional[str] = None
     location: Optional[str] = None
     mine_type: Optional[str] = None

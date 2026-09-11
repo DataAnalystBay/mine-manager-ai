@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+﻿import { useState } from "react";
 
 import axios from "axios";
 
@@ -55,7 +55,10 @@ reportDownloadClient.interceptors.request.use(
    ============================================================ */
 
 function ExecutiveReports() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+
+  const reportLanguage =
+    language === "MN" ? "mn" : "en";
 
   const [loadingReport, setLoadingReport] = useState(null);
 
@@ -140,6 +143,9 @@ function ExecutiveReports() {
 
     try {
       const response = await reportDownloadClient.get(endpoint, {
+        params: {
+          lang: reportLanguage,
+        },
         responseType: "blob",
       });
 
@@ -401,7 +407,7 @@ function ExecutiveReports() {
                   "-0.01em",
               }}
             >
-              ТАЙЛАН ҮҮСГЭХ
+              {t("reports.generateReportHeading")}
             </Typography>
 
             <Typography
@@ -421,8 +427,7 @@ function ExecutiveReports() {
                   1.45,
               }}
             >
-              Удирдлагын тайлангийн төрөл болон
-              хугацааг сонгоно уу.
+              {t("reports.generateReportDescription")}
             </Typography>
           </Box>
 
@@ -674,19 +679,19 @@ function ExecutiveReports() {
             }}
           >
             <ReportCard
-              title="Улирлын гүйцэтгэлийн тайлан"
-              subtitle={t("reports.quarterlyPerformanceReport")}
-              frequency="Улирал бүр"
+              title={t("reports.quarterlyPerformanceReport")}
+              subtitle={t("reports.quarterlyDescription")}
+              frequency={t("reports.quarterlyFrequency")}
               format="PDF"
               icon={
                 <DateRangeRoundedIcon />
               }
               sections={[
-                "Quarterly KPI Performance",
-                "Trend & Variance",
-                "Risk & Outlook",
+                t("reports.quarterlyKpiPerformance"),
+                t("reports.trendVariance"),
+                t("reports.riskOutlook"),
               ]}
-              buttonText="Тун удахгүй"
+              buttonText={t("reports.comingSoon")}
               disabled
             />
           </Grid>
@@ -703,19 +708,19 @@ function ExecutiveReports() {
             }}
           >
             <ReportCard
-              title="Жилийн гүйцэтгэлийн тайлан"
-              subtitle={t("reports.annualPerformanceReport")}
-              frequency="Жил бүр"
+              title={t("reports.annualPerformanceReport")}
+              subtitle={t("reports.annualDescription")}
+              frequency={t("reports.annualFrequency")}
               format="PDF"
               icon={
                 <EventNoteRoundedIcon />
               }
               sections={[
-                "Annual KPI Performance",
-                "Year-over-Year Trend",
-                "Executive Review",
+                t("reports.annualKpiPerformance"),
+                t("reports.yearOverYearTrend"),
+                t("reports.executiveReview"),
               ]}
-              buttonText="Тун удахгүй"
+              buttonText={t("reports.comingSoon")}
               disabled
             />
           </Grid>

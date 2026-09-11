@@ -30,6 +30,7 @@ import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 
 import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDate } from "../../utils/displayDateTime";
 
 import {
   translateDynamicExecutiveActionCategory,
@@ -253,22 +254,7 @@ function formatDate(
     );
   }
 
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return dateValue;
-  }
-
-  return new Intl.DateTimeFormat(
-    language === "MN"
-      ? "mn-MN"
-      : "en-GB",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  ).format(date);
+  return formatDisplayDate(dateValue, language, dateValue);
 }
 
 function isOverdue(action) {

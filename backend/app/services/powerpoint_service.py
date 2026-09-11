@@ -18,6 +18,12 @@ from sqlalchemy.orm import Session
 from app.services.report_branding_service import (
     ReportBranding,
     get_report_branding,
+    resolve_report_branding,
+)
+from app.services.report_localization import (
+    format_report_date,
+    localize_report_label,
+    normalize_report_language,
 )
 
 
@@ -306,24 +312,47 @@ def _latest(rows: Sequence[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     return rows[-1] if rows else None
 
 
-def _format_date(value: Any) -> str:
+def _reporting_period_bounds(
+    *row_groups: Sequence[Dict[str, Any]],
+) -> Tuple[Optional[date], Optional[date]]:
+    dates = [
+        value.date() if isinstance(value, datetime) else value
+        for rows in row_groups
+        for row in rows
+        for value in [row.get("report_date")]
+        if isinstance(value, (date, datetime))
+    ]
+    if not dates:
+        return None, None
+    return min(dates), max(dates)
+
+
+def _format_date(value: Any, language: str = "en") -> str:
     if isinstance(value, datetime):
-        return value.strftime("%d %b")
+        return format_report_date(value, language, "short_chart_date")
     if isinstance(value, date):
-        return value.strftime("%d %b")
+        return format_report_date(value, language, "short_chart_date")
     return str(value or "")
 
 
-def _format_number(value: Optional[float], decimals: int = 0) -> str:
+def _format_number(
+    value: Optional[float],
+    decimals: int = 0,
+    language: str = "en",
+) -> str:
     if value is None:
-        return "No data"
+        return localize_report_label("no_data", language)
 
     return f"{value:,.{decimals}f}"
 
 
-def _format_percent(value: Optional[float], decimals: int = 1) -> str:
+def _format_percent(
+    value: Optional[float],
+    decimals: int = 1,
+    language: str = "en",
+) -> str:
     if value is None:
-        return "No data"
+        return localize_report_label("no_data", language)
 
     return f"{value:.{decimals}f}%"
 
@@ -345,6 +374,90 @@ def _achievement_status(value: Optional[float]) -> Tuple[str, str, str]:
         return "Watch", AMBER, AMBER_LIGHT
 
     return "Below target", RED, RED_LIGHT
+
+
+def _localized_achievement_status(
+    value: Optional[float],
+    language: str,
+) -> Tuple[str, str, str]:
+    """Localize an achievement display after semantic threshold evaluation."""
+
+    _, foreground, background = _achievement_status(value)
+    if value is None:
+        key = "no_data"
+    elif value >= 1.0:
+        key = "on_or_above_target_status"
+    elif value >= 0.9:
+        key = "watch"
+    else:
+        key = "below_target_status"
+    return localize_report_label(key, language), foreground, background
+
+
+def _localized_semantic_value(
+    value: Any,
+    language: str,
+    *,
+    fallback_key: str,
+) -> str:
+    """Localize known semantic codes while preserving customer-entered text."""
+
+    semantic_value = getattr(value, "value", value)
+    source = str(semantic_value or "").strip()
+    if not source:
+        return localize_report_label(fallback_key, language)
+
+    normalized = source.lower().replace("-", " ").replace("_", " ")
+    key = "_".join(normalized.split())
+    known_keys = {
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "open",
+        "in_progress",
+        "not_started",
+        "completed",
+        "overdue",
+        "unassigned",
+        "not_set",
+    }
+    if key in known_keys:
+        return localize_report_label(key, language)
+    return source
+
+
+_MN_ACTION_TITLE_DISPLAY_MAPPINGS = {
+    "Review the lowest-performing operational KPI": (
+        "Хамгийн сул гүйцэтгэлтэй үйл ажиллагааны KPI-г хянан үзэх"
+    ),
+    "Investigate production loss versus plan": (
+        "Үйлдвэрлэлийн төлөвлөгөөний зөрүүний шалтгааныг судлах"
+    ),
+}
+
+_MN_ACTION_OWNER_DISPLAY_MAPPINGS = {
+    "Operations": "Үйл ажиллагаа",
+    "Processing Operations": "Боловсруулах үйлдвэрийн үйл ажиллагаа",
+}
+
+
+def _localized_action_title(value: Any, language: str) -> str:
+    """Localize curated action titles for PowerPoint display only."""
+
+    source = str(value or "").strip()
+    if normalize_report_language(language) != "mn":
+        return source
+    return _MN_ACTION_TITLE_DISPLAY_MAPPINGS.get(source, source)
+
+
+def _localized_action_owner(value: Any, language: str) -> str:
+    """Localize curated organizational owners for PowerPoint display only."""
+
+    source = str(value or "").strip()
+    if normalize_report_language(language) != "mn":
+        return source
+    return _MN_ACTION_OWNER_DISPLAY_MAPPINGS.get(source, source)
 
 
 def _hex_to_rgb(value: str) -> RGBColor:
@@ -382,7 +495,9 @@ def _add_text(
     bold: bool = False,
     alignment: PP_ALIGN = PP_ALIGN.LEFT,
     vertical_anchor: MSO_ANCHOR = MSO_ANCHOR.MIDDLE,
-    font_name: str = "Aptos",
+    font_name: Optional[str] = None,
+    language: str = "en",
+    word_wrap: bool = True,
 ) -> Any:
     box = slide.shapes.add_textbox(
         Inches(left),
@@ -393,7 +508,7 @@ def _add_text(
 
     frame = box.text_frame
     frame.clear()
-    frame.word_wrap = True
+    frame.word_wrap = word_wrap
     frame.vertical_anchor = vertical_anchor
     frame.margin_left = 0
     frame.margin_right = 0
@@ -405,7 +520,7 @@ def _add_text(
 
     run = paragraph.add_run()
     run.text = str(text_value)
-    run.font.name = font_name
+    run.font.name = font_name or ("Arial" if language == "mn" else "Aptos")
     run.font.size = Pt(font_size)
     run.font.bold = bold
     run.font.color.rgb = _hex_to_rgb(color)
@@ -460,7 +575,7 @@ def _add_divider(
     line.line.fill.background()
 
 
-def _add_slide_number(slide, number: int) -> None:
+def _add_slide_number(slide, number: int, language: str = "en") -> None:
     _add_text(
         slide,
         str(number),
@@ -471,6 +586,7 @@ def _add_slide_number(slide, number: int) -> None:
         font_size=9,
         color=TEXT_MUTED,
         alignment=PP_ALIGN.RIGHT,
+        language=language,
     )
 
 
@@ -507,6 +623,7 @@ def _add_standard_header(
     title: str,
     subtitle: Optional[str],
     slide_number: int,
+    language: str = "en",
 ) -> None:
     primary = branding.primary_color_excel
 
@@ -531,18 +648,21 @@ def _add_standard_header(
         font_size=11,
         color=primary,
         bold=True,
+        language=language,
     )
 
     _add_text(
         slide,
         title,
         0.55,
-        0.68,
+        0.62 if language == "mn" else 0.68,
         10.7,
-        0.55,
-        font_size=27,
+        0.7 if language == "mn" else 0.55,
+        font_size=24 if language == "mn" else 27,
         color=TEXT_DARK,
         bold=True,
+        language=language,
+        word_wrap=False,
     )
 
     if subtitle:
@@ -553,8 +673,10 @@ def _add_standard_header(
             1.25,
             10.7,
             0.35,
-            font_size=11,
+            font_size=10.5 if language == "mn" else 11,
             color=TEXT_MUTED,
+            language=language,
+            word_wrap=False,
         )
 
     logo_added = _add_logo(
@@ -576,10 +698,11 @@ def _add_standard_header(
             font_size=10,
             color=TEXT_MUTED,
             alignment=PP_ALIGN.RIGHT,
+            language=language,
         )
 
     _add_divider(slide, 0.55, 1.72, 12.1)
-    _add_slide_number(slide, slide_number)
+    _add_slide_number(slide, slide_number, language)
 
 
 def _add_kpi_card(
@@ -594,6 +717,7 @@ def _add_kpi_card(
     status_color: str,
     status_background: str,
     note: Optional[str] = None,
+    language: str = "en",
 ) -> None:
     _add_rounded_rectangle(
         slide,
@@ -614,6 +738,7 @@ def _add_kpi_card(
         font_size=10,
         color=TEXT_MUTED,
         bold=True,
+        language=language,
     )
 
     _add_text(
@@ -626,16 +751,23 @@ def _add_kpi_card(
         font_size=25,
         color=TEXT_DARK,
         bold=True,
+        language=language,
     )
 
-    badge_width = min(max(1.1, len(status) * 0.075), width - 0.5)
+    is_mongolian = language == "mn"
+    badge_width = min(
+        max(1.1, len(status) * (0.064 if is_mongolian else 0.075)),
+        width - 0.5,
+    )
+    badge_top = top + (1.24 if is_mongolian else 1.37)
+    badge_height = 0.31 if is_mongolian else 0.34
 
     _add_rounded_rectangle(
         slide,
         left + 0.25,
-        top + 1.37,
+        badge_top,
         badge_width,
-        0.34,
+        badge_height,
         fill_color=status_background,
         line_color=status_background,
     )
@@ -644,12 +776,13 @@ def _add_kpi_card(
         slide,
         status,
         left + 0.34,
-        top + 1.405,
+        badge_top + (0.035 if is_mongolian else 0.035),
         badge_width - 0.18,
         0.24,
-        font_size=8.5,
+        font_size=7.2 if is_mongolian else 8.5,
         color=status_color,
         bold=True,
+        language=language,
     )
 
     if note:
@@ -657,11 +790,12 @@ def _add_kpi_card(
             slide,
             note,
             left + 0.25,
-            top + height - 0.48,
+            top + height - (0.34 if is_mongolian else 0.48),
             width - 0.5,
-            0.28,
-            font_size=8.5,
+            0.24 if is_mongolian else 0.28,
+            font_size=7.4 if is_mongolian else 8.5,
             color=TEXT_MUTED,
+            language=language,
         )
 
 
@@ -675,6 +809,7 @@ def _add_bullet_list(
     font_size: float = 14,
     color: str = TEXT_DARK,
     bullet_color: Optional[str] = None,
+    language: str = "en",
 ) -> None:
     box = slide.shapes.add_textbox(
         Inches(left),
@@ -698,7 +833,7 @@ def _add_bullet_list(
             else frame.add_paragraph()
         )
         paragraph.text = f"•  {item}"
-        paragraph.font.name = "Aptos"
+        paragraph.font.name = "Arial" if language == "mn" else "Aptos"
         paragraph.font.size = Pt(font_size)
         paragraph.font.color.rgb = _hex_to_rgb(
             bullet_color or color
@@ -721,6 +856,7 @@ def _add_line_chart(
     height: float,
     title: Optional[str] = None,
     percentage_axis: bool = False,
+    language: str = "en",
 ) -> None:
     if not categories or not series:
         _add_rounded_rectangle(
@@ -733,7 +869,7 @@ def _add_line_chart(
         )
         _add_text(
             slide,
-            "No trend data available",
+            localize_report_label("no_trend_data_available", language),
             left + 0.3,
             top + height / 2 - 0.2,
             width - 0.6,
@@ -741,6 +877,7 @@ def _add_line_chart(
             font_size=13,
             color=TEXT_MUTED,
             alignment=PP_ALIGN.CENTER,
+            language=language,
         )
         return
 
@@ -765,6 +902,7 @@ def _add_line_chart(
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         chart.legend.font.size = Pt(9)
+        chart.legend.font.name = "Arial" if language == "mn" else "Aptos"
 
     chart.has_title = bool(title)
 
@@ -772,6 +910,9 @@ def _add_line_chart(
         chart.chart_title.text_frame.text = title
         chart.chart_title.text_frame.paragraphs[0].font.size = Pt(12)
         chart.chart_title.text_frame.paragraphs[0].font.bold = True
+        chart.chart_title.text_frame.paragraphs[0].font.name = (
+            "Arial" if language == "mn" else "Aptos"
+        )
 
     chart.value_axis.has_major_gridlines = True
     chart.value_axis.major_gridlines.format.line.color.rgb = (
@@ -779,6 +920,8 @@ def _add_line_chart(
     )
     chart.value_axis.tick_labels.font.size = Pt(8)
     chart.category_axis.tick_labels.font.size = Pt(8)
+    chart.value_axis.tick_labels.font.name = "Arial" if language == "mn" else "Aptos"
+    chart.category_axis.tick_labels.font.name = "Arial" if language == "mn" else "Aptos"
 
     if percentage_axis:
         chart.value_axis.tick_labels.number_format = "0%"
@@ -806,6 +949,8 @@ def _add_line_chart(
 def _build_cover_slide(
     presentation: Presentation,
     branding: ReportBranding,
+    language: str,
+    reporting_period: Tuple[Optional[date], Optional[date]],
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -835,11 +980,12 @@ def _build_cover_slide(
         font_size=16,
         color=primary,
         bold=True,
+        language=language,
     )
 
     _add_text(
         slide,
-        "Executive Operations\nBoard Pack",
+        localize_report_label("executive_operations_board_pack_cover", language),
         0.85,
         1.65,
         8.7,
@@ -848,6 +994,7 @@ def _build_cover_slide(
         color=WHITE,
         bold=True,
         vertical_anchor=MSO_ANCHOR.TOP,
+        language=language,
     )
 
     _add_text(
@@ -859,6 +1006,7 @@ def _build_cover_slide(
         0.5,
         font_size=18,
         color=WHITE,
+        language=language,
     )
 
     _add_divider(
@@ -869,18 +1017,38 @@ def _build_cover_slide(
         color=primary,
     )
 
-    generated = datetime.now().strftime("%d %B %Y, %H:%M")
+    generated_at = datetime.now()
+    generated = (
+        format_report_date(generated_at, language, "generated_timestamp")
+        if language == "mn"
+        else generated_at.strftime("%d %B %Y, %H:%M")
+    )
+    period_start, period_end = reporting_period
+    metadata_lines = []
+    if period_start is not None and period_end is not None:
+        metadata_lines.append(
+            f"{localize_report_label('reporting_period', language)}: "
+            f"{format_report_date(period_start, language, 'reporting_period_date')} – "
+            f"{format_report_date(period_end, language, 'reporting_period_date')}"
+        )
+    metadata_lines.extend(
+        (
+            f"{localize_report_label('generated_metadata', language)}: {generated}",
+            f"{localize_report_label('timezone', language)}: {branding.timezone}",
+        )
+    )
 
     _add_text(
         slide,
-        f"Generated: {generated}\nTimezone: {branding.timezone}",
+        "\n".join(metadata_lines),
         0.85,
         4.85,
         5.2,
-        0.85,
-        font_size=11,
+        1.1,
+        font_size=10 if language == "mn" else 11,
         color="CBD5E1",
         vertical_anchor=MSO_ANCHOR.TOP,
+        language=language,
     )
 
     logo_added = _add_logo(
@@ -912,6 +1080,7 @@ def _build_cover_slide(
             color=WHITE,
             bold=True,
             alignment=PP_ALIGN.CENTER,
+            language=language,
         )
 
     _add_text(
@@ -924,6 +1093,7 @@ def _build_cover_slide(
         font_size=9,
         color="94A3B8",
         alignment=PP_ALIGN.RIGHT,
+        language=language,
     )
 
 
@@ -935,6 +1105,7 @@ def _build_kpi_summary_slide(
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
     operation_profile: str,
+    language: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -944,17 +1115,18 @@ def _build_kpi_summary_slide(
     is_sxew = _is_sxew_operation(operation_profile)
 
     subtitle = (
-        "Current operational position across cathode production, plant, and safety"
+        localize_report_label("current_position_sxew", language)
         if is_sxew
-        else "Current operational position across production, fleet, plant, and safety"
+        else localize_report_label("current_position_standard", language)
     )
 
     _add_standard_header(
         slide,
         branding,
-        "Executive KPI Summary",
+        localize_report_label("executive_kpi_summary", language),
         subtitle,
         2,
+        language,
     )
 
     latest_production = _latest(production_rows)
@@ -1003,20 +1175,22 @@ def _build_kpi_summary_slide(
         (8.49, 4.38),
     ]
 
-    production_status = _achievement_status(
-        production_achievement
+    production_status = _localized_achievement_status(
+        production_achievement,
+        language,
     )
     _add_kpi_card(
         slide,
         (
-            "Cathode production achievement"
+            localize_report_label("cathode_production_achievement", language)
             if is_sxew
-            else "Ore production achievement"
+            else localize_report_label("ore_plan_achievement", language)
         ),
         _format_percent(
             production_achievement * 100
             if production_achievement is not None
-            else None
+            else None,
+            language=language,
         ),
         production_status[0],
         *positions[0],
@@ -1025,23 +1199,26 @@ def _build_kpi_summary_slide(
         production_status[1],
         production_status[2],
         note=(
-            "Actual cathode production compared with plan"
+            localize_report_label("cathode_actual_vs_plan", language)
             if is_sxew
-            else "Actual ore movement compared with plan"
+            else localize_report_label("ore_actual_vs_plan", language)
         ),
+        language=language,
     )
 
-    plant_status = _achievement_status(
-        plant_achievement
+    plant_status = _localized_achievement_status(
+        plant_achievement,
+        language,
     )
     plant_position = positions[1] if is_sxew else positions[3]
     _add_kpi_card(
         slide,
-        "Plant throughput achievement",
+        localize_report_label("plant_throughput_achievement", language),
         _format_percent(
             plant_achievement * 100
             if plant_achievement is not None
-            else None
+            else None,
+            language=language,
         ),
         plant_status[0],
         *plant_position,
@@ -1049,7 +1226,8 @@ def _build_kpi_summary_slide(
         card_height,
         plant_status[1],
         plant_status[2],
-        note="Actual throughput compared with plan",
+        note=localize_report_label("throughput_actual_vs_plan", language),
+        language=language,
     )
 
     safety_ratio = (
@@ -1057,42 +1235,44 @@ def _build_kpi_summary_slide(
         if safety_score is not None
         else None
     )
-    safety_status = _achievement_status(safety_ratio)
+    safety_status = _localized_achievement_status(safety_ratio, language)
     safety_position = positions[2] if is_sxew else positions[4]
     _add_kpi_card(
         slide,
-        "Safety score",
-        _format_percent(safety_score),
+        localize_report_label("powerpoint_safety_score", language),
+        _format_percent(safety_score, language=language),
         safety_status[0],
         *safety_position,
         card_width,
         card_height,
         safety_status[1],
         safety_status[2],
-        note="Latest composite safety score",
+        note=localize_report_label("latest_composite_safety_score", language),
+        language=language,
     )
 
     incident_status = (
-        ("No incidents", GREEN, GREEN_LIGHT)
+        (localize_report_label("no_incidents", language), GREEN, GREEN_LIGHT)
         if incidents == 0
         else (
-            ("Review required", RED, RED_LIGHT)
+            (localize_report_label("review_required", language), RED, RED_LIGHT)
             if incidents is not None
-            else ("No data", TEXT_MUTED, BACKGROUND)
+            else (localize_report_label("no_data", language), TEXT_MUTED, BACKGROUND)
         )
     )
     incident_position = positions[3] if is_sxew else positions[5]
     _add_kpi_card(
         slide,
-        "Safety incidents",
-        str(incidents) if incidents is not None else "No data",
+        localize_report_label("safety_incidents", language),
+        str(incidents) if incidents is not None else localize_report_label("no_data", language),
         incident_status[0],
         *incident_position,
         card_width,
         card_height,
         incident_status[1],
         incident_status[2],
-        note="Latest reporting date",
+        note=localize_report_label("latest_reporting_date", language),
+        language=language,
     )
 
     if not is_sxew:
@@ -1112,20 +1292,22 @@ def _build_kpi_summary_slide(
             if fleet_availability is not None
             else None
         )
-        availability_status = _achievement_status(
-            availability_ratio
+        availability_status = _localized_achievement_status(
+            availability_ratio,
+            language,
         )
         _add_kpi_card(
             slide,
-            "Fleet availability",
-            _format_percent(fleet_availability),
+            localize_report_label("fleet_availability", language),
+            _format_percent(fleet_availability, language=language),
             availability_status[0],
             *positions[1],
             card_width,
             card_height,
             availability_status[1],
             availability_status[2],
-            note="Latest available fleet record",
+            note=localize_report_label("latest_available_fleet_record", language),
+            language=language,
         )
 
         utilization_ratio = (
@@ -1133,20 +1315,22 @@ def _build_kpi_summary_slide(
             if fleet_utilization is not None
             else None
         )
-        utilization_status = _achievement_status(
-            utilization_ratio
+        utilization_status = _localized_achievement_status(
+            utilization_ratio,
+            language,
         )
         _add_kpi_card(
             slide,
-            "Fleet utilization",
-            _format_percent(fleet_utilization),
+            localize_report_label("fleet_utilization", language),
+            _format_percent(fleet_utilization, language=language),
             utilization_status[0],
             *positions[2],
             card_width,
             card_height,
             utilization_status[1],
             utilization_status[2],
-            note="Latest available fleet record",
+            note=localize_report_label("latest_available_fleet_record", language),
+            language=language,
         )
 
 def _build_production_slide(
@@ -1154,6 +1338,7 @@ def _build_production_slide(
     branding: ReportBranding,
     production_rows: List[Dict[str, Any]],
     operation_profile: str,
+    language: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -1166,21 +1351,22 @@ def _build_production_slide(
         slide,
         branding,
         (
-            "Cathode Production Trend"
+            localize_report_label("cathode_production_trend", language)
             if is_sxew
-            else "Production Trend"
+            else localize_report_label("production_trend", language)
         ),
         (
-            "Cathode production plan versus actual performance"
+            localize_report_label("cathode_plan_vs_actual_performance", language)
             if is_sxew
-            else "Ore production plan versus actual performance"
+            else localize_report_label("ore_plan_vs_actual_performance", language)
         ),
         3,
+        language,
     )
 
     trend_rows = production_rows[-14:]
     categories = [
-        _format_date(row.get("report_date"))
+        _format_date(row.get("report_date"), language)
         for row in trend_rows
     ]
 
@@ -1198,12 +1384,16 @@ def _build_production_slide(
         categories,
         [
             (
-                "Cathode Plan" if is_sxew else "Ore Plan",
+                localize_report_label("cathode_plan", language)
+                if is_sxew
+                else localize_report_label("ore_plan", language),
                 plan_values,
                 TEXT_MUTED,
             ),
             (
-                "Cathode Actual" if is_sxew else "Ore Actual",
+                localize_report_label("cathode_actual", language)
+                if is_sxew
+                else localize_report_label("ore_actual", language),
                 actual_values,
                 branding.primary_color_excel,
             ),
@@ -1212,7 +1402,8 @@ def _build_production_slide(
         2.0,
         8.35,
         4.6,
-        title="Recent reporting periods",
+        title=localize_report_label("recent_reporting_periods", language),
+        language=language,
     )
 
     latest_production = _latest(production_rows)
@@ -1238,7 +1429,7 @@ def _build_production_slide(
         achievement = None
         variance = None
 
-    status = _achievement_status(achievement)
+    status = _localized_achievement_status(achievement, language)
 
     _add_rounded_rectangle(
         slide,
@@ -1251,7 +1442,7 @@ def _build_production_slide(
 
     _add_text(
         slide,
-        "Latest position",
+        localize_report_label("latest_position", language),
         9.5,
         2.28,
         2.9,
@@ -1259,32 +1450,31 @@ def _build_production_slide(
         font_size=12,
         color=TEXT_DARK,
         bold=True,
+        language=language,
     )
 
-    production_label = (
-        "Cathode"
-        if is_sxew
-        else "Ore"
-    )
     items = [
         (
-            f"{production_label} plan",
-            _format_number(production_plan),
+            localize_report_label("cathode_plan_label", language)
+            if is_sxew else localize_report_label("ore_plan", language),
+            _format_number(production_plan, language=language),
         ),
         (
-            f"{production_label} actual",
-            _format_number(production_actual),
+            localize_report_label("cathode_actual_label", language)
+            if is_sxew else localize_report_label("ore_actual", language),
+            _format_number(production_actual, language=language),
         ),
         (
-            "Variance",
-            _format_number(variance),
+            localize_report_label("variance", language),
+            _format_number(variance, language=language),
         ),
         (
-            "Achievement",
+            localize_report_label("achievement", language),
             _format_percent(
                 achievement * 100
                 if achievement is not None
-                else None
+                else None,
+                language=language,
             ),
         ),
     ]
@@ -1301,6 +1491,7 @@ def _build_production_slide(
             0.3,
             font_size=10,
             color=TEXT_MUTED,
+            language=language,
         )
         _add_text(
             slide,
@@ -1313,6 +1504,7 @@ def _build_production_slide(
             color=TEXT_DARK,
             bold=True,
             alignment=PP_ALIGN.RIGHT,
+            language=language,
         )
         _add_divider(
             slide,
@@ -1341,6 +1533,7 @@ def _build_production_slide(
         color=status[1],
         bold=True,
         alignment=PP_ALIGN.CENTER,
+        language=language,
     )
 
 def _build_operations_overview_slide(
@@ -1350,6 +1543,7 @@ def _build_operations_overview_slide(
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
     operation_profile: str,
+    language: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -1362,21 +1556,22 @@ def _build_operations_overview_slide(
         slide,
         branding,
         (
-            "Plant and Safety Overview"
+            localize_report_label("plant_and_safety_overview", language)
             if is_sxew
-            else "Fleet, Plant and Safety Overview"
+            else localize_report_label("fleet_plant_and_safety_overview", language)
         ),
         (
-            "Recent processing and safety performance"
+            localize_report_label("recent_processing_and_safety", language)
             if is_sxew
-            else "Recent operational performance across supporting value streams"
+            else localize_report_label("recent_supporting_value_streams", language)
         ),
         4,
+        language,
     )
 
     plant_trend = plant_rows[-10:]
     plant_categories = [
-        _format_date(row.get("report_date"))
+        _format_date(row.get("report_date"), language)
         for row in plant_trend
     ]
     plant_achievement = [
@@ -1394,7 +1589,7 @@ def _build_operations_overview_slide(
             plant_categories,
             [
                 (
-                    "Throughput achievement",
+                    localize_report_label("throughput_achievement", language),
                     plant_achievement,
                     branding.primary_color_excel,
                 )
@@ -1403,13 +1598,14 @@ def _build_operations_overview_slide(
             2.02,
             12.2,
             2.1,
-            title="Plant throughput achievement",
+            title=localize_report_label("plant_throughput_achievement", language),
             percentage_axis=True,
+            language=language,
         )
     else:
         fleet_trend = fleet_rows[-10:]
         fleet_categories = [
-            _format_date(row.get("report_date"))
+            _format_date(row.get("report_date"), language)
             for row in fleet_trend
         ]
         fleet_availability = [
@@ -1426,12 +1622,12 @@ def _build_operations_overview_slide(
             fleet_categories,
             [
                 (
-                    "Availability",
+                    localize_report_label("availability", language),
                     fleet_availability,
                     BLUE,
                 ),
                 (
-                    "Utilization",
+                    localize_report_label("utilization", language),
                     fleet_utilization,
                     branding.primary_color_excel,
                 ),
@@ -1440,8 +1636,9 @@ def _build_operations_overview_slide(
             2.02,
             5.95,
             2.1,
-            title="Fleet performance",
+            title=localize_report_label("fleet_performance", language),
             percentage_axis=True,
+            language=language,
         )
 
         _add_line_chart(
@@ -1449,7 +1646,7 @@ def _build_operations_overview_slide(
             plant_categories,
             [
                 (
-                    "Throughput achievement",
+                    localize_report_label("throughput_achievement", language),
                     plant_achievement,
                     GREEN,
                 )
@@ -1458,8 +1655,9 @@ def _build_operations_overview_slide(
             2.02,
             5.95,
             2.1,
-            title="Plant throughput achievement",
+            title=localize_report_label("plant_throughput_achievement", language),
             percentage_axis=True,
+            language=language,
         )
 
     _add_rounded_rectangle(
@@ -1475,7 +1673,7 @@ def _build_operations_overview_slide(
 
     safety_metrics = [
         (
-            "Incidents",
+            localize_report_label("incidents", language),
             str(
                 int(
                     _number(
@@ -1484,10 +1682,10 @@ def _build_operations_overview_slide(
                 )
             )
             if latest_safety
-            else "No data",
+            else localize_report_label("no_data", language),
         ),
         (
-            "Near misses",
+            localize_report_label("powerpoint_near_misses", language),
             str(
                 int(
                     _number(
@@ -1496,10 +1694,10 @@ def _build_operations_overview_slide(
                 )
             )
             if latest_safety
-            else "No data",
+            else localize_report_label("no_data", language),
         ),
         (
-            "Critical risks",
+            localize_report_label("powerpoint_critical_risks", language),
             str(
                 int(
                     _number(
@@ -1508,23 +1706,24 @@ def _build_operations_overview_slide(
                 )
             )
             if latest_safety
-            else "No data",
+            else localize_report_label("no_data", language),
         ),
         (
-            "Safety score",
+            localize_report_label("powerpoint_safety_score", language),
             _format_percent(
                 _number(
                     latest_safety.get("safety_score")
                 )
                 if latest_safety
-                else None
+                else None,
+                language=language,
             ),
         ),
     ]
 
     _add_text(
         slide,
-        "Latest safety position",
+        localize_report_label("latest_safety_position", language),
         0.85,
         4.7,
         2.5,
@@ -1532,6 +1731,7 @@ def _build_operations_overview_slide(
         font_size=12,
         color=TEXT_DARK,
         bold=True,
+        language=language,
     )
 
     for index, (label, value) in enumerate(
@@ -1548,6 +1748,7 @@ def _build_operations_overview_slide(
             0.3,
             font_size=9.5,
             color=TEXT_MUTED,
+            language=language,
         )
         _add_text(
             slide,
@@ -1559,6 +1760,7 @@ def _build_operations_overview_slide(
             font_size=22,
             color=TEXT_DARK,
             bold=True,
+            language=language,
         )
 
 def _build_risk_slide(
@@ -1569,6 +1771,7 @@ def _build_risk_slide(
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
     operation_profile: str,
+    language: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -1580,9 +1783,10 @@ def _build_risk_slide(
     _add_standard_header(
         slide,
         branding,
-        "Key Operational Risks",
-        "Automated observations from the latest available operational records",
+        localize_report_label("key_operational_risks", language),
+        localize_report_label("automated_risk_observations", language),
         5,
+        language,
     )
 
     latest_production = _latest(production_rows)
@@ -1598,12 +1802,6 @@ def _build_risk_slide(
             latest_production.get("ore_plan"),
         )
 
-        production_name = (
-            "Cathode production"
-            if is_sxew
-            else "Ore production"
-        )
-
         if (
             production_achievement is not None
             and production_achievement < 0.9
@@ -1611,11 +1809,14 @@ def _build_risk_slide(
             risks.append(
                 (
                     "High",
-                    f"{production_name} materially below plan",
-                    (
-                        "Latest achievement is "
-                        f"{production_achievement * 100:.1f}%."
+                    localize_report_label(
+                        "cathode_materially_below_plan"
+                        if is_sxew else "ore_materially_below_plan",
+                        language,
                     ),
+                    localize_report_label(
+                        "latest_achievement_sentence", language
+                    ).format(value=f"{production_achievement * 100:.1f}"),
                 )
             )
         elif (
@@ -1625,11 +1826,13 @@ def _build_risk_slide(
             risks.append(
                 (
                     "Medium",
-                    f"{production_name} below plan",
-                    (
-                        "Latest achievement is "
-                        f"{production_achievement * 100:.1f}%."
+                    localize_report_label(
+                        "cathode_below_plan" if is_sxew else "ore_below_plan",
+                        language,
                     ),
+                    localize_report_label(
+                        "latest_achievement_sentence", language
+                    ).format(value=f"{production_achievement * 100:.1f}"),
                 )
             )
 
@@ -1645,22 +1848,20 @@ def _build_risk_slide(
             risks.append(
                 (
                     "High",
-                    "Fleet availability constraint",
-                    (
-                        "Latest availability is "
-                        f"{availability:.1f}%."
-                    ),
+                    localize_report_label("fleet_availability_constraint", language),
+                    localize_report_label(
+                        "latest_availability_sentence", language
+                    ).format(value=f"{availability:.1f}"),
                 )
             )
         elif availability < 90:
             risks.append(
                 (
                     "Medium",
-                    "Fleet availability below target",
-                    (
-                        "Latest availability is "
-                        f"{availability:.1f}%."
-                    ),
+                    localize_report_label("fleet_availability_below_target", language),
+                    localize_report_label(
+                        "latest_availability_sentence", language
+                    ).format(value=f"{availability:.1f}"),
                 )
             )
 
@@ -1668,22 +1869,20 @@ def _build_risk_slide(
             risks.append(
                 (
                     "High",
-                    "Fleet utilization constraint",
-                    (
-                        "Latest utilization is "
-                        f"{utilization:.1f}%."
-                    ),
+                    localize_report_label("fleet_utilization_constraint", language),
+                    localize_report_label(
+                        "latest_utilization_sentence", language
+                    ).format(value=f"{utilization:.1f}"),
                 )
             )
         elif utilization < 90:
             risks.append(
                 (
                     "Medium",
-                    "Fleet utilization below target",
-                    (
-                        "Latest utilization is "
-                        f"{utilization:.1f}%."
-                    ),
+                    localize_report_label("fleet_utilization_below_target", language),
+                    localize_report_label(
+                        "latest_utilization_sentence", language
+                    ).format(value=f"{utilization:.1f}"),
                 )
             )
 
@@ -1700,11 +1899,10 @@ def _build_risk_slide(
             risks.append(
                 (
                     "High",
-                    "Plant throughput materially below plan",
-                    (
-                        "Latest achievement is "
-                        f"{plant_achievement * 100:.1f}%."
-                    ),
+                    localize_report_label("plant_throughput_materially_below_plan", language),
+                    localize_report_label(
+                        "latest_achievement_sentence", language
+                    ).format(value=f"{plant_achievement * 100:.1f}"),
                 )
             )
         elif (
@@ -1714,11 +1912,10 @@ def _build_risk_slide(
             risks.append(
                 (
                     "Medium",
-                    "Plant throughput below plan",
-                    (
-                        "Latest achievement is "
-                        f"{plant_achievement * 100:.1f}%."
-                    ),
+                    localize_report_label("plant_throughput_below_plan", language),
+                    localize_report_label(
+                        "latest_achievement_sentence", language
+                    ).format(value=f"{plant_achievement * 100:.1f}"),
                 )
             )
 
@@ -1738,11 +1935,10 @@ def _build_risk_slide(
             risks.append(
                 (
                     "Critical",
-                    "Safety incident recorded",
-                    (
-                        f"{incidents} incident(s) "
-                        "in the latest record."
-                    ),
+                    localize_report_label("safety_incident_recorded", language),
+                    localize_report_label(
+                        "incident_latest_record_sentence", language
+                    ).format(count=incidents),
                 )
             )
 
@@ -1750,11 +1946,10 @@ def _build_risk_slide(
             risks.append(
                 (
                     "High",
-                    "Open critical safety risks",
-                    (
-                        f"{critical_risks} critical risk "
-                        "exposure(s) require review."
-                    ),
+                    localize_report_label("open_critical_safety_risks", language),
+                    localize_report_label(
+                        "critical_exposure_review_sentence", language
+                    ).format(count=critical_risks),
                 )
             )
 
@@ -1762,11 +1957,8 @@ def _build_risk_slide(
         risks.append(
             (
                 "Low",
-                "No material threshold exception detected",
-                (
-                    "Latest records are within the basic "
-                    "automated screening thresholds."
-                ),
+                localize_report_label("no_material_threshold_exception", language),
+                localize_report_label("screening_threshold_sentence", language),
             )
         )
 
@@ -1807,7 +1999,7 @@ def _build_risk_slide(
         )
         _add_text(
             slide,
-            level,
+            localize_report_label(level, language),
             0.88,
             top + 0.22,
             0.85,
@@ -1816,6 +2008,7 @@ def _build_risk_slide(
             color=level_color,
             bold=True,
             alignment=PP_ALIGN.CENTER,
+            language=language,
         )
 
         _add_text(
@@ -1828,6 +2021,7 @@ def _build_risk_slide(
             font_size=11,
             color=TEXT_DARK,
             bold=True,
+            language=language,
         )
 
         _add_text(
@@ -1839,12 +2033,14 @@ def _build_risk_slide(
             0.4,
             font_size=9.5,
             color=TEXT_MUTED,
+            language=language,
         )
 
 def _build_actions_slide(
     presentation: Presentation,
     branding: ReportBranding,
     actions: List[Dict[str, Any]],
+    language: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -1854,9 +2050,10 @@ def _build_actions_slide(
     _add_standard_header(
         slide,
         branding,
-        "Management Action Register",
-        "Priority actions requiring executive attention and ownership",
+        localize_report_label("management_action_register", language),
+        localize_report_label("priority_actions_subtitle", language),
         6,
+        language,
     )
 
     visible_actions = actions[:5]
@@ -1872,7 +2069,7 @@ def _build_actions_slide(
         )
         _add_text(
             slide,
-            "No executive actions are currently available.",
+            localize_report_label("no_executive_actions", language),
             1.0,
             3.4,
             11.3,
@@ -1880,15 +2077,16 @@ def _build_actions_slide(
             font_size=18,
             color=TEXT_MUTED,
             alignment=PP_ALIGN.CENTER,
+            language=language,
         )
         return
 
     headers = [
-        ("Priority", 0.7),
-        ("Action", 1.85),
-        ("Owner", 7.7),
-        ("Timing", 9.5),
-        ("Status", 11.05),
+        (localize_report_label("priority", language), 0.7),
+        (localize_report_label("action", language), 1.85),
+        (localize_report_label("owner", language), 7.7),
+        (localize_report_label("timing", language), 9.5),
+        (localize_report_label("status", language), 11.05),
     ]
 
     for label, left in headers:
@@ -1902,12 +2100,19 @@ def _build_actions_slide(
             font_size=9.5,
             color=TEXT_MUTED,
             bold=True,
+            language=language,
         )
 
     for index, action in enumerate(visible_actions):
         top = 2.46 + index * 0.82
-        priority = str(action.get("priority") or "Medium").title()
-        status = str(action.get("status") or "Open").title()
+        priority_value = getattr(action.get("priority"), "value", action.get("priority"))
+        priority = str(priority_value or "Medium").title()
+        priority_display = _localized_semantic_value(
+            action.get("priority"), language, fallback_key="medium"
+        )
+        status = _localized_semantic_value(
+            action.get("status"), language, fallback_key="open"
+        )
 
         priority_colors = {
             "Critical": (RED, RED_LIGHT),
@@ -1941,7 +2146,7 @@ def _build_actions_slide(
 
         _add_text(
             slide,
-            priority,
+            priority_display,
             0.79,
             top + 0.205,
             0.8,
@@ -1950,40 +2155,53 @@ def _build_actions_slide(
             color=priority_color,
             bold=True,
             alignment=PP_ALIGN.CENTER,
+            language=language,
         )
+
+        action_title = _localized_action_title(action.get("title"), language)
+        action_owner = _localized_action_owner(action.get("owner"), language)
 
         _add_text(
             slide,
-            str(action.get("title") or "Untitled action"),
+            action_title or localize_report_label("untitled_action", language),
             1.85,
-            top + 0.12,
+            top + (0.08 if language == "mn" else 0.12),
             5.55,
-            0.42,
-            font_size=10,
+            0.48 if language == "mn" else 0.42,
+            font_size=8.6 if language == "mn" else 10,
             color=TEXT_DARK,
             bold=True,
+            language=language,
         )
 
         _add_text(
             slide,
-            str(action.get("owner") or "Unassigned"),
+            action_owner or localize_report_label("unassigned", language),
             7.7,
-            top + 0.12,
+            top + (0.08 if language == "mn" else 0.12),
             1.55,
-            0.4,
-            font_size=9,
+            0.48 if language == "mn" else 0.4,
+            font_size=7.2 if language == "mn" else 9,
             color=TEXT_MUTED,
+            language=language,
         )
 
         _add_text(
             slide,
-            str(action.get("timing") or "Not set"),
+            (
+                format_report_date(action.get("timing"), language, "reporting_period_date")
+                if isinstance(action.get("timing"), (date, datetime))
+                else _localized_semantic_value(
+                    action.get("timing"), language, fallback_key="not_set"
+                )
+            ),
             9.5,
             top + 0.12,
             1.3,
             0.4,
             font_size=9,
             color=TEXT_MUTED,
+            language=language,
         )
 
         _add_text(
@@ -1996,6 +2214,7 @@ def _build_actions_slide(
             font_size=9,
             color=TEXT_DARK,
             bold=True,
+            language=language,
         )
 
 
@@ -2007,6 +2226,7 @@ def _build_recommendation_slide(
     plant_rows: List[Dict[str, Any]],
     safety_rows: List[Dict[str, Any]],
     operation_profile: str,
+    language: str,
 ) -> None:
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[6]
@@ -2018,9 +2238,10 @@ def _build_recommendation_slide(
     _add_standard_header(
         slide,
         branding,
-        "Executive Recommendations",
-        "Recommended management focus for the next operating cycle",
+        localize_report_label("executive_recommendations", language),
+        localize_report_label("recommendations_subtitle", language),
         7,
+        language,
     )
 
     recommendations: List[str] = []
@@ -2044,8 +2265,7 @@ def _build_recommendation_slide(
 
         if incidents > 0 or critical_risks > 0:
             recommendations.append(
-                "Confirm immediate controls, ownership, and close-out timing "
-                "for all current safety incidents and critical risk exposures."
+                localize_report_label("recommend_safety_controls", language)
             )
 
     if latest_production:
@@ -2060,13 +2280,11 @@ def _build_recommendation_slide(
         ):
             recommendations.append(
                 (
-                    "Review the cathode production constraint and agree a "
-                    "recoverable production plan for the next operating cycle."
+                    localize_report_label("recommend_cathode_recovery_plan", language)
                 )
                 if is_sxew
                 else (
-                    "Review the primary production constraint and agree a "
-                    "recoverable plan for ore movement before the next shift cycle."
+                    localize_report_label("recommend_ore_recovery_plan", language)
                 )
             )
 
@@ -2080,14 +2298,12 @@ def _build_recommendation_slide(
 
         if availability < 85:
             recommendations.append(
-                "Prioritize the equipment availability loss tree and confirm "
-                "maintenance recovery actions for the highest-impact assets."
+                localize_report_label("recommend_availability_actions", language)
             )
 
         if utilization < 80:
             recommendations.append(
-                "Review dispatch, delay, and operating-time losses to convert "
-                "available fleet capacity into productive utilization."
+                localize_report_label("recommend_utilization_actions", language)
             )
 
     if latest_plant:
@@ -2102,30 +2318,18 @@ def _build_recommendation_slide(
         ):
             recommendations.append(
                 (
-                    "Validate the plant throughput constraint and align "
-                    "processing priorities with the next achievable cathode "
-                    "production target."
+                    localize_report_label("recommend_sxew_throughput", language)
                 )
                 if is_sxew
                 else (
-                    "Validate the plant throughput constraint and align mine-to-"
-                    "mill priorities with the next achievable production target."
+                    localize_report_label("recommend_standard_throughput", language)
                 )
             )
 
     default_recommendations = [
-        (
-            "Keep one accountable owner and one completion date for each "
-            "executive action."
-        ),
-        (
-            "Review exceptions against plan daily and escalate only the "
-            "highest-value operational decisions."
-        ),
-        (
-            "Confirm data quality before using KPI movements for management "
-            "decisions."
-        ),
+        localize_report_label("recommend_accountable_owner", language),
+        localize_report_label("recommend_daily_exceptions", language),
+        localize_report_label("recommend_data_quality", language),
     ]
 
     for recommendation in default_recommendations:
@@ -2146,7 +2350,7 @@ def _build_recommendation_slide(
 
     _add_text(
         slide,
-        "Recommended next actions",
+        localize_report_label("recommended_next_actions", language),
         0.9,
         2.35,
         4.8,
@@ -2154,6 +2358,7 @@ def _build_recommendation_slide(
         font_size=15,
         color=TEXT_DARK,
         bold=True,
+        language=language,
     )
 
     _add_bullet_list(
@@ -2163,8 +2368,9 @@ def _build_recommendation_slide(
         3.0,
         7.45,
         3.1,
-        font_size=13,
+        font_size=11.5 if language == "mn" else 13,
         color=TEXT_DARK,
+        language=language,
     )
 
     primary = branding.primary_color_excel
@@ -2181,7 +2387,7 @@ def _build_recommendation_slide(
 
     _add_text(
         slide,
-        "Executive focus",
+        localize_report_label("executive_focus", language),
         9.45,
         2.45,
         2.9,
@@ -2189,34 +2395,34 @@ def _build_recommendation_slide(
         font_size=13,
         color=primary,
         bold=True,
+        language=language,
     )
 
     _add_text(
         slide,
-        "Safety first.\nProtect the plan.\nClose the actions.",
+        localize_report_label("executive_focus_statement", language),
         9.45,
         3.25,
         2.85,
         1.8,
-        font_size=24,
+        font_size=20 if language == "mn" else 24,
         color=WHITE,
         bold=True,
         vertical_anchor=MSO_ANCHOR.TOP,
+        language=language,
     )
 
     _add_text(
         slide,
-        (
-            "This board pack summarizes current operational records and "
-            "supports—not replaces—management judgment."
-        ),
+        localize_report_label("board_pack_disclaimer", language),
         9.45,
         5.75,
         2.85,
         0.55,
-        font_size=9,
+        font_size=8.5 if language == "mn" else 9,
         color="CBD5E1",
         vertical_anchor=MSO_ANCHOR.TOP,
+        language=language,
     )
 
 def generate_executive_powerpoint(
@@ -2225,6 +2431,7 @@ def generate_executive_powerpoint(
     company_id: int,
     mine_id: int,
     operation_profile: str = "standard_mine",
+    language: str = "en",
 ) -> BytesIO:
     """
     Generate a tenant-isolated, operation-aware Executive Operations Board Pack.
@@ -2266,6 +2473,7 @@ def generate_executive_powerpoint(
     is_sxew = _is_sxew_operation(
         normalized_operation_profile
     )
+    report_language = normalize_report_language(language)
 
     branding = get_report_branding(
         db=db,
@@ -2305,21 +2513,33 @@ def generate_executive_powerpoint(
         company_id=company_id,
         mine_id=mine_id,
     )
+    branding = resolve_report_branding(
+        branding,
+        report_language,
+    )
+    reporting_period = _reporting_period_bounds(
+        production_rows,
+        fleet_rows,
+        plant_rows,
+        safety_rows,
+    )
 
     presentation = Presentation()
     presentation.slide_width = SLIDE_WIDTH
     presentation.slide_height = SLIDE_HEIGHT
 
     presentation.core_properties.title = (
-        f"{branding.company_name} Executive Operations Board Pack"
+        f"{branding.company_name} "
+        f"{localize_report_label('executive_operations_board_pack', report_language)}"
     )
     presentation.core_properties.subject = (
-        f"Operational board pack for {branding.mine_name}"
+        f"{localize_report_label('executive_operations_board_pack', report_language)} — "
+        f"{branding.mine_name}"
     )
     presentation.core_properties.author = "Mine Manager AI"
     presentation.core_properties.company = branding.company_name
     presentation.core_properties.comments = (
-        "Generated by Mine Manager AI from tenant-isolated operational data."
+        localize_report_label("board_pack_disclaimer", report_language)
     )
     presentation.core_properties.created = datetime.now()
     presentation.core_properties.modified = datetime.now()
@@ -2327,6 +2547,8 @@ def generate_executive_powerpoint(
     _build_cover_slide(
         presentation,
         branding,
+        report_language,
+        reporting_period,
     )
 
     _build_kpi_summary_slide(
@@ -2337,6 +2559,7 @@ def generate_executive_powerpoint(
         plant_rows,
         safety_rows,
         normalized_operation_profile,
+        report_language,
     )
 
     _build_production_slide(
@@ -2344,6 +2567,7 @@ def generate_executive_powerpoint(
         branding,
         production_rows,
         normalized_operation_profile,
+        report_language,
     )
 
     _build_operations_overview_slide(
@@ -2353,6 +2577,7 @@ def generate_executive_powerpoint(
         plant_rows,
         safety_rows,
         normalized_operation_profile,
+        report_language,
     )
 
     _build_risk_slide(
@@ -2363,12 +2588,14 @@ def generate_executive_powerpoint(
         plant_rows,
         safety_rows,
         normalized_operation_profile,
+        report_language,
     )
 
     _build_actions_slide(
         presentation,
         branding,
         executive_actions,
+        report_language,
     )
 
     _build_recommendation_slide(
@@ -2379,6 +2606,7 @@ def generate_executive_powerpoint(
         plant_rows,
         safety_rows,
         normalized_operation_profile,
+        report_language,
     )
 
     buffer = BytesIO()

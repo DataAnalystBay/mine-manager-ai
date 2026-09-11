@@ -32,6 +32,7 @@ import { getSafetyTrend, getTodaySafety } from "../api/safetyApi";
 import SafetyTrendChart from "../components/SafetyTrendChart";
 import ExecutiveActionDialog from "../components/executive/ExecutiveActionDialog";
 import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDate } from "../utils/displayDateTime";
 import "./Plant.css";
 
 const SAFETY_SCORE_TARGET = 95;
@@ -61,13 +62,7 @@ function formatTranslation(t, key, values) {
 
 function formatDate(dateValue, language, t) {
   if (!dateValue) return t("safety.unavailable");
-  const parsed = new Date(dateValue);
-  if (Number.isNaN(parsed.getTime())) return dateValue;
-  return parsed.toLocaleDateString(language === "MN" ? "mn-MN" : "en-US", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  });
+  return formatDisplayDate(dateValue, language, dateValue);
 }
 
 function normalizeTrend(rows) {

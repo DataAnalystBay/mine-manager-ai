@@ -19,6 +19,10 @@ import {
 import {
   useLanguage,
 } from "../context/LanguageContext";
+import {
+  resolveCompanyDisplayName,
+  resolveMineDisplayName,
+} from "../utils/customerIdentity";
 
 import useAuth
   from "../hooks/useAuth";
@@ -321,13 +325,17 @@ function Sidebar() {
      ========================================================== */
 
   const companyName =
-    company?.company_name ||
-    "Mine Manager AI";
+    resolveCompanyDisplayName(
+      company,
+      language,
+      "Mine Manager AI"
+    );
 
 
   const mineName =
-    mine?.mine_name ||
-    (
+    resolveMineDisplayName(
+      mine,
+      language,
       language === "MN"
         ? "Демо уурхай"
         : "Demo Mine"

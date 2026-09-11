@@ -53,6 +53,11 @@ from app.services.report_history_service import (
     record_failed_report,
     serialize_report_history,
 )
+from app.services.report_localization import (
+    build_content_disposition,
+    build_report_filename,
+    normalize_report_language,
+)
 from app.services.tenant_service import (
     resolve_authenticated_tenant,
 )
@@ -197,6 +202,23 @@ def _resolve_tenant(
     return tenant
 
 
+def _attach_customer_identity(report_data: dict, tenant: dict) -> dict:
+    """Carry configured display-name fields to PDF rendering boundaries."""
+
+    enriched = dict(report_data)
+    for field in (
+        "company_name",
+        "company_name_en",
+        "company_name_mn",
+        "mine_name",
+        "mine_name_en",
+        "mine_name_mn",
+    ):
+        if field in tenant:
+            enriched[field] = tenant.get(field)
+    return enriched
+
+
 def _generate_report_response(
     *,
     db: Session,
@@ -208,6 +230,7 @@ def _generate_report_response(
     report_name: str,
     report_format: str,
     filename: str,
+    ascii_filename: str,
     media_type: str,
     generated_by: str,
     company_id: int,
@@ -265,7 +288,10 @@ def _generate_report_response(
             media_type=media_type,
             headers={
                 "Content-Disposition": (
-                    f'attachment; filename="{filename}"'
+                    build_content_disposition(
+                        filename,
+                        ascii_filename,
+                    )
                 ),
                 "Content-Length": str(
                     file_size_bytes
@@ -344,6 +370,10 @@ def download_daily_executive_pdf(
             "the active mine."
         ),
     ),
+    lang: Optional[str] = Query(
+        default="en",
+        description="Report language: en or mn.",
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -358,6 +388,8 @@ def download_daily_executive_pdf(
     """
 
     del mine_name
+
+    report_language = normalize_report_language(lang)
 
     tenant = _resolve_tenant(
         db=db,
@@ -399,17 +431,25 @@ def download_daily_executive_pdf(
             ),
         )
 
-    filename = (
-        "Daily_Executive_Report_"
-        f"{datetime.now().strftime('%Y-%m-%d')}"
-        ".pdf"
+    generated_at = datetime.now()
+    filename = build_report_filename(
+        "daily_pdf",
+        report_language,
+        generated_at,
+    )
+    live_kpis = _attach_customer_identity(live_kpis, tenant)
+    ascii_filename = build_report_filename(
+        "daily_pdf",
+        "en",
+        generated_at,
     )
 
     return _generate_report_response(
         db=db,
         generator=lambda: (
             generate_daily_executive_pdf(
-                live_kpis
+                live_kpis,
+                language=report_language,
             )
         ),
         report_key=(
@@ -420,6 +460,7 @@ def download_daily_executive_pdf(
         ),
         report_format="PDF",
         filename=filename,
+        ascii_filename=ascii_filename,
         media_type="application/pdf",
         generated_by=(
             _get_generated_by(
@@ -458,6 +499,10 @@ def download_weekly_operations_pdf(
             "the active mine."
         ),
     ),
+    lang: Optional[str] = Query(
+        default="en",
+        description="Report language: en or mn.",
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -470,6 +515,8 @@ def download_weekly_operations_pdf(
     """
 
     del mine_name
+
+    report_language = normalize_report_language(lang)
 
     tenant = _resolve_tenant(
         db=db,
@@ -511,17 +558,25 @@ def download_weekly_operations_pdf(
             ),
         )
 
-    filename = (
-        "Weekly_Operations_Report_"
-        f"{datetime.now().strftime('%Y-%m-%d')}"
-        ".pdf"
+    generated_at = datetime.now()
+    filename = build_report_filename(
+        "weekly_pdf",
+        report_language,
+        generated_at,
+    )
+    weekly_kpis = _attach_customer_identity(weekly_kpis, tenant)
+    ascii_filename = build_report_filename(
+        "weekly_pdf",
+        "en",
+        generated_at,
     )
 
     return _generate_report_response(
         db=db,
         generator=lambda: (
             generate_weekly_operations_pdf(
-                weekly_kpis
+                weekly_kpis,
+                language=report_language,
             )
         ),
         report_key=(
@@ -532,6 +587,7 @@ def download_weekly_operations_pdf(
         ),
         report_format="PDF",
         filename=filename,
+        ascii_filename=ascii_filename,
         media_type="application/pdf",
         generated_by=(
             _get_generated_by(
@@ -570,6 +626,10 @@ def download_monthly_kpi_pdf(
             "the active mine."
         ),
     ),
+    lang: Optional[str] = Query(
+        default="en",
+        description="Report language: en or mn.",
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -582,6 +642,8 @@ def download_monthly_kpi_pdf(
     """
 
     del mine_name
+
+    report_language = normalize_report_language(lang)
 
     tenant = _resolve_tenant(
         db=db,
@@ -623,17 +685,25 @@ def download_monthly_kpi_pdf(
             ),
         )
 
-    filename = (
-        "Monthly_KPI_Pack_"
-        f"{datetime.now().strftime('%Y-%m-%d')}"
-        ".pdf"
+    generated_at = datetime.now()
+    filename = build_report_filename(
+        "monthly_pdf",
+        report_language,
+        generated_at,
+    )
+    monthly_kpis = _attach_customer_identity(monthly_kpis, tenant)
+    ascii_filename = build_report_filename(
+        "monthly_pdf",
+        "en",
+        generated_at,
     )
 
     return _generate_report_response(
         db=db,
         generator=lambda: (
             generate_monthly_kpi_pdf(
-                monthly_kpis
+                monthly_kpis,
+                language=report_language,
             )
         ),
         report_key=(
@@ -644,6 +714,7 @@ def download_monthly_kpi_pdf(
         ),
         report_format="PDF",
         filename=filename,
+        ascii_filename=ascii_filename,
         media_type="application/pdf",
         generated_by=(
             _get_generated_by(
@@ -672,6 +743,10 @@ def download_monthly_kpi_pdf(
     ],
 )
 def download_executive_excel_export(
+    lang: Optional[str] = Query(
+        default="en",
+        description="Export language: en or mn.",
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -697,10 +772,18 @@ def download_executive_excel_export(
         current_user=current_user,
     )
 
-    filename = (
-        "Mine_Manager_AI_Executive_Export_"
-        f"{datetime.now().strftime('%Y-%m-%d')}"
-        ".xlsx"
+    report_language = normalize_report_language(lang)
+
+    generated_at = datetime.now()
+    filename = build_report_filename(
+        "excel_export",
+        report_language,
+        generated_at,
+    )
+    ascii_filename = build_report_filename(
+        "excel_export",
+        "en",
+        generated_at,
     )
 
     return _generate_report_response(
@@ -718,6 +801,7 @@ def download_executive_excel_export(
                 operation_profile=tenant[
                     "operation_profile"
                 ],
+                language=report_language,
             )
         ),
 
@@ -732,6 +816,7 @@ def download_executive_excel_export(
         report_format="XLSX",
 
         filename=filename,
+        ascii_filename=ascii_filename,
 
         media_type=(
             "application/vnd."
@@ -768,6 +853,10 @@ def download_executive_excel_export(
     ],
 )
 def download_executive_powerpoint(
+    lang: Optional[str] = Query(
+        default="en",
+        description="Export language: en or mn.",
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -793,10 +882,18 @@ def download_executive_powerpoint(
         current_user=current_user,
     )
 
-    filename = (
-        "Mine_Manager_AI_Executive_Board_Pack_"
-        f"{datetime.now().strftime('%Y-%m-%d')}"
-        ".pptx"
+    report_language = normalize_report_language(lang)
+
+    generated_at = datetime.now()
+    filename = build_report_filename(
+        "board_pack",
+        report_language,
+        generated_at,
+    )
+    ascii_filename = build_report_filename(
+        "board_pack",
+        "en",
+        generated_at,
     )
 
     return _generate_report_response(
@@ -814,6 +911,7 @@ def download_executive_powerpoint(
                 operation_profile=tenant[
                     "operation_profile"
                 ],
+                language=report_language,
             )
         ),
 
@@ -828,6 +926,7 @@ def download_executive_powerpoint(
         report_format="PPTX",
 
         filename=filename,
+        ascii_filename=ascii_filename,
 
         media_type=(
             "application/vnd."

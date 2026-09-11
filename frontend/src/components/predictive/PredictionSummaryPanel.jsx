@@ -87,6 +87,95 @@ function getPredictionOrder(
 }
 
 
+function translateExecutiveMessage(
+  value,
+  uiLanguage,
+  isSxewOperation,
+) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  if (uiLanguage !== "MN") {
+    if (!isSxewOperation) {
+      return text;
+    }
+
+    return text
+      .replaceAll(
+        "Ore Production",
+        "Cathode Production",
+      )
+      .replaceAll(
+        "Plant Performance",
+        "Process Plant Performance",
+      );
+  }
+
+  const kpiReplacements = isSxewOperation
+    ? [
+        [/Cathode Production/gi, "Катодын зэсийн үйлдвэрлэл"],
+        [/Ore Production/gi, "Катодын зэсийн үйлдвэрлэл"],
+        [/Process Plant Performance/gi, "Үйлдвэрийн гүйцэтгэл"],
+        [/Plant Performance/gi, "Үйлдвэрийн гүйцэтгэл"],
+        [/Cu Recovery/gi, "Зэс авалт"],
+        [/Copper Recovery/gi, "Зэс авалт"],
+        [/Safety Performance/gi, "Аюулгүй ажиллагааны гүйцэтгэл"],
+        [/Safety/gi, "Аюулгүй ажиллагаа"],
+        [/Mine Health Score/gi, "Уурхайн нэгдсэн төлөвийн үнэлгээ"],
+        [/Mine Health/gi, "Уурхайн нэгдсэн төлөв"],
+      ]
+    : [
+        [/Ore Production/gi, "Хүдрийн олборлолт"],
+        [/Waste Movement/gi, "Хөрс хуулалт"],
+        [/Fleet Performance/gi, "Техникийн гүйцэтгэл"],
+        [/Plant Performance/gi, "Үйлдвэрийн гүйцэтгэл"],
+        [/Safety Performance/gi, "Аюулгүй ажиллагааны гүйцэтгэл"],
+        [/Safety/gi, "Аюулгүй ажиллагаа"],
+        [/Mine Health Score/gi, "Уурхайн нэгдсэн төлөвийн үнэлгээ"],
+        [/Mine Health/gi, "Уурхайн нэгдсэн төлөв"],
+      ];
+
+  let translated = text;
+
+  kpiReplacements.forEach(
+    ([pattern, replacement]) => {
+      translated = translated.replace(
+        pattern,
+        replacement,
+      );
+    },
+  );
+
+  translated = translated
+    .replace(
+      /\s+(?:is|are) forecast to decline over the next three shifts based on recent performance\./i,
+      " сүүлийн үеийн гүйцэтгэлд үндэслэн дараагийн 3 ээлжид буурах төлөвтэй байна.",
+    )
+    .replace(
+      /\s+(?:is|are) forecast to improve over the next three shifts based on recent performance\./i,
+      " сүүлийн үеийн гүйцэтгэлд үндэслэн дараагийн 3 ээлжид сайжрах төлөвтэй байна.",
+    )
+    .replace(
+      /^Available KPI performance is forecast to remain broadly stable over the next three shifts\.$/i,
+      "Боломжит KPI үзүүлэлтүүдийн гүйцэтгэл дараагийн 3 ээлжид ерөнхийдөө тогтвортой байх төлөвтэй байна.",
+    )
+    .replace(
+      /^No significant KPI movement is forecast over the next three shifts\.$/i,
+      "Дараагийн 3 ээлжид KPI үзүүлэлтүүдэд мэдэгдэхүйц өөрчлөлт гарах төлөвгүй байна.",
+    )
+    .replace(
+      /^Not enough historical KPI data is available to generate a reliable forecast\.$/i,
+      "Найдвартай урьдчилсан төлөв гаргахад түүхэн KPI өгөгдөл хангалтгүй байна.",
+    )
+    .replace(/\band\b/gi, "болон");
+
+  return translated;
+}
+
+
 function getOutlookConfig(outlook, t) {
   const normalizedOutlook = String(
     outlook || "",
@@ -148,10 +237,26 @@ function formatGeneratedAt(
     return fallbackLabel;
   }
 
+  if (language === "MN") {
+    const year = value.getFullYear();
+    const month = String(
+      value.getMonth() + 1,
+    ).padStart(2, "0");
+    const day = String(
+      value.getDate(),
+    ).padStart(2, "0");
+    const hour = String(
+      value.getHours(),
+    ).padStart(2, "0");
+    const minute = String(
+      value.getMinutes(),
+    ).padStart(2, "0");
+
+    return `${year}.${month}.${day} ${hour}:${minute}`;
+  }
+
   return value.toLocaleString(
-    language === "MN"
-      ? "mn-MN"
-      : "en-GB",
+    "en-GB",
     {
       day: "2-digit",
       month: "short",
@@ -559,12 +664,6 @@ function PredictionSummaryPanel({
     >
       <header className="prediction-summary__header">
         <div>
-          <p className="prediction-summary__eyebrow">
-            {t(
-              "predictionSummary.sprintLabel",
-            )}
-          </p>
-
           <h2 className="prediction-summary__title">
             {t(
               "predictionSummary.title",
@@ -719,7 +818,11 @@ function PredictionSummaryPanel({
               </h3>
 
               <p className="prediction-summary__overview-message">
-                {predictionData.executive_message}
+                {translateExecutiveMessage(
+                  predictionData.executive_message,
+                  uiLanguage,
+                  isSxewOperation,
+                )}
               </p>
 
               <div className="prediction-summary__overview-note">

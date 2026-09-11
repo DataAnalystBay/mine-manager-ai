@@ -24,6 +24,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDate } from "../../utils/displayDateTime";
 
 const STATUS_OPTIONS = [
   {
@@ -164,22 +165,7 @@ function formatDate(
     );
   }
 
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return dateValue;
-  }
-
-  return new Intl.DateTimeFormat(
-    language === "MN"
-      ? "mn-MN"
-      : "en-GB",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  ).format(date);
+  return formatDisplayDate(dateValue, language, dateValue);
 }
 
 function isOverdue(action) {

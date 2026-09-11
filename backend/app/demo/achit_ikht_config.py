@@ -1,6 +1,7 @@
 ACHIT_IKHT_CONFIG = {
     "company": {
         "name": "Achit-Ikht LLC",
+        "name_en": "Achit-Ikht LLC",
         "name_mn": "Ачит-Ихт ХХК",
         "country": "Mongolia",
         "industry": "Mining / Mineral Processing",
@@ -15,7 +16,8 @@ ACHIT_IKHT_CONFIG = {
 
     "mine": {
         "name": "Achit-Ikht Copper Cathode Operation",
-        "name_mn": "Ачит-Ихт катодын зэсийн үйлдвэр",
+        "name_en": "Achit-Ikht Copper Cathode Operation",
+        "name_mn": "Ачит-Ихт Зэсийн Катодын Үйлдвэр",
         "operation_type": "Processing Plant / SX-EW",
         "status": "active",
         "annual_capacity_tonnes": 10000,

@@ -33,6 +33,7 @@ import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 
 import { getReportHistory } from "../../api/reportHistoryApi";
 import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDateTime } from "../../utils/displayDateTime";
 
 /* ============================================================
    FORMAT THEME
@@ -132,22 +133,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
       return "—";
     }
 
-    const generatedDate = new Date(value);
-
-    if (Number.isNaN(generatedDate.getTime())) {
-      return value;
-    }
-
-    return generatedDate.toLocaleString(
-      language === "MN" ? "mn-MN" : "en-US",
-      {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
+    return formatDisplayDateTime(value, language, value);
   };
 
   /* ==========================================================
@@ -540,12 +526,12 @@ function ReportHistoryTable({ refreshKey = 0 }) {
                 }}
               >
                 {[
-                  ["REPORT", "31%"],
-                  ["FORMAT", "10%"],
-                  ["MINE", "16%"],
-                  ["GENERATED", "22%"],
-                  ["SIZE", "9%"],
-                  ["STATUS", "12%"],
+                  [t("reports.report"), "31%"],
+                  [t("reports.format"), "10%"],
+                  [t("reports.mine"), "16%"],
+                  [t("reports.generated"), "22%"],
+                  [t("reports.size"), "9%"],
+                  [t("reports.status"), "12%"],
                 ].map(([label, width]) => (
                   <TableCell
                     key={label}

@@ -159,7 +159,64 @@ function transformSxewText(
   let text = String(value);
 
   if (apiLanguage === "mn") {
+    /*
+     * Translate the deterministic English phrases returned by the
+     * Executive Insights backend before the card renders them.
+     * Keep product/technical abbreviations such as SX-EW, PLS and EW.
+     */
+
+    const sentenceReplacements = [
+      [
+        /^Immediate executive attention is required:\s*(.+)\.$/i,
+        "Удирдлагын яаралтай анхаарал шаардлагатай: $1.",
+      ],
+      [
+        /^High-priority operational review required:\s*(.+)\.$/i,
+        "Үйл ажиллагааны өндөр ач холбогдолтой хяналт шаардлагатай: $1.",
+      ],
+      [
+        /^Cathode Production is ([\d.]+)% below target, operating at ([\d.]+)% of plan\.$/i,
+        "Катодын зэсийн үйлдвэрлэл зорилтоос $1%-иар доогуур, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+      ],
+      [
+        /^Cathode Production is ([\d.]+) percentage points below target performance\.$/i,
+        "Катодын зэсийн үйлдвэрлэлийн гүйцэтгэл зорилтот түвшнээс $1 нэгж хувиар доогуур байна.",
+      ],
+      [
+        /^Cathode Production is ([\d.]+)% above target, operating at ([\d.]+)% of plan\.$/i,
+        "Катодын зэсийн үйлдвэрлэл зорилтоос $1%-иар дээгүүр, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+      ],
+      [
+        /^Mine Health trend is (.+)\.$/i,
+        "Уурхайн нэгдсэн төлөвийн хандлага $1 байна.",
+      ],
+      [
+        /^Mine Health is (.+) over the available reporting period\.$/i,
+        "Боломжит тайлант хугацаанд уурхайн нэгдсэн төлөв $1 байна.",
+      ],
+      [
+        /^The score changed from ([\d.]+)% to ([\d.]+)%, a movement of (-?[\d.]+) percentage points\.$/i,
+        "Нэгдсэн үнэлгээ $1%-аас $2% болж, $3 нэгж хувиар өөрчлөгдсөн.",
+      ],
+      [
+        /^No negative direct cathode production impact is currently estimated\.$/i,
+        "Одоогоор катодын зэсийн үйлдвэрлэлд шууд сөрөг нөлөө үүсэхээргүй байна.",
+      ],
+      [
+        /^Maintain current operating rhythm and continue monitoring leading indicators\.$/i,
+        "Одоогийн үйл ажиллагааны хэмнэлийг хадгалж, тэргүүлэх үзүүлэлтүүдийн хяналтыг үргэлжлүүлнэ үү.",
+      ],
+    ];
+
+    sentenceReplacements.forEach(([pattern, replacement]) => {
+      text = text.replace(pattern, replacement);
+    });
+
     const replacements = [
+      [/Available reporting period/gi, "Боломжит тайлант хугацаа"],
+      [/Cathode Production Below Target/gi, "Катодын зэсийн үйлдвэрлэл зорилтот түвшнээс доогуур"],
+      [/Cathode Production/gi, "Катодын зэсийн үйлдвэрлэл"],
+      [/cathode production/gi, "катодын зэсийн үйлдвэрлэл"],
       [/Ore Production/gi, "Катодын зэсийн үйлдвэрлэл"],
       [/ore production/gi, "катодын зэсийн үйлдвэрлэл"],
       [/Ore Performance/gi, "Катодын үйлдвэрлэлийн гүйцэтгэл"],
@@ -167,13 +224,22 @@ function transformSxewText(
       [/Plant Performance/gi, "Үйлдвэрийн гүйцэтгэл"],
       [/plant performance/gi, "үйлдвэрийн гүйцэтгэл"],
       [/Process Plant/gi, "Үйлдвэр"],
-      [/Cu Recovery/gi, "Cu Recovery"],
-      [/Copper Recovery/gi, "Cu Recovery"],
-      [/copper recovery/gi, "Cu recovery"],
+      [/Cu Recovery/gi, "Зэс авалт"],
+      [/Cu recovery/gi, "зэс авалт"],
+      [/Copper Recovery/gi, "Зэс авалт"],
+      [/copper recovery/gi, "зэс авалт"],
+      [/Mine Health Score/gi, "Уурхайн нэгдсэн төлөвийн үнэлгээ"],
+      [/Mine Health/gi, "Уурхайн нэгдсэн төлөв"],
       [/Mine Operations/gi, "Үйлдвэрлэлийн үйл ажиллагаа"],
       [/mine operations/gi, "үйлдвэрлэлийн үйл ажиллагаа"],
       [/shovel allocation/gi, "үйлдвэрлэлийн хүчин чадлын хуваарилалт"],
       [/mining sequence/gi, "үйлдвэрлэлийн дараалал"],
+      [/short-interval control/gi, "богино хугацааны үйл ажиллагааны хяналт"],
+      [/percentage points/gi, "нэгж хувь"],
+      [/below target performance/gi, "зорилтот түвшнээс доогуур"],
+      [/below target/gi, "зорилтот түвшнээс доогуур"],
+      [/operating at/gi, "гүйцэтгэл"],
+      [/of plan/gi, "төлөвлөгөөний"],
     ];
 
     replacements.forEach(
@@ -218,6 +284,151 @@ function transformSxewText(
 
 
 /**
+ * Translate deterministic Executive Insights backend text for a
+ * standard mining operation when the UI language is Mongolian.
+ *
+ * This is display-only compatibility logic. Raw API values and
+ * backend calculations remain unchanged.
+ */
+function transformStandardMineText(
+  value,
+  apiLanguage,
+) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  let text = String(value);
+
+  if (apiLanguage !== "mn") {
+    return text;
+  }
+
+  const sentenceReplacements = [
+    [
+      /^Ore Production is ([\d.]+)% above target, operating at ([\d.]+)% of plan\.$/i,
+      "Хүдрийн олборлолт зорилтоос $1%-иар дээгүүр, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Ore Production is ([\d.]+)% below target, operating at ([\d.]+)% of plan\.$/i,
+      "Хүдрийн олборлолт зорилтоос $1%-иар доогуур, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Waste Movement is ([\d.]+)% above target, operating at ([\d.]+)% of plan\.$/i,
+      "Хөрс хуулалт зорилтоос $1%-иар дээгүүр, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Waste Movement is ([\d.]+)% below target, operating at ([\d.]+)% of plan\.$/i,
+      "Хөрс хуулалт зорилтоос $1%-иар доогуур, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Fleet Performance is ([\d.]+)% above target, operating at ([\d.]+)% of plan\.$/i,
+      "Техникийн гүйцэтгэл зорилтоос $1%-иар дээгүүр, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Fleet Performance is ([\d.]+)% below target, operating at ([\d.]+)% of plan\.$/i,
+      "Техникийн гүйцэтгэл зорилтоос $1%-иар доогуур, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Plant Performance is ([\d.]+)% above target, operating at ([\d.]+)% of plan\.$/i,
+      "Үйлдвэрийн гүйцэтгэл зорилтоос $1%-иар дээгүүр, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Plant Performance is ([\d.]+)% below target, operating at ([\d.]+)% of plan\.$/i,
+      "Үйлдвэрийн гүйцэтгэл зорилтоос $1%-иар доогуур, төлөвлөгөөний $2%-ийн гүйцэтгэлтэй байна.",
+    ],
+    [
+      /^Mine Health trend is (.+)\.$/i,
+      "Уурхайн нэгдсэн төлөвийн хандлага $1 байна.",
+    ],
+    [
+      /^Mine Health is (.+) over the available reporting period\.$/i,
+      "Боломжит тайлант хугацаанд уурхайн нэгдсэн төлөв $1 байна.",
+    ],
+    [
+      /^No negative ore production performance gap is currently estimated\.$/i,
+      "Одоогоор хүдрийн олборлолтын гүйцэтгэлд сөрөг зөрүү тооцоологдоогүй байна.",
+    ],
+    [
+      /^No negative waste movement performance gap is currently estimated\.$/i,
+      "Одоогоор хөрс хуулалтын гүйцэтгэлд сөрөг зөрүү тооцоологдоогүй байна.",
+    ],
+    [
+      /^No negative fleet performance gap is currently estimated\.$/i,
+      "Одоогоор техникийн гүйцэтгэлд сөрөг зөрүү тооцоологдоогүй байна.",
+    ],
+    [
+      /^No negative plant performance gap is currently estimated\.$/i,
+      "Одоогоор үйлдвэрийн гүйцэтгэлд сөрөг зөрүү тооцоологдоогүй байна.",
+    ],
+    [
+      /^Immediate executive attention is required:\s*(.+)\.$/i,
+      "Удирдлагын яаралтай анхаарал шаардлагатай: $1.",
+    ],
+    [
+      /^High-priority operational review required:\s*(.+)\.$/i,
+      "Үйл ажиллагааны өндөр ач холбогдолтой хяналт шаардлагатай: $1.",
+    ],
+    [
+      /^The score changed from ([\d.]+)% to ([\d.]+)%, a movement of (-?[\d.]+) percentage points\.$/i,
+      "Нэгдсэн үнэлгээ $1%-аас $2% болж, $3 нэгж хувиар өөрчлөгдсөн.",
+    ],
+    [
+      /^Maintain current operating rhythm and continue monitoring leading indicators\.$/i,
+      "Одоогийн үйл ажиллагааны хэмнэлийг хадгалж, тэргүүлэх үзүүлэлтүүдийн хяналтыг үргэлжлүүлнэ үү.",
+    ],
+  ];
+
+  sentenceReplacements.forEach(
+    ([pattern, replacement]) => {
+      text = text.replace(
+        pattern,
+        replacement,
+      );
+    },
+  );
+
+  const replacements = [
+    [/Available reporting period/gi, "Боломжит тайлант хугацаа"],
+    [/Ore Production Above Target/gi, "Хүдрийн олборлолт зорилтоос дээгүүр"],
+    [/Ore Production Below Target/gi, "Хүдрийн олборлолт зорилтоос доогуур"],
+    [/Waste Movement Above Target/gi, "Хөрс хуулалт зорилтоос дээгүүр"],
+    [/Waste Movement Below Target/gi, "Хөрс хуулалт зорилтоос доогуур"],
+    [/Fleet Performance Above Target/gi, "Техникийн гүйцэтгэл зорилтоос дээгүүр"],
+    [/Fleet Performance Below Target/gi, "Техникийн гүйцэтгэл зорилтоос доогуур"],
+    [/Plant Performance Above Target/gi, "Үйлдвэрийн гүйцэтгэл зорилтоос дээгүүр"],
+    [/Plant Performance Below Target/gi, "Үйлдвэрийн гүйцэтгэл зорилтоос доогуур"],
+    [/Ore Production/gi, "Хүдрийн олборлолт"],
+    [/ore production/gi, "хүдрийн олборлолт"],
+    [/Waste Movement/gi, "Хөрс хуулалт"],
+    [/waste movement/gi, "хөрс хуулалт"],
+    [/Fleet Performance/gi, "Техникийн гүйцэтгэл"],
+    [/fleet performance/gi, "техникийн гүйцэтгэл"],
+    [/Plant Performance/gi, "Үйлдвэрийн гүйцэтгэл"],
+    [/plant performance/gi, "үйлдвэрийн гүйцэтгэл"],
+    [/Safety Performance/gi, "Аюулгүй ажиллагааны гүйцэтгэл"],
+    [/safety performance/gi, "аюулгүй ажиллагааны гүйцэтгэл"],
+    [/Mine Health Score/gi, "Уурхайн нэгдсэн төлөвийн үнэлгээ"],
+    [/Mine Health/gi, "Уурхайн нэгдсэн төлөв"],
+    [/percentage points/gi, "нэгж хувь"],
+    [/below target performance/gi, "зорилтот түвшнээс доогуур"],
+    [/above target performance/gi, "зорилтот түвшнээс дээгүүр"],
+  ];
+
+  replacements.forEach(
+    ([pattern, replacement]) => {
+      text = text.replace(
+        pattern,
+        replacement,
+      );
+    },
+  );
+
+  return text;
+}
+
+
+/**
  * Recursively transform all string fields in one insight.
  *
  * This means the compatibility layer still works even when the
@@ -227,13 +438,15 @@ function transformSxewText(
 function transformInsightObject(
   value,
   apiLanguage,
+  isSxewOperation,
 ) {
   if (Array.isArray(value)) {
     return value.map(
       (item) =>
         transformInsightObject(
           item,
-          apiLanguage
+          apiLanguage,
+          isSxewOperation
         )
     );
   }
@@ -248,7 +461,8 @@ function transformInsightObject(
           key,
           transformInsightObject(
             itemValue,
-            apiLanguage
+            apiLanguage,
+            isSxewOperation
           ),
         ],
       )
@@ -256,10 +470,15 @@ function transformInsightObject(
   }
 
   if (typeof value === "string") {
-    return transformSxewText(
-      value,
-      apiLanguage
-    );
+    return isSxewOperation
+      ? transformSxewText(
+          value,
+          apiLanguage
+        )
+      : transformStandardMineText(
+          value,
+          apiLanguage
+        );
   }
 
   return value;
@@ -433,24 +652,31 @@ function ExecutiveInsightsPanel({
           data?.insights
         );
 
-      if (!isSxewOperation) {
-        return normalized;
+      const applicableInsights =
+        isSxewOperation
+          ? normalized.filter(
+              (insight) =>
+                !isInapplicableSxewInsight(
+                  insight
+                )
+            )
+          : normalized;
+
+      if (
+        apiLanguage !== "mn" &&
+        !isSxewOperation
+      ) {
+        return applicableInsights;
       }
 
-      return normalized
-        .filter(
-          (insight) =>
-            !isInapplicableSxewInsight(
-              insight
-            )
-        )
-        .map(
-          (insight) =>
-            transformInsightObject(
-              insight,
-              apiLanguage
-            )
-        );
+      return applicableInsights.map(
+        (insight) =>
+          transformInsightObject(
+            insight,
+            apiLanguage,
+            isSxewOperation
+          )
+      );
     }, [
       data?.insights,
       isSxewOperation,
@@ -489,12 +715,16 @@ function ExecutiveInsightsPanel({
         );
       }
 
-      return (
+      const translatedHeadline =
         translateDynamicExecutiveHeadline(
           value,
           t
         ) ||
-        value
+        value;
+
+      return transformStandardMineText(
+        translatedHeadline,
+        apiLanguage
       );
     }, [
       data?.executive_headline,
@@ -512,14 +742,25 @@ function ExecutiveInsightsPanel({
           ""
         ).trim();
 
-      return (
-        value ||
-        t(
+      if (!value) {
+        return t(
           "executiveInsights.reportingPeriodUnavailable"
-        )
-      );
+        );
+      }
+
+      return isSxewOperation
+        ? transformSxewText(
+            value,
+            apiLanguage
+          )
+        : transformStandardMineText(
+            value,
+            apiLanguage
+          );
     }, [
       data?.reporting_period,
+      isSxewOperation,
+      apiLanguage,
       t,
     ]);
 

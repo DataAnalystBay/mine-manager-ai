@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 
 import TimelineIcon from "@mui/icons-material/Timeline";
+import { useLanguage } from "../../context/LanguageContext";
 
 
 function formatNumber(
@@ -68,6 +69,7 @@ function CustomTooltip({
   payload,
   label,
 }) {
+  const { t } = useLanguage();
   if (
     !active ||
     !Array.isArray(payload) ||
@@ -97,7 +99,7 @@ function CustomTooltip({
           color: "#172033",
         }}
       >
-        {label || "Health check"}
+        {label || t("systemHealth.healthCheck")}
       </Typography>
 
       <Stack spacing={0.8}>
@@ -202,6 +204,7 @@ function MetricSummary({
 export default function SystemHealthTrendChart({
   data = [],
 }) {
+  const { t } = useLanguage();
   const chartData = Array.isArray(data)
     ? data
     : [];
@@ -291,7 +294,7 @@ export default function SystemHealthTrendChart({
                   color: "#172033",
                 }}
               >
-                Performance Timeline
+                {t("systemHealth.performanceTimeline")}
               </Typography>
 
               <Typography
@@ -301,8 +304,7 @@ export default function SystemHealthTrendChart({
                   color: "#64748b",
                 }}
               >
-                Response-time trend from
-                the latest 30 health checks.
+                {t("systemHealth.performanceTimelineDescription")}
               </Typography>
             </Box>
           </Stack>
@@ -310,7 +312,7 @@ export default function SystemHealthTrendChart({
 
         <Chip
           size="small"
-          label={`${chartData.length} / 30 checks`}
+          label={t("systemHealth.checksCount").replace("{count}", chartData.length)}
           sx={{
             height: 28,
             border:
@@ -335,17 +337,17 @@ export default function SystemHealthTrendChart({
         }}
       >
         <MetricSummary
-          label="Overall Check"
+          label={t("systemHealth.overallCheck")}
           value={latestOverall}
         />
 
         <MetricSummary
-          label="Database Latency"
+          label={t("systemHealth.databaseLatency")}
           value={latestDatabase}
         />
 
         <MetricSummary
-          label="Demo Data Check"
+          label={t("systemHealth.demoDataCheck")}
           value={latestDemoData}
         />
       </Box>
@@ -429,7 +431,7 @@ export default function SystemHealthTrendChart({
               <Line
                 type="monotone"
                 dataKey="overallMs"
-                name="Overall check"
+                name={t("systemHealth.overallCheck")}
                 stroke="#7c3aed"
                 strokeWidth={3}
                 dot={{
@@ -445,7 +447,7 @@ export default function SystemHealthTrendChart({
               <Line
                 type="monotone"
                 dataKey="databaseMs"
-                name="Database latency"
+                name={t("systemHealth.databaseLatency")}
                 stroke="#f97316"
                 strokeWidth={2.5}
                 dot={{
@@ -461,7 +463,7 @@ export default function SystemHealthTrendChart({
               <Line
                 type="monotone"
                 dataKey="demoDataMs"
-                name="Demo Data"
+                name={t("systemHealth.demoData")}
                 stroke="#16a34a"
                 strokeWidth={2.5}
                 dot={{
@@ -504,7 +506,7 @@ export default function SystemHealthTrendChart({
                 color: "#334155",
               }}
             >
-              No performance history yet
+              {t("systemHealth.noPerformanceHistory")}
             </Typography>
 
             <Typography
@@ -518,11 +520,7 @@ export default function SystemHealthTrendChart({
                 color: "#64748b",
               }}
             >
-              Health-check history will
-              appear after the first
-              successful request and will
-              continue building during
-              automatic and manual refreshes.
+              {t("systemHealth.noPerformanceHistoryDescription")}
             </Typography>
           </Box>
         )}

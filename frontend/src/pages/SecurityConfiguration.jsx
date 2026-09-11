@@ -8,31 +8,20 @@ import {
 } from "react-icons/fa";
 
 import { getDeploymentReadiness } from "../api/deploymentReadinessApi";
+import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDateTime } from "../utils/displayDateTime";
 import "./SecurityConfiguration.css";
 
 
-const CATEGORY_LABELS = {
-  application: "Application",
-  security: "Security",
-  database: "Database",
-  filesystem: "Filesystem",
-  dependencies: "Dependencies",
-  operations: "Operations",
-};
-
-
-const formatGeneratedDate = (value) => {
+const formatGeneratedDate = (value, language, t) => {
   if (!value) {
-    return "Not available";
+    return t("common.notAvailable");
   }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString();
+  return formatDisplayDateTime(value, language, {
+    seconds: true,
+    fallback: value,
+  });
 };
 
 
@@ -48,8 +37,17 @@ const getStatusIcon = (status) => {
   return <FaExclamationTriangle />;
 };
 
+const formatSecurityStatus = (status, t) => {
+  const normalized = String(status || "unknown").trim().toLowerCase();
+  const key = ["pass", "warning", "fail", "ready", "not_ready", "pilot_ready", "production_ready", "unknown"].includes(normalized)
+    ? `securityConfiguration.status_${normalized}`
+    : null;
+  return key ? t(key) : String(status || t("securityConfiguration.unknown"));
+};
+
 
 const SecurityConfiguration = () => {
+  const { language, t } = useLanguage();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,13 +69,13 @@ const SecurityConfiguration = () => {
     } catch (requestError) {
       setError(
         requestError?.message ||
-          "Unable to load the deployment readiness report.",
+          t("securityConfiguration.loadError"),
       );
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
 
   useEffect(() => {
@@ -99,11 +97,8 @@ const SecurityConfiguration = () => {
       <div className="security-config-page">
         <div className="security-loading-state">
           <FaShieldAlt className="security-loading-icon" />
-          <h2>Checking deployment readiness</h2>
-          <p>
-            Reviewing security, database, filesystem, dependencies,
-            and operational configuration.
-          </p>
+          <h2>{t("securityConfiguration.checking")}</h2>
+          <p>{t("securityConfiguration.checkingDescription")}</p>
         </div>
       </div>
     );
@@ -115,7 +110,7 @@ const SecurityConfiguration = () => {
       <div className="security-config-page">
         <div className="security-error-state">
           <FaTimesCircle />
-          <h2>Readiness check unavailable</h2>
+          <h2>{t("securityConfiguration.unavailable")}</h2>
           <p>{error}</p>
 
           <button
@@ -123,7 +118,7 @@ const SecurityConfiguration = () => {
             className="security-primary-button"
             onClick={() => loadReadinessReport()}
           >
-            Try Again
+            {t("securityConfiguration.tryAgain")}
           </button>
         </div>
       </div>
@@ -143,15 +138,12 @@ const SecurityConfiguration = () => {
         <div>
           <div className="security-page-eyebrow">
             <FaShieldAlt />
-            Security & Enterprise Readiness
+            {t("securityConfiguration.eyebrow")}
           </div>
 
-          <h1>Security Configuration Center</h1>
+          <h1>{t("securityConfiguration.title")}</h1>
 
-          <p>
-            Review deployment readiness, security controls, system
-            dependencies, and production configuration.
-          </p>
+          <p>{t("securityConfiguration.subtitle")}</p>
         </div>
 
         <button
@@ -161,7 +153,7 @@ const SecurityConfiguration = () => {
           disabled={refreshing}
         >
           <FaSyncAlt className={refreshing ? "is-spinning" : ""} />
-          {refreshing ? "Refreshing..." : "Refresh Checks"}
+          {refreshing ? t("securityConfiguration.refreshing") : t("securityConfiguration.refreshChecks")}
         </button>
       </div>
 
@@ -179,21 +171,21 @@ const SecurityConfiguration = () => {
           <div className="security-readiness-card-header">
             <div>
               <span className="security-card-label">
-                Deployment status
+                {t("securityConfiguration.deploymentStatus")}
               </span>
-              <h2>{readiness.label || "Unknown"}</h2>
+              <h2>{formatSecurityStatus(readiness.status || readiness.label, t)}</h2>
             </div>
 
             <div className="security-score-circle">
               <strong>{score.percentage ?? 0}%</strong>
-              <span>Ready</span>
+              <span>{t("securityConfiguration.ready")}</span>
             </div>
           </div>
 
           <p>{readiness.message}</p>
 
           <div className="security-generated-time">
-            Last checked: {formatGeneratedDate(report?.generated_at)}
+            {t("securityConfiguration.lastChecked")}: {formatGeneratedDate(report?.generated_at, language, t)}
           </div>
         </article>
 
@@ -202,7 +194,7 @@ const SecurityConfiguration = () => {
             <FaCheckCircle />
           </div>
           <div>
-            <span>Passed</span>
+            <span>{t("securityConfiguration.passed")}</span>
             <strong>{summary.passed ?? 0}</strong>
           </div>
         </article>
@@ -212,7 +204,7 @@ const SecurityConfiguration = () => {
             <FaExclamationTriangle />
           </div>
           <div>
-            <span>Warnings</span>
+            <span>{t("securityConfiguration.warnings")}</span>
             <strong>{summary.warnings ?? 0}</strong>
           </div>
         </article>
@@ -222,7 +214,7 @@ const SecurityConfiguration = () => {
             <FaTimesCircle />
           </div>
           <div>
-            <span>Failed</span>
+            <span>{t("securityConfiguration.failed")}</span>
             <strong>{summary.failed ?? 0}</strong>
           </div>
         </article>
@@ -233,9 +225,9 @@ const SecurityConfiguration = () => {
           <div className="security-section-heading">
             <div>
               <span className="security-section-eyebrow">
-                Immediate attention
+                {t("securityConfiguration.immediateAttention")}
               </span>
-              <h2>Blocking Issues</h2>
+              <h2>{t("securityConfiguration.blockingIssues")}</h2>
             </div>
 
             <span className="security-count-badge status-fail">
@@ -271,13 +263,13 @@ const SecurityConfiguration = () => {
         <div className="security-section-heading">
           <div>
             <span className="security-section-eyebrow">
-              System validation
+              {t("securityConfiguration.systemValidation")}
             </span>
-            <h2>Readiness Checks</h2>
+            <h2>{t("securityConfiguration.readinessChecks")}</h2>
           </div>
 
           <span className="security-total-checks">
-            {summary.total_checks ?? 0} checks
+            {summary.total_checks ?? 0} {t("securityConfiguration.checks")}
           </span>
         </div>
 
@@ -289,10 +281,10 @@ const SecurityConfiguration = () => {
             >
               <div className="security-category-header">
                 <h3>
-                  {CATEGORY_LABELS[categoryKey] || categoryKey}
+                  {t(`securityConfiguration.category_${categoryKey}`) || categoryKey}
                 </h3>
 
-                <span>{checks.length} checks</span>
+                <span>{checks.length} {t("securityConfiguration.checks")}</span>
               </div>
 
               <div className="security-check-list">
@@ -313,12 +305,12 @@ const SecurityConfiguration = () => {
                           <span
                             className={`security-status-badge status-${check.status}`}
                           >
-                            {check.status}
+                            {formatSecurityStatus(check.status, t)}
                           </span>
 
                           {!check.required && (
                             <span className="security-optional-badge">
-                              Optional
+                              {t("securityConfiguration.optional")}
                             </span>
                           )}
                         </div>
@@ -328,7 +320,7 @@ const SecurityConfiguration = () => {
 
                       {check.recommendation && (
                         <div className="security-check-recommendation">
-                          <strong>Recommended action:</strong>{" "}
+                          <strong>{t("securityConfiguration.recommendedAction")}:</strong>{" "}
                           {check.recommendation}
                         </div>
                       )}
@@ -345,9 +337,9 @@ const SecurityConfiguration = () => {
         <div className="security-section-heading">
           <div>
             <span className="security-section-eyebrow">
-              Configuration actions
+              {t("securityConfiguration.configurationActions")}
             </span>
-            <h2>Recommended Actions</h2>
+            <h2>{t("securityConfiguration.recommendedActions")}</h2>
           </div>
 
           <span className="security-count-badge status-warning">
@@ -359,11 +351,8 @@ const SecurityConfiguration = () => {
           <div className="security-empty-recommendations">
             <FaCheckCircle />
             <div>
-              <h3>No outstanding recommendations</h3>
-              <p>
-                The current deployment configuration passed all
-                recommended readiness checks.
-              </p>
+              <h3>{t("securityConfiguration.noRecommendations")}</h3>
+              <p>{t("securityConfiguration.noRecommendationsDescription")}</p>
             </div>
           </div>
         ) : (
@@ -384,7 +373,7 @@ const SecurityConfiguration = () => {
                     <span
                       className={`security-status-badge status-${item.status}`}
                     >
-                      {item.status}
+                      {formatSecurityStatus(item.status, t)}
                     </span>
                   </div>
 
@@ -400,31 +389,31 @@ const SecurityConfiguration = () => {
         <div className="security-section-heading">
           <div>
             <span className="security-section-eyebrow">
-              Deployment environment
+              {t("securityConfiguration.deploymentEnvironment")}
             </span>
-            <h2>Runtime Information</h2>
+            <h2>{t("securityConfiguration.runtimeInformation")}</h2>
           </div>
         </div>
 
         <div className="security-runtime-grid">
           <div>
-            <span>Environment</span>
-            <strong>{report?.runtime?.environment || "Unknown"}</strong>
+            <span>{t("securityConfiguration.environment")}</span>
+            <strong>{report?.runtime?.environment || t("securityConfiguration.unknown")}</strong>
           </div>
 
           <div>
             <span>Python</span>
-            <strong>{report?.runtime?.python_version || "Unknown"}</strong>
+            <strong>{report?.runtime?.python_version || t("securityConfiguration.unknown")}</strong>
           </div>
 
           <div>
-            <span>Operating system</span>
-            <strong>{report?.runtime?.operating_system || "Unknown"}</strong>
+            <span>{t("securityConfiguration.operatingSystem")}</span>
+            <strong>{report?.runtime?.operating_system || t("securityConfiguration.unknown")}</strong>
           </div>
 
           <div>
-            <span>Architecture</span>
-            <strong>{report?.runtime?.architecture || "Unknown"}</strong>
+            <span>{t("securityConfiguration.architecture")}</span>
+            <strong>{report?.runtime?.architecture || t("securityConfiguration.unknown")}</strong>
           </div>
         </div>
       </section>

@@ -610,6 +610,21 @@ def get_monthly_kpi_summary(
                 "recovery":
                     recovery,
 
+                # Chart-only values preserve missing Plant rows
+                # as gaps without changing established aggregate
+                # or compatibility fields above.
+                "throughput_chart": (
+                    throughput
+                    if plant_row is not None
+                    else None
+                ),
+
+                "recovery_chart": (
+                    recovery
+                    if plant_row is not None
+                    else None
+                ),
+
                 "safety":
                     incidents,
 

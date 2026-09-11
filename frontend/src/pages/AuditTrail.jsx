@@ -28,6 +28,8 @@ import HistoryIcon from "@mui/icons-material/History";
 
 import { getAuditLogs } from "../api/auditLogApi";
 import AuditFilterBar from "../components/audit/AuditFilterBar";
+import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDateTime } from "../utils/displayDateTime";
 
 import "./AuditTrail.css";
 
@@ -52,31 +54,25 @@ const INITIAL_SUMMARY = {
 };
 
 
-function formatDateTime(value) {
+function formatLabel(value, t) {
   if (!value) {
     return "—";
   }
 
-  const date = new Date(value);
+  const normalized = String(value).trim().toUpperCase();
+  const key = {
+    CREATE_USER: "createUser",
+    UPDATE_USER: "updateUser",
+    ACTIVATE_USER: "activateUser",
+    DEACTIVATE_USER: "deactivateUser",
+    RESET_PASSWORD: "resetPassword",
+    SUCCESS: "success",
+    FAILED: "failed",
+    USER: "user",
+  }[normalized];
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-}
-
-
-function formatLabel(value) {
-  if (!value) {
-    return "—";
+  if (key) {
+    return t(`auditTrail.${key}`);
   }
 
   return String(value)
@@ -155,6 +151,7 @@ function toEndDateTime(value) {
 
 
 function AuditTrail() {
+  const { language, t } = useLanguage();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
@@ -261,12 +258,12 @@ function AuditTrail() {
       setError(
         requestError?.userMessage ||
           requestError?.message ||
-          "Unable to load audit logs."
+          t("auditTrail.loadError")
       );
     } finally {
       setLoading(false);
     }
-  }, [apiFilters]);
+  }, [apiFilters, t]);
 
 
   useEffect(() => {
@@ -344,7 +341,7 @@ function AuditTrail() {
               component="h1"
               className="audit-trail-title"
             >
-              Audit Trail
+              {t("auditTrail.title")}
             </Typography>
           </Stack>
 
@@ -352,8 +349,7 @@ function AuditTrail() {
             variant="body2"
             className="audit-trail-subtitle"
           >
-            Review administrator activity,
-            account changes, and system events.
+            {t("auditTrail.subtitle")}
           </Typography>
         </Box>
 
@@ -363,7 +359,7 @@ function AuditTrail() {
           onClick={loadAuditLogs}
           disabled={loading}
         >
-          Refresh
+          {t("common.refresh")}
         </Button>
       </Stack>
 
@@ -402,7 +398,7 @@ function AuditTrail() {
             variant="body2"
             sx={{ color: "#64748b" }}
           >
-            Total Logs
+            {t("auditTrail.totalLogs")}
           </Typography>
 
           <Typography
@@ -430,7 +426,7 @@ function AuditTrail() {
             variant="body2"
             sx={{ color: "#166534" }}
           >
-            Successful
+            {t("auditTrail.successful")}
           </Typography>
 
           <Typography
@@ -458,7 +454,7 @@ function AuditTrail() {
             variant="body2"
             sx={{ color: "#b91c1c" }}
           >
-            Failed
+            {t("auditTrail.failed")}
           </Typography>
 
           <Typography
@@ -486,7 +482,7 @@ function AuditTrail() {
             variant="body2"
             sx={{ color: "#1d4ed8" }}
           >
-            Today&apos;s Activity
+            {t("auditTrail.todayActivity")}
           </Typography>
 
           <Typography
@@ -513,15 +509,14 @@ function AuditTrail() {
               variant="h6"
               className="audit-trail-card-title"
             >
-              Activity Records
+              {t("auditTrail.activityRecords")}
             </Typography>
 
             <Typography
               variant="body2"
               className="audit-trail-record-count"
             >
-              {total} record
-              {total === 1 ? "" : "s"}
+              {t(total === 1 ? "auditTrail.recordCount" : "auditTrail.recordsCount").replace("{count}", total)}
             </Typography>
           </Box>
         </Box>
@@ -542,32 +537,32 @@ function AuditTrail() {
         <TableContainer>
           <Table
             sx={{ minWidth: 1050 }}
-            aria-label="Audit trail records"
+            aria-label={t("auditTrail.recordsAria")}
           >
             <TableHead>
               <TableRow>
                 <TableCell>
-                  Date and Time
+                  {t("auditTrail.dateTime")}
                 </TableCell>
 
                 <TableCell>
-                  Actor
+                  {t("auditTrail.actor")}
                 </TableCell>
 
                 <TableCell>
-                  Action
+                  {t("auditTrail.action")}
                 </TableCell>
 
                 <TableCell>
-                  Entity
+                  {t("auditTrail.entity")}
                 </TableCell>
 
                 <TableCell>
-                  Description
+                  {t("auditTrail.description")}
                 </TableCell>
 
                 <TableCell>
-                  Status
+                  {t("auditTrail.status")}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -583,7 +578,7 @@ function AuditTrail() {
                       <CircularProgress size={30} />
 
                       <Typography variant="body2">
-                        Loading audit records...
+                        {t("auditTrail.loading")}
                       </Typography>
                     </Box>
                   </TableCell>
@@ -598,12 +593,11 @@ function AuditTrail() {
                       <HistoryIcon />
 
                       <Typography variant="h6">
-                        No audit records found
+                        {t("auditTrail.emptyTitle")}
                       </Typography>
 
                       <Typography variant="body2">
-                        Try changing or clearing
-                        the current filters.
+                        {t("auditTrail.emptyDescription")}
                       </Typography>
                     </Box>
                   </TableCell>
@@ -615,8 +609,13 @@ function AuditTrail() {
                     hover
                   >
                     <TableCell className="audit-date-cell">
-                      {formatDateTime(
-                        item.created_at
+                      {formatDisplayDateTime(
+                        item.created_at,
+                        language,
+                        {
+                          seconds: true,
+                          fallback: String(item.created_at || "—"),
+                        },
                       )}
                     </TableCell>
 
@@ -627,7 +626,7 @@ function AuditTrail() {
                           className="audit-actor-name"
                         >
                           {item.actor_name ||
-                            "System"}
+                            t("auditTrail.system")}
                         </Typography>
 
                         <Typography
@@ -643,7 +642,8 @@ function AuditTrail() {
                       <Chip
                         size="small"
                         label={formatLabel(
-                          item.action
+                          item.action,
+                          t
                         )}
                         color={getActionChipColor(
                           item.action
@@ -666,7 +666,8 @@ function AuditTrail() {
                         className="audit-entity-type"
                       >
                         {formatLabel(
-                          item.entity_type
+                          item.entity_type,
+                          t
                         )}
                       </Typography>
                     </TableCell>
@@ -679,7 +680,8 @@ function AuditTrail() {
                       <Chip
                         size="small"
                         label={formatLabel(
-                          item.status
+                          item.status,
+                          t
                         )}
                         color={getStatusChipColor(
                           item.status

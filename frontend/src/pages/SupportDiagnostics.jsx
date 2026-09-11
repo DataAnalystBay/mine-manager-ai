@@ -30,22 +30,18 @@ import {
   downloadSupportDiagnostics,
   getSupportDiagnostics,
 } from "../api/supportDiagnosticsApi";
+import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDateTime } from "../utils/displayDateTime";
 
 import "./SupportDiagnostics.css";
 
-const STATUS_LABELS = {
-  healthy: "Healthy",
-  available: "Available",
-  warning: "Warning",
-  failed: "Failed",
-  not_configured: "Not Configured",
-  not_available: "Not Available",
-};
-
-function formatStatusLabel(status) {
+function formatStatusLabel(status, t) {
+  const key = ["healthy", "available", "warning", "failed", "not_configured", "not_available"].includes(status)
+    ? `supportDiagnostics.status_${status}`
+    : null;
   return (
-    STATUS_LABELS[status] ||
-    String(status || "Unknown")
+    (key && t(key)) ||
+    String(status || t("supportDiagnostics.unknown"))
       .replaceAll("_", " ")
       .replace(/\b\w/g, (character) =>
         character.toUpperCase(),
@@ -75,28 +71,7 @@ function getStatusClass(status) {
   return "status-warning";
 }
 
-function formatDateTime(value) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-}
-
-function formatValue(value) {
+function formatValue(value, t) {
   if (
     value === null ||
     value === undefined ||
@@ -106,7 +81,7 @@ function formatValue(value) {
   }
 
   if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
+    return value ? t("common.yes") : t("common.no");
   }
 
   return String(value);
@@ -118,6 +93,7 @@ function SummaryCard({
   status,
   icon,
 }) {
+  const { t } = useLanguage();
   return (
     <Paper
       elevation={0}
@@ -139,7 +115,7 @@ function SummaryCard({
         {status && (
           <Chip
             size="small"
-            label={formatStatusLabel(status)}
+            label={formatStatusLabel(status, t)}
             className={`support-status-chip ${getStatusClass(
               status,
             )}`}
@@ -154,6 +130,7 @@ function DetailRow({
   label,
   value,
 }) {
+  const { t } = useLanguage();
   return (
     <Box className="support-detail-row">
       <Typography className="support-detail-label">
@@ -161,7 +138,7 @@ function DetailRow({
       </Typography>
 
       <Typography className="support-detail-value">
-        {formatValue(value)}
+        {formatValue(value, t)}
       </Typography>
     </Box>
   );
@@ -174,6 +151,7 @@ function DiagnosticsSection({
   status,
   children,
 }) {
+  const { t } = useLanguage();
   return (
     <Paper
       elevation={0}
@@ -205,7 +183,7 @@ function DiagnosticsSection({
         {status && (
           <Chip
             size="small"
-            label={formatStatusLabel(status)}
+            label={formatStatusLabel(status, t)}
             className={`support-status-chip ${getStatusClass(
               status,
             )}`}
@@ -221,6 +199,7 @@ function DiagnosticsSection({
 }
 
 function SupportDiagnostics() {
+  const { language, t } = useLanguage();
   const [diagnostics, setDiagnostics] =
     useState(null);
 
@@ -251,12 +230,12 @@ function SupportDiagnostics() {
 
       setError(
         requestError?.message ||
-          "Unable to load support diagnostics.",
+          t("supportDiagnostics.loadError"),
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadDiagnostics();
@@ -289,12 +268,12 @@ function SupportDiagnostics() {
         await downloadSupportDiagnostics();
 
       setDownloadMessage(
-        `Diagnostics downloaded: ${filename}`,
+        t("supportDiagnostics.downloaded").replace("{filename}", filename),
       );
     } catch (requestError) {
       setError(
         requestError?.message ||
-          "Unable to download support diagnostics.",
+          t("supportDiagnostics.downloadError"),
       );
     } finally {
       setDownloading(false);
@@ -307,7 +286,7 @@ function SupportDiagnostics() {
         <CircularProgress size={42} />
 
         <Typography>
-          Loading support diagnostics...
+          {t("supportDiagnostics.loading")}
         </Typography>
       </Box>
     );
@@ -352,13 +331,12 @@ function SupportDiagnostics() {
               component="h1"
               className="support-page-title"
             >
-              Support Diagnostics
+              {t("supportDiagnostics.title")}
             </Typography>
           </Stack>
 
           <Typography className="support-page-subtitle">
-            Review runtime, database, storage, logs,
-            health, and deployment-readiness information.
+            {t("supportDiagnostics.subtitle")}
           </Typography>
         </Box>
 
@@ -374,7 +352,7 @@ function SupportDiagnostics() {
             startIcon={<RefreshIcon />}
             onClick={loadDiagnostics}
           >
-            Refresh
+            {t("common.refresh")}
           </Button>
 
           <Button
@@ -393,8 +371,8 @@ function SupportDiagnostics() {
             disabled={downloading}
           >
             {downloading
-              ? "Preparing..."
-              : "Download Diagnostics"}
+              ? t("common.preparing")
+              : t("supportDiagnostics.download")}
           </Button>
         </Stack>
       </Box>
@@ -423,36 +401,39 @@ function SupportDiagnostics() {
         icon={<SecurityIcon />}
       >
         {diagnostics?.security_notice ||
-          "Sensitive credentials are excluded from this diagnostics report."}
+          t("supportDiagnostics.securityNotice")}
       </Alert>
 
       <Box className="support-summary-grid">
         <SummaryCard
-          title="Overall Status"
+          title={t("supportDiagnostics.overallStatus")}
           value={formatStatusLabel(
             diagnostics?.overall_status,
+            t,
           )}
           status={diagnostics?.overall_status}
           icon={<SupportAgentIcon />}
         />
 
         <SummaryCard
-          title="Database"
+          title={t("supportDiagnostics.database")}
           value={formatStatusLabel(
             database?.status,
+            t,
           )}
           status={database?.status}
           icon={<DnsIcon />}
         />
 
         <SummaryCard
-          title="Storage"
+          title={t("supportDiagnostics.storage")}
           value={
             diskStorage?.details?.free_gb !==
             undefined
-              ? `${diskStorage.details.free_gb} GB free`
+              ? `${diskStorage.details.free_gb} GB ${t("supportDiagnostics.freeUnit")}`
               : formatStatusLabel(
                   diskStorage?.status,
+                  t,
                 )
           }
           status={diskStorage?.status}
@@ -460,7 +441,7 @@ function SupportDiagnostics() {
         />
 
         <SummaryCard
-          title="Runtime Directories"
+          title={t("supportDiagnostics.runtimeDirectories")}
           value={`${directorySummary.healthy}/${directorySummary.total} ready`}
           status={
             directorySummary.warning > 0
@@ -473,41 +454,43 @@ function SupportDiagnostics() {
 
       <Box className="support-sections-grid">
         <DiagnosticsSection
-          title="Application Information"
-          subtitle="Current runtime and environment"
+          title={t("supportDiagnostics.applicationInformation")}
+          subtitle={t("supportDiagnostics.runtimeEnvironment")}
           icon={<SupportAgentIcon />}
           status={diagnostics?.overall_status}
         >
           <DetailRow
-            label="Application"
+            label={t("supportDiagnostics.application")}
             value={
               applicationInformation.application
             }
           />
 
           <DetailRow
-            label="Version"
+            label={t("supportDiagnostics.version")}
             value={applicationInformation.version}
           />
 
           <DetailRow
-            label="Environment"
+            label={t("supportDiagnostics.environment")}
             value={
               applicationInformation.environment
             }
           />
 
           <DetailRow
-            label="Debug enabled"
+            label={t("supportDiagnostics.debugEnabled")}
             value={
               applicationInformation.debug_enabled
             }
           />
 
           <DetailRow
-            label="Server time"
-            value={formatDateTime(
+            label={t("supportDiagnostics.serverTime")}
+            value={formatDisplayDateTime(
               applicationInformation.server_time_utc,
+              language,
+              { seconds: true, fallback: String(applicationInformation.server_time_utc || "—") },
             )}
           />
 
@@ -519,54 +502,54 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Operating system"
+            label={t("supportDiagnostics.operatingSystem")}
             value={
               applicationInformation.platform
             }
           />
 
           <DetailRow
-            label="Process ID"
+            label={t("supportDiagnostics.processId")}
             value={applicationInformation.process_id}
           />
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="Database"
+          title={t("supportDiagnostics.database")}
           subtitle={database?.message}
           icon={<DnsIcon />}
           status={database?.status}
         >
           <DetailRow
-            label="Database"
+            label={t("supportDiagnostics.database")}
             value={
               database?.details?.database_name
             }
           />
 
           <DetailRow
-            label="Database user"
+            label={t("supportDiagnostics.databaseUser")}
             value={
               database?.details?.database_user
             }
           />
 
           <DetailRow
-            label="Server version"
+            label={t("supportDiagnostics.serverVersion")}
             value={
               database?.details?.server_version
             }
           />
 
           <DetailRow
-            label="Alembic revision"
+            label={t("supportDiagnostics.alembicRevision")}
             value={
               database?.details?.alembic_revision
             }
           />
 
           <DetailRow
-            label="Response time"
+            label={t("supportDiagnostics.responseTime")}
             value={
               database?.response_time_ms !==
               undefined
@@ -576,7 +559,7 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="SSL expected"
+            label={t("supportDiagnostics.sslExpected")}
             value={
               database?.details?.ssl_expected
             }
@@ -584,20 +567,20 @@ function SupportDiagnostics() {
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="Disk Storage"
+          title={t("supportDiagnostics.diskStorage")}
           subtitle={diskStorage?.message}
           icon={<StorageIcon />}
           status={diskStorage?.status}
         >
           <DetailRow
-            label="Path"
+            label={t("supportDiagnostics.path")}
             value={
               diskStorage?.details?.path
             }
           />
 
           <DetailRow
-            label="Total"
+            label={t("supportDiagnostics.total")}
             value={
               diskStorage?.details?.total_gb !==
               undefined
@@ -607,7 +590,7 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Used"
+            label={t("supportDiagnostics.used")}
             value={
               diskStorage?.details?.used_gb !==
               undefined
@@ -617,7 +600,7 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Free"
+            label={t("supportDiagnostics.free")}
             value={
               diskStorage?.details?.free_gb !==
               undefined
@@ -656,34 +639,36 @@ function SupportDiagnostics() {
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="System Health"
+          title={t("supportDiagnostics.systemHealth")}
           subtitle={systemHealth?.message}
           icon={<StorageIcon />}
           status={systemHealth?.status}
         >
           <DetailRow
-            label="Overall status"
+            label={t("supportDiagnostics.overallStatus")}
             value={
               systemHealth?.details?.overall_status
             }
           />
 
           <DetailRow
-            label="Checked at"
-            value={formatDateTime(
+            label={t("supportDiagnostics.checkedAt")}
+            value={formatDisplayDateTime(
               systemHealth?.details?.checked_at,
+              language,
+              { seconds: true, fallback: String(systemHealth?.details?.checked_at || "—") },
             )}
           />
 
           <DetailRow
-            label="Cached"
+            label={t("supportDiagnostics.cached")}
             value={
               systemHealth?.details?.cached
             }
           />
 
           <DetailRow
-            label="Cache age"
+            label={t("supportDiagnostics.cacheAge")}
             value={
               systemHealth?.details
                 ?.cache_age_seconds !== undefined
@@ -693,7 +678,7 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Slowest service"
+            label={t("supportDiagnostics.slowestService")}
             value={
               systemHealth?.details?.slowest_service
                 ? typeof systemHealth.details.slowest_service === "string"
@@ -708,7 +693,7 @@ function SupportDiagnostics() {
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="Deployment Readiness"
+          title={t("supportDiagnostics.deploymentReadiness")}
           subtitle={deploymentReadiness?.message}
           icon={<SecurityIcon />}
           status={
@@ -716,7 +701,7 @@ function SupportDiagnostics() {
           }
         >
           <DetailRow
-            label="Overall status"
+            label={t("supportDiagnostics.overallStatus")}
             value={
               deploymentReadiness?.details
                 ?.overall_status
@@ -724,7 +709,7 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Readiness score"
+            label={t("supportDiagnostics.readinessScore")}
             value={
               deploymentReadiness?.details
                 ?.readiness_score
@@ -732,14 +717,14 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Passed"
+            label={t("supportDiagnostics.passed")}
             value={
               deploymentReadiness?.details?.passed
             }
           />
 
           <DetailRow
-            label="Warnings"
+            label={t("supportDiagnostics.warnings")}
             value={
               deploymentReadiness?.details
                 ?.warnings
@@ -747,7 +732,7 @@ function SupportDiagnostics() {
           />
 
           <DetailRow
-            label="Failed"
+            label={t("supportDiagnostics.failed")}
             value={
               deploymentReadiness?.details?.failed
             }
@@ -755,27 +740,27 @@ function SupportDiagnostics() {
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="Application Logs"
+          title={t("supportDiagnostics.applicationLogs")}
           subtitle={logs?.message}
           icon={<DescriptionIcon />}
           status={logs?.status}
         >
           <DetailRow
-            label="Log directory"
+            label={t("supportDiagnostics.logDirectory")}
             value={
               logs?.details?.log_directory
             }
           />
 
           <DetailRow
-            label="Log files"
+            label={t("supportDiagnostics.logFiles")}
             value={
               logs?.details?.file_count
             }
           />
 
           <DetailRow
-            label="Recent entries"
+            label={t("supportDiagnostics.recentEntries")}
             value={
               logs?.details?.entry_count
             }
@@ -807,8 +792,8 @@ function SupportDiagnostics() {
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="Runtime Directories"
-          subtitle="Application file-system readiness"
+          title={t("supportDiagnostics.runtimeDirectories")}
+          subtitle={t("supportDiagnostics.filesystemReadiness")}
           icon={<FolderIcon />}
           status={
             directorySummary.warning > 0
@@ -842,6 +827,7 @@ function SupportDiagnostics() {
                     size="small"
                     label={formatStatusLabel(
                       directory?.status,
+                      t,
                     )}
                     className={`support-status-chip ${getStatusClass(
                       directory?.status,
@@ -854,8 +840,8 @@ function SupportDiagnostics() {
         </DiagnosticsSection>
 
         <DiagnosticsSection
-          title="Dependencies"
-          subtitle="Installed backend package versions"
+          title={t("supportDiagnostics.dependencies")}
+          subtitle={t("supportDiagnostics.packageVersions")}
           icon={<DescriptionIcon />}
           status="available"
         >
@@ -874,11 +860,13 @@ function SupportDiagnostics() {
       </Box>
 
       <Typography className="support-generated-at">
-        Generated:{" "}
-        {formatDateTime(
+        {t("supportDiagnostics.generated")}:{" "}
+        {formatDisplayDateTime(
           diagnostics?.generated_at,
+          language,
+          { seconds: true, fallback: String(diagnostics?.generated_at || "—") },
         )}{" "}
-        · Duration:{" "}
+        · {t("supportDiagnostics.duration")}:{" "}
         {diagnostics?.generation_duration_ms ?? 0} ms
       </Typography>
     </Box>

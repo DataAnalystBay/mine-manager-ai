@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Optional
+from typing import Any, Mapping, Optional
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.database import engine
+from app.services.report_localization import normalize_report_language
 
 
 # ============================================================
@@ -42,6 +43,11 @@ class ReportBranding:
     timezone: str
     language: str
 
+    company_name_en: Optional[str] = None
+    company_name_mn: Optional[str] = None
+    mine_name_en: Optional[str] = None
+    mine_name_mn: Optional[str] = None
+
     company_id: Optional[int] = None
     mine_id: Optional[int] = None
 
@@ -72,6 +78,12 @@ class ReportBranding:
         )
 
 
+@dataclass(frozen=True)
+class CustomerDisplayIdentity:
+    company_name: str
+    operation_name: str
+
+
 # ============================================================
 # INTERNAL HELPERS
 # ============================================================
@@ -95,6 +107,63 @@ def _normalize_text(
         return default
 
     return cleaned_value
+
+
+def _configuration_value(configuration: Any, key: str) -> Any:
+    if isinstance(configuration, Mapping):
+        return configuration.get(key)
+    return getattr(configuration, key, None)
+
+
+def _optional_text(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned_value = str(value).strip()
+    return cleaned_value or None
+
+
+def resolve_customer_display_identity(
+    configuration: Any,
+    language: object = "en",
+) -> CustomerDisplayIdentity:
+    """Resolve configured customer identity without translating free text."""
+
+    report_language = normalize_report_language(language)
+    company_source = _normalize_text(
+        _configuration_value(configuration, "company_name"),
+        DEFAULT_COMPANY_NAME,
+    )
+    operation_source = _normalize_text(
+        _configuration_value(configuration, "mine_name")
+        or _configuration_value(configuration, "operation_name"),
+        DEFAULT_MINE_NAME,
+    )
+    company_configured = _optional_text(
+        _configuration_value(configuration, f"company_name_{report_language}")
+    )
+    operation_configured = _optional_text(
+        _configuration_value(configuration, f"mine_name_{report_language}")
+        or _configuration_value(configuration, f"operation_name_{report_language}")
+    )
+
+    return CustomerDisplayIdentity(
+        company_name=company_configured or company_source,
+        operation_name=operation_configured or operation_source,
+    )
+
+
+def resolve_report_branding(
+    branding: ReportBranding,
+    language: object = "en",
+) -> ReportBranding:
+    """Return branding with one shared language-specific customer identity."""
+
+    identity = resolve_customer_display_identity(branding, language)
+    return replace(
+        branding,
+        company_name=identity.company_name,
+        mine_name=identity.operation_name,
+    )
 
 
 def _normalize_hex_color(
@@ -239,6 +308,8 @@ def _load_company(
         SELECT
             id,
             company_name,
+            company_name_en,
+            company_name_mn,
             logo_url,
             primary_color,
             secondary_color,
@@ -282,6 +353,8 @@ def _load_mine(
             id,
             company_id,
             mine_name,
+            mine_name_en,
+            mine_name_mn,
             site_code,
             location,
             mine_type,
@@ -332,6 +405,8 @@ def _load_latest_company(
         SELECT
             id,
             company_name,
+            company_name_en,
+            company_name_mn,
             logo_url,
             primary_color,
             secondary_color,
@@ -367,6 +442,8 @@ def _load_latest_company_mine(
             id,
             company_id,
             mine_name,
+            mine_name_en,
+            mine_name_mn,
             site_code,
             location,
             mine_type,
@@ -476,6 +553,18 @@ def _build_branding(
 
         company_name=company_name,
         mine_name=mine_name,
+        company_name_en=_optional_text(
+            company.get("company_name_en")
+        ),
+        company_name_mn=_optional_text(
+            company.get("company_name_mn")
+        ),
+        mine_name_en=_optional_text(
+            mine.get("mine_name_en")
+        ),
+        mine_name_mn=_optional_text(
+            mine.get("mine_name_mn")
+        ),
 
         logo_url=logo_url,
         logo_path=logo_path,

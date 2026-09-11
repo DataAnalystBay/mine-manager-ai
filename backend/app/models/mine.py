@@ -9,6 +9,8 @@ class MineSettings(Base):
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey("company_settings.id", ondelete="CASCADE"))
     mine_name = Column(String(255), nullable=False)
+    mine_name_en = Column(String(255), nullable=True)
+    mine_name_mn = Column(String(255), nullable=True)
     site_code = Column(String(50))
     location = Column(String(255))
     mine_type = Column(String(100))

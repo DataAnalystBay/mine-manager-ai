@@ -45,7 +45,9 @@ import {
   getExecutiveActions,
 } from "../api/executiveActionsApi";
 import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDate } from "../utils/displayDateTime";
 import { useConfig } from "../context/ConfigContext";
+import { resolveMineDisplayName } from "../utils/customerIdentity";
 
 import "./Plant.css";
 
@@ -122,14 +124,7 @@ function formatSignedPercent(value) {
 
 function formatReportingDate(value, language, t) {
   if (!value) return t("plant.unavailable");
-
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString(
-    language === "MN" ? "mn-MN" : "en-US",
-    { day: "2-digit", month: "short", year: "numeric" }
-  );
+  return formatDisplayDate(value, language, value);
 }
 
 
@@ -285,6 +280,11 @@ function Plant() {
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(false);
   const [error, setError] = useState("");
+  const displayMineName = resolveMineDisplayName(
+    mine,
+    language,
+    today?.mine_name || t("plant.operationFallback")
+  );
   const [trendError, setTrendError] = useState("");
   const [selectedAiRecommendation, setSelectedAiRecommendation] = useState(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
@@ -799,7 +799,7 @@ function Plant() {
             {t("plant.title")}
           </Typography>
           <Typography className="plant-page-context">
-            {today?.mine_name || mine?.mine_name || t("plant.operationFallback")}
+            {displayMineName}
           </Typography>
         </Box>
 

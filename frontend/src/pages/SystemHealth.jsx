@@ -33,6 +33,11 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 import { getSystemHealth } from "../api/systemHealthApi";
 import { useConfig } from "../context/ConfigContext";
+import { useLanguage } from "../context/LanguageContext";
+import {
+  formatDisplayDateTime,
+  formatDisplayTime,
+} from "../utils/displayDateTime";
 import SystemHealthTrendChart from "../components/system-health/SystemHealthTrendChart";
 import SystemHealthIncidentTimeline from "../components/system-health/SystemHealthIncidentTimeline";
 
@@ -143,28 +148,6 @@ function getPerformanceStatusConfig(status) {
     ...config,
     label: `${config.label} Performance`,
   };
-}
-
-
-function formatCheckedAt(value) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
 }
 
 
@@ -359,7 +342,8 @@ function buildPerformanceHistoryPoint(health) {
 
 function buildStatusChangeIncidents(
   previousHealth,
-  currentHealth
+  currentHealth,
+  t
 ) {
   if (!previousHealth || !currentHealth) {
     return [];
@@ -419,7 +403,7 @@ function buildStatusChangeIncidents(
     const serviceLabel =
       currentService?.label ||
       currentService?.service ||
-      "Service";
+      t("systemHealth.service");
 
     if (
       currentStatus === "warning" ||
@@ -428,22 +412,20 @@ function buildStatusChangeIncidents(
       const metricDescription =
         currentService?.latency_ms !== undefined &&
         currentService?.latency_ms !== null
-          ? `${currentService.message || "Service requires attention."} Current latency: ${formatNumber(
-              currentService.latency_ms
-            )} ms.`
+          ? t("systemHealth.currentLatency")
+              .replace("{message}", currentService.message || t("systemHealth.serviceAttention"))
+              .replace("{latency}", formatNumber(currentService.latency_ms))
           : currentService?.message ||
-            "Service requires attention.";
+            t("systemHealth.serviceAttention");
 
       incidents.push({
         id: `${serviceKey}-${createdAt}-${currentStatus}`,
         createdAt,
         service: serviceLabel,
         type: currentStatus,
-        title: `${serviceLabel} entered ${
-          currentStatus === "unhealthy"
-            ? "critical"
-            : "warning"
-        } state`,
+        title: t("systemHealth.enteredState")
+          .replace("{service}", serviceLabel)
+          .replace("{status}", t(currentStatus === "unhealthy" ? "systemHealth.critical" : "systemHealth.status_warning")),
         description: metricDescription,
       });
     }
@@ -457,10 +439,10 @@ function buildStatusChangeIncidents(
         createdAt,
         service: serviceLabel,
         type: "recovered",
-        title: `${serviceLabel} recovered`,
+        title: t("systemHealth.serviceRecovered").replace("{service}", serviceLabel),
         description:
           currentService?.message ||
-          "Service returned to healthy status.",
+          t("systemHealth.returnedHealthy"),
       });
     }
   });
@@ -470,6 +452,7 @@ function buildStatusChangeIncidents(
 
 
 function StatusChip({ status }) {
+  const { t } = useLanguage();
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
 
@@ -483,7 +466,7 @@ function StatusChip({ status }) {
           }}
         />
       }
-      label={config.label}
+      label={t(`systemHealth.status_${normalizeStatus(status)}`)}
       sx={{
         height: 28,
         border: `1px solid ${config.border}`,
@@ -503,13 +486,14 @@ function StatusChip({ status }) {
 
 
 function CacheStatusChip({ cached }) {
+  const { t } = useLanguage();
   const config =
     getCacheStatusConfig(cached);
 
   return (
     <Chip
       size="small"
-      label={config.label}
+      label={t(cached ? "systemHealth.cached" : "systemHealth.liveCheck")}
       sx={{
         height: 28,
         border: `1px solid ${config.border}`,
@@ -527,6 +511,7 @@ function CacheStatusChip({ cached }) {
 function PerformanceStatusChip({
   status,
 }) {
+  const { t } = useLanguage();
   const config =
     getPerformanceStatusConfig(status);
 
@@ -542,7 +527,7 @@ function PerformanceStatusChip({
           }}
         />
       }
-      label={config.label}
+      label={t("systemHealth.performanceStatus").replace("{status}", t(`systemHealth.status_${normalizeStatus(status)}`))}
       sx={{
         height: 28,
         border: `1px solid ${config.border}`,
@@ -765,6 +750,7 @@ function ServiceCard({
   service,
   primaryColor,
 }) {
+  const { t } = useLanguage();
   const IconComponent =
     serviceIcons[service?.service] ||
     ApiIcon;
@@ -847,7 +833,7 @@ function ServiceCard({
             color: "#172033",
           }}
         >
-          {service?.label || "Service"}
+          {service?.label || t("systemHealth.service")}
         </Typography>
 
         <Typography
@@ -865,7 +851,7 @@ function ServiceCard({
           }}
         >
           {service?.message ||
-            "No status information available"}
+            t("systemHealth.noStatusInformation")}
         </Typography>
       </Box>
 
@@ -882,7 +868,7 @@ function ServiceCard({
         }}
       >
         <ServiceDetail
-          label="Latency"
+          label={t("systemHealth.latency")}
           value={
             service?.latency_ms !==
               undefined &&
@@ -896,7 +882,7 @@ function ServiceCard({
 
         {!isDatabase && (
           <ServiceDetail
-            label="Check duration"
+            label={t("systemHealth.checkDuration")}
             value={
               service?.check_duration_ms !==
                 undefined &&
@@ -911,22 +897,22 @@ function ServiceCard({
         )}
 
         <ServiceDetail
-          label="Version"
+          label={t("systemHealth.version")}
           value={service?.version}
         />
 
         <ServiceDetail
-          label="Provider"
+          label={t("systemHealth.provider")}
           value={service?.provider}
         />
 
         <ServiceDetail
-          label="Environment"
+          label={t("systemHealth.environment")}
           value={service?.environment}
         />
 
         <ServiceDetail
-          label="Free space"
+          label={t("systemHealth.freeSpace")}
           value={
             service?.free_space_gb !==
               undefined &&
@@ -939,7 +925,7 @@ function ServiceCard({
         />
 
         <ServiceDetail
-          label="Used space"
+          label={t("systemHealth.usedSpace")}
           value={
             service?.used_space_gb !==
               undefined &&
@@ -952,7 +938,7 @@ function ServiceCard({
         />
 
         <ServiceDetail
-          label="Total space"
+          label={t("systemHealth.totalSpace")}
           value={
             service?.total_space_gb !==
               undefined &&
@@ -965,7 +951,7 @@ function ServiceCard({
         />
 
         <ServiceDetail
-          label="Free space %"
+          label={t("systemHealth.freeSpacePercent")}
           value={
             service?.free_space_percent !==
               undefined &&
@@ -979,7 +965,7 @@ function ServiceCard({
         />
 
         <ServiceDetail
-          label="Tables loaded"
+          label={t("systemHealth.tablesLoaded")}
           value={
             service?.tables_with_data !==
               undefined &&
@@ -1001,6 +987,7 @@ function ServiceCard({
 
 export default function SystemHealth() {
   const { company } = useConfig();
+  const { language, t } = useLanguage();
 
   const primaryColor =
     company?.primary_color || "#f97316";
@@ -1069,7 +1056,8 @@ export default function SystemHealth() {
         const newIncidents =
           buildStatusChangeIncidents(
             previousHealthRef.current,
-            response
+            response,
+            t
           );
 
         if (newIncidents.length > 0) {
@@ -1156,7 +1144,7 @@ export default function SystemHealth() {
           error?.response?.data?.message ||
           error?.userMessage ||
           error?.message ||
-          "Unable to load system health.";
+          t("systemHealth.loadError");
 
         setErrorMessage(message);
       } finally {
@@ -1164,7 +1152,7 @@ export default function SystemHealth() {
         setRefreshing(false);
       }
     },
-    []
+    [t]
   );
 
 
@@ -1420,8 +1408,7 @@ export default function SystemHealth() {
             color: "#64748b",
           }}
         >
-          Checking Mine Manager AI
-          services...
+          {t("systemHealth.checkingServices")}
         </Typography>
       </Box>
     );
@@ -1480,7 +1467,7 @@ export default function SystemHealth() {
                 color: "#172033",
               }}
             >
-              System Health
+              {t("systemHealth.title")}
             </Typography>
 
             <Typography
@@ -1490,8 +1477,7 @@ export default function SystemHealth() {
                 color: "#64748b",
               }}
             >
-              Mine Manager AI Platform
-              Monitoring
+              {t("systemHealth.subtitle")}
             </Typography>
           </Box>
 
@@ -1543,7 +1529,7 @@ export default function SystemHealth() {
                     color: "#172033",
                   }}
                 >
-                  {autoRefresh ? "Live" : "Paused"}
+                  {autoRefresh ? t("systemHealth.live") : t("systemHealth.paused")}
                 </Typography>
 
                 <Typography
@@ -1553,12 +1539,11 @@ export default function SystemHealth() {
                   }}
                 >
                   {lastUpdated
-                    ? `Updated ${lastUpdated.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}`
-                    : "Waiting for first check"}
+                    ? t("systemHealth.updatedAt").replace(
+                        "{time}",
+                        formatDisplayTime(lastUpdated, language, { seconds: true }),
+                      )
+                    : t("systemHealth.waitingFirstCheck")}
                 </Typography>
               </Box>
             </Paper>
@@ -1591,7 +1576,7 @@ export default function SystemHealth() {
                     color: "#64748b",
                   }}
                 >
-                  Next refresh
+                  {t("systemHealth.nextRefresh")}
                 </Typography>
 
                 <Typography
@@ -1603,7 +1588,7 @@ export default function SystemHealth() {
                 >
                   {autoRefresh
                     ? formatCountdown(countdown)
-                    : "Paused"}
+                    : t("systemHealth.paused")}
                 </Typography>
               </Box>
             </Paper>
@@ -1629,7 +1614,7 @@ export default function SystemHealth() {
                   color: "#172033",
                 }}
               >
-                Auto Refresh
+                {t("systemHealth.autoRefresh")}
               </Typography>
 
               <Switch
@@ -1695,8 +1680,8 @@ export default function SystemHealth() {
               }}
             >
               {refreshing
-                ? "Refreshing..."
-                : "Refresh"}
+                ? t("systemHealth.refreshing")
+                : t("common.refresh")}
             </Button>
           </Stack>
         </Stack>
@@ -1736,7 +1721,7 @@ export default function SystemHealth() {
                     color: "#172033",
                   }}
                 >
-                  System Overview
+                  {t("systemHealth.systemOverview")}
                 </Typography>
 
                 <Typography
@@ -1746,8 +1731,7 @@ export default function SystemHealth() {
                     color: "#64748b",
                   }}
                 >
-                  Current service health and
-                  performance indicators.
+                  {t("systemHealth.overviewDescription")}
                 </Typography>
               </Box>
 
@@ -1763,12 +1747,12 @@ export default function SystemHealth() {
                 }}
               >
                 <HealthKpiCard
-                  label="Healthy Services"
+                  label={t("systemHealth.healthyServices")}
                   value={
                     serviceSummary.healthy
                   }
                   caption={
-                    `${serviceSummary.total} services monitored`
+                    t("systemHealth.servicesMonitored").replace("{count}", serviceSummary.total)
                   }
                   icon={CheckCircleIcon}
                   color="#15803d"
@@ -1776,14 +1760,14 @@ export default function SystemHealth() {
                 />
 
                 <HealthKpiCard
-                  label="Warnings"
+                  label={t("systemHealth.warnings")}
                   value={
                     serviceSummary.warning
                   }
                   caption={
                     serviceSummary.warning === 1
-                      ? "1 service needs attention"
-                      : `${serviceSummary.warning} services need attention`
+                      ? t("systemHealth.oneServiceAttention")
+                      : t("systemHealth.servicesAttention").replace("{count}", serviceSummary.warning)
                   }
                   icon={WarningAmberIcon}
                   color="#b45309"
@@ -1791,20 +1775,20 @@ export default function SystemHealth() {
                 />
 
                 <HealthKpiCard
-                  label="Average Check"
+                  label={t("systemHealth.averageCheck")}
                   value={
                     `${formatNumber(
                       averageServiceDuration
                     )} ms`
                   }
-                  caption="Average service-check duration"
+                  caption={t("systemHealth.averageCheckDescription")}
                   icon={ApiIcon}
                   color="#1d4ed8"
                   background="#dbeafe"
                 />
 
                 <HealthKpiCard
-                  label="Slowest Service"
+                  label={t("systemHealth.slowestService")}
                   value={
                     slowestServiceSummary.label
                   }
@@ -1878,7 +1862,7 @@ export default function SystemHealth() {
                         color: "#64748b",
                       }}
                     >
-                      Platform Status
+                      {t("systemHealth.platformStatus")}
                     </Typography>
 
                     <Stack
@@ -1954,27 +1938,29 @@ export default function SystemHealth() {
 
                   <Box>
                     <MetaRow
-                      label="Last Real Check"
-                      value={formatCheckedAt(
-                        health.checked_at
+                      label={t("systemHealth.lastRealCheck")}
+                      value={formatDisplayDateTime(
+                        health.checked_at,
+                        language,
+                        { seconds: true, fallback: String(health.checked_at || "—") },
                       )}
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Response Source"
+                      label={t("systemHealth.responseSource")}
                       value={
                         health.cached
-                          ? "Cached result"
-                          : "Live system check"
+                          ? t("systemHealth.cachedResult")
+                          : t("systemHealth.liveSystemCheck")
                       }
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Cache Age"
+                      label={t("systemHealth.cacheAge")}
                       value={
                         health.cached
                           ? formatSeconds(
@@ -1987,7 +1973,7 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Cache TTL"
+                      label={t("systemHealth.cacheTtl")}
                       value={
                         health
                           .cache_ttl_seconds !==
@@ -2005,17 +1991,17 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Environment"
+                      label={t("systemHealth.environment")}
                       value={
                         health.environment ||
-                        "Unknown"
+                        t("systemHealth.status_unknown")
                       }
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Version"
+                      label={t("systemHealth.version")}
                       value={
                         health.version || "—"
                       }
@@ -2024,7 +2010,7 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Services"
+                      label={t("systemHealth.services")}
                       value={
                         `${serviceSummary.healthy} Healthy · ` +
                         `${serviceSummary.warning} Warning · ` +
@@ -2035,7 +2021,7 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Check Duration"
+                      label={t("systemHealth.checkDuration")}
                       value={
                         health
                           .check_duration_ms !==
@@ -2054,7 +2040,7 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="API Response Time"
+                      label={t("systemHealth.apiResponseTime")}
                       value={
                         health
                           .response_duration_ms !==
@@ -2073,18 +2059,18 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Check Performance"
+                      label={t("systemHealth.checkPerformance")}
                       value={
                         health
                           .check_duration_message ||
-                        "No performance status"
+                        t("systemHealth.noPerformanceStatus")
                       }
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Slowest Service"
+                      label={t("systemHealth.slowestService")}
                       value={
                         health
                           ?.slowest_service
@@ -2117,7 +2103,7 @@ export default function SystemHealth() {
 
               <Box
                 component="aside"
-                aria-label="System health operations summary"
+                aria-label={t("systemHealth.operationsSummary")}
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -2161,25 +2147,25 @@ export default function SystemHealth() {
 
                   <Stack spacing={0}>
                     <MetaRow
-                      label="Monitoring"
-                      value={autoRefresh ? "Live" : "Paused"}
+                      label={t("systemHealth.monitoring")}
+                      value={autoRefresh ? t("systemHealth.live") : t("systemHealth.paused")}
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Next Refresh"
+                      label={t("systemHealth.nextRefresh")}
                       value={
                         autoRefresh
                           ? `00:${String(countdown).padStart(2, "0")}`
-                          : "Paused"
+                          : t("systemHealth.paused")
                       }
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Healthy Services"
+                      label={t("systemHealth.healthyServices")}
                       valueNode={
                         <Chip
                           size="small"
@@ -2198,7 +2184,7 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Warnings"
+                      label={t("systemHealth.warnings")}
                       valueNode={
                         <Chip
                           size="small"
@@ -2217,7 +2203,7 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Critical"
+                      label={t("systemHealth.critical")}
                       valueNode={
                         <Chip
                           size="small"
@@ -2245,14 +2231,14 @@ export default function SystemHealth() {
                     <Divider />
 
                     <MetaRow
-                      label="Slowest Service"
+                      label={t("systemHealth.slowestService")}
                       value={slowestServiceSummary.label}
                     />
 
                     <Divider />
 
                     <MetaRow
-                      label="Slowest Duration"
+                      label={t("systemHealth.slowestDuration")}
                       value={`${formatNumber(
                         slowestServiceSummary.duration
                       )} ms`}
@@ -2324,7 +2310,7 @@ export default function SystemHealth() {
                         } require${
                           serviceSummary.warning === 1 ? "s" : ""
                         } attention`
-                      : "No active warnings"}
+                      : t("systemHealth.noActiveWarnings")}
                   </Typography>
 
                   <Typography
@@ -2341,7 +2327,7 @@ export default function SystemHealth() {
                           slowestServiceSummary.label
                         }: ${
                           primaryWarningService?.message ||
-                          "Service performance is outside the preferred threshold."
+                          t("systemHealth.performanceOutsideThreshold")
                         }`
                       : "All monitored services are operating within their expected thresholds."}
                   </Typography>

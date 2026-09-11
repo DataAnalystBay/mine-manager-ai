@@ -6,6 +6,7 @@ import {
 } from "react-icons/fi";
 
 import { useLanguage } from "../../context/LanguageContext";
+import { formatDisplayDate } from "../../utils/displayDateTime";
 
 import "./SupportingDataTable.css";
 
@@ -51,53 +52,7 @@ function formatDate(dateValue, language) {
     return "—";
   }
 
-  const rawValue = String(dateValue).trim();
-
-  const isoDateMatch = rawValue.match(
-    /^(\d{4})-(\d{2})-(\d{2})/,
-  );
-
-  if (
-    language === "MN" &&
-    isoDateMatch
-  ) {
-    const year = Number(
-      isoDateMatch[1],
-    );
-    const month = Number(
-      isoDateMatch[2],
-    );
-    const day = Number(
-      isoDateMatch[3],
-    );
-
-    return (
-      `${year} оны ${month}-р сарын ${day}`
-    );
-  }
-
-  const date = new Date(rawValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return rawValue;
-  }
-
-  if (language === "MN") {
-    return (
-      `${date.getFullYear()} оны ` +
-      `${date.getMonth() + 1}-р сарын ` +
-      `${date.getDate()}`
-    );
-  }
-
-  return date.toLocaleDateString(
-    "en-US",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    },
-  );
+  return formatDisplayDate(dateValue, language, String(dateValue));
 }
 
 

@@ -23,6 +23,11 @@ from sqlalchemy.orm import Session
 from app.services.report_branding_service import (
     ReportBranding,
     get_report_branding,
+    resolve_report_branding,
+)
+from app.services.report_localization import (
+    localize_report_label,
+    normalize_report_language,
 )
 
 
@@ -439,9 +444,13 @@ def _latest_report_date(
 def _display_value(
     value: Optional[float],
     suffix: str = "",
+    language: str = "en",
 ) -> str:
     if value is None:
-        return "No data"
+        return localize_report_label(
+            "no_data",
+            language,
+        )
 
     if suffix == "%":
         return f"{value:.1f}%"
@@ -455,6 +464,7 @@ def _display_value(
 
 def _build_styles(
     branding: ReportBranding,
+    language: str = "en",
 ) -> Dict[str, Any]:
     primary = (
         branding
@@ -485,6 +495,17 @@ def _build_styles(
             style="thin",
             color=BORDER_COLOR,
         ),
+    )
+
+    font_name = (
+        "Arial"
+        if normalize_report_language(language) == "mn"
+        else None
+    )
+    font_kwargs = (
+        {"name": font_name}
+        if font_name
+        else {}
     )
 
     return {
@@ -534,6 +555,7 @@ def _build_styles(
             Font(
                 color=WHITE_COLOR,
                 bold=True,
+                **font_kwargs,
             ),
 
         "title_font":
@@ -541,12 +563,14 @@ def _build_styles(
                 color=WHITE_COLOR,
                 bold=True,
                 size=20,
+                **font_kwargs,
             ),
 
         "subtitle_font":
             Font(
                 color=WHITE_COLOR,
                 size=10,
+                **font_kwargs,
             ),
 
         "section_font":
@@ -554,28 +578,36 @@ def _build_styles(
                 color=TEXT_COLOR,
                 bold=True,
                 size=12,
+                **font_kwargs,
             ),
 
         "header_font":
             Font(
                 color=WHITE_COLOR,
                 bold=True,
+                **font_kwargs,
             ),
 
         "body_font":
             Font(
                 color=TEXT_COLOR,
                 size=10,
+                **font_kwargs,
             ),
 
         "muted_font":
             Font(
                 color=MUTED_TEXT_COLOR,
                 size=9,
+                **font_kwargs,
             ),
 
         "border":
             thin_border,
+
+        "is_mongolian":
+            normalize_report_language(language)
+            == "mn",
     }
 
 
@@ -691,10 +723,23 @@ def _style_title(
     subtitle_cell.font = styles[
         "subtitle_font"
     ]
+    if styles.get(
+        "is_mongolian"
+    ):
+        subtitle_cell.alignment = Alignment(
+            vertical="center",
+            wrap_text=True,
+        )
 
     worksheet.row_dimensions[
         2
-    ].height = 20
+    ].height = (
+        28
+        if styles.get(
+            "is_mongolian"
+        )
+        else 20
+    )
 
     return 4
 
@@ -867,10 +912,14 @@ def _create_executive_summary_sheet(
         Dict[str, Any]
     ],
     operation_profile: str,
+    language: str = "en",
 ) -> None:
     worksheet = workbook.active
     worksheet.title = (
-        "Executive Summary"
+        localize_report_label(
+            "excel_sheet_executive_summary",
+            language,
+        )
     )
 
     _set_sheet_view(
@@ -880,16 +929,20 @@ def _create_executive_summary_sheet(
     is_sxew = _is_sxew_operation(
         operation_profile
     )
+    display_mine_name = branding.mine_name
 
     subtitle = (
         f"{branding.company_name} | "
-        f"{branding.mine_name} | "
-        "Executive Operations Export"
+        f"{display_mine_name} | "
+        f"{localize_report_label('executive_operations_export', language)}"
     )
 
     _style_title(
         worksheet,
-        "Executive Operations Summary",
+        localize_report_label(
+            "executive_operations_summary",
+            language,
+        ),
         subtitle,
         styles,
         6,
@@ -913,27 +966,48 @@ def _create_executive_summary_sheet(
 
     metadata = [
         (
-            "Company",
+            localize_report_label(
+                "company",
+                language,
+            ),
             branding.company_name,
         ),
         (
-            "Operation",
-            branding.mine_name,
+            localize_report_label(
+                "operation",
+                language,
+            ),
+            display_mine_name,
         ),
         (
-            "Operation Profile",
+            localize_report_label(
+                "operation_profile",
+                language,
+            ),
             (
-                "SX-EW Copper"
+                localize_report_label(
+                    "sxew_copper",
+                    language,
+                )
                 if is_sxew
-                else "Standard Mine"
+                else localize_report_label(
+                    "standard_mine",
+                    language,
+                )
             ),
         ),
         (
-            "Latest Report Date",
+            localize_report_label(
+                "latest_report_date",
+                language,
+            ),
             (
                 latest_report_date
                 if latest_report_date
-                else "No data"
+                else localize_report_label(
+                    "no_data",
+                    language,
+                )
             ),
         ),
     ]
@@ -986,7 +1060,10 @@ def _create_executive_summary_sheet(
     _style_section_heading(
         worksheet,
         section_row,
-        "Latest KPI Position",
+        localize_report_label(
+            "latest_kpi_position",
+            language,
+        ),
         styles,
         6,
     )
@@ -1060,7 +1137,10 @@ def _create_executive_summary_sheet(
     if is_sxew:
         kpis = [
             (
-                "Cathode production achievement",
+                localize_report_label(
+                    "cathode_production_achievement",
+                    language,
+                ),
                 _display_value(
                     (
                         ore_achievement * 100
@@ -1069,11 +1149,15 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 ore_achievement,
             ),
             (
-                "Plant throughput achievement",
+                localize_report_label(
+                    "plant_throughput_achievement",
+                    language,
+                ),
                 _display_value(
                     (
                         plant_achievement * 100
@@ -1082,11 +1166,15 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 plant_achievement,
             ),
             (
-                "Safety score",
+                localize_report_label(
+                    "excel_safety_score_summary",
+                    language,
+                ),
                 _display_value(
                     (
                         _number(
@@ -1098,6 +1186,7 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 (
                     _number(
@@ -1115,7 +1204,10 @@ def _create_executive_summary_sheet(
     else:
         kpis = [
             (
-                "Ore plan achievement",
+                localize_report_label(
+                    "ore_plan_achievement",
+                    language,
+                ),
                 _display_value(
                     (
                         ore_achievement * 100
@@ -1124,11 +1216,15 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 ore_achievement,
             ),
             (
-                "Waste plan achievement",
+                localize_report_label(
+                    "waste_plan_achievement",
+                    language,
+                ),
                 _display_value(
                     (
                         waste_achievement * 100
@@ -1137,11 +1233,15 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 waste_achievement,
             ),
             (
-                "Fleet availability",
+                localize_report_label(
+                    "fleet_availability",
+                    language,
+                ),
                 _display_value(
                     (
                         _number(
@@ -1153,6 +1253,7 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 (
                     _number(
@@ -1166,7 +1267,10 @@ def _create_executive_summary_sheet(
                 ),
             ),
             (
-                "Fleet utilization",
+                localize_report_label(
+                    "fleet_utilization",
+                    language,
+                ),
                 _display_value(
                     (
                         _number(
@@ -1178,6 +1282,7 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 (
                     _number(
@@ -1191,7 +1296,10 @@ def _create_executive_summary_sheet(
                 ),
             ),
             (
-                "Plant throughput achievement",
+                localize_report_label(
+                    "plant_throughput_achievement",
+                    language,
+                ),
                 _display_value(
                     (
                         plant_achievement * 100
@@ -1200,11 +1308,15 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 plant_achievement,
             ),
             (
-                "Safety score",
+                localize_report_label(
+                    "excel_safety_score_summary",
+                    language,
+                ),
                 _display_value(
                     (
                         _number(
@@ -1216,6 +1328,7 @@ def _create_executive_summary_sheet(
                         else None
                     ),
                     "%",
+                    language,
                 ),
                 (
                     _number(
@@ -1240,8 +1353,14 @@ def _create_executive_summary_sheet(
         header_row,
         [
             "KPI",
-            "Current Value",
-            "Status",
+            localize_report_label(
+                "current_value",
+                language,
+            ),
+            localize_report_label(
+                "status",
+                language,
+            ),
         ],
         styles,
     )
@@ -1254,25 +1373,34 @@ def _create_executive_summary_sheet(
         kpis,
         start=header_row + 1,
     ):
-        status_text = (
-            "No data"
+        status_key = (
+            "no_data"
         )
 
         if ratio_value is not None:
             if ratio_value >= 1:
-                status_text = (
-                    "On or above target"
+                status_key = (
+                    "on_or_above_target"
                 )
 
             elif ratio_value >= 0.9:
-                status_text = (
-                    "Watch"
+                status_key = (
+                    "watch"
                 )
 
             else:
-                status_text = (
-                    "Below target"
+                status_key = (
+                    "below_target"
                 )
+
+        status_text = localize_report_label(
+            (
+                "excel_below_target"
+                if status_key == "below_target"
+                else status_key
+            ),
+            language,
+        )
 
         worksheet.cell(
             row=index,
@@ -1314,8 +1442,8 @@ def _create_executive_summary_sheet(
         )
 
         if (
-            status_text
-            == "On or above target"
+            status_key
+            == "on_or_above_target"
         ):
             status_cell.fill = (
                 styles[
@@ -1324,8 +1452,8 @@ def _create_executive_summary_sheet(
             )
 
         elif (
-            status_text
-            == "Watch"
+            status_key
+            == "watch"
         ):
             status_cell.fill = (
                 styles[
@@ -1334,8 +1462,8 @@ def _create_executive_summary_sheet(
             )
 
         elif (
-            status_text
-            == "Below target"
+            status_key
+            == "below_target"
         ):
             status_cell.fill = (
                 styles[
@@ -1352,7 +1480,10 @@ def _create_executive_summary_sheet(
     _style_section_heading(
         worksheet,
         data_row,
-        "Data Coverage",
+        localize_report_label(
+            "data_coverage",
+            language,
+        ),
         styles,
         6,
     )
@@ -1360,15 +1491,24 @@ def _create_executive_summary_sheet(
     if is_sxew:
         coverage = [
             (
-                "Cathode production records",
+                localize_report_label(
+                    "cathode_production_records",
+                    language,
+                ),
                 len(production_rows),
             ),
             (
-                "Plant records",
+                localize_report_label(
+                    "plant_records",
+                    language,
+                ),
                 len(plant_rows),
             ),
             (
-                "Safety records",
+                localize_report_label(
+                    "safety_records",
+                    language,
+                ),
                 len(safety_rows),
             ),
         ]
@@ -1376,19 +1516,31 @@ def _create_executive_summary_sheet(
     else:
         coverage = [
             (
-                "Production records",
+                localize_report_label(
+                    "production_records",
+                    language,
+                ),
                 len(production_rows),
             ),
             (
-                "Fleet records",
+                localize_report_label(
+                    "fleet_records",
+                    language,
+                ),
                 len(fleet_rows),
             ),
             (
-                "Plant records",
+                localize_report_label(
+                    "plant_records",
+                    language,
+                ),
                 len(plant_rows),
             ),
             (
-                "Safety records",
+                localize_report_label(
+                    "safety_records",
+                    language,
+                ),
                 len(safety_rows),
             ),
         ]
@@ -1434,9 +1586,9 @@ def _create_executive_summary_sheet(
     _set_column_widths(
         worksheet,
         {
-            "A": 32,
-            "B": 20,
-            "C": 22,
+            "A": 38 if normalize_report_language(language) == "mn" else 32,
+            "B": 24 if normalize_report_language(language) == "mn" else 20,
+            "C": 28 if normalize_report_language(language) == "mn" else 22,
             "D": 16,
             "E": 16,
             "F": 16,
@@ -1460,6 +1612,7 @@ def _create_production_sheet(
         Dict[str, Any]
     ],
     operation_profile: str,
+    language: str = "en",
 ) -> None:
     is_sxew = _is_sxew_operation(
         operation_profile
@@ -1467,9 +1620,15 @@ def _create_production_sheet(
 
     worksheet = workbook.create_sheet(
         (
-            "Cathode Production"
+            localize_report_label(
+                "excel_sheet_cathode_production",
+                language,
+            )
             if is_sxew
-            else "Production"
+            else localize_report_label(
+                "excel_sheet_production",
+                language,
+            )
         )
     )
 
@@ -1479,49 +1638,55 @@ def _create_production_sheet(
 
     if is_sxew:
         title = (
-            "Cathode Production Performance"
+            localize_report_label(
+                "cathode_production_performance",
+                language,
+            )
         )
 
         subtitle = (
             f"{branding.company_name} | "
             f"{branding.mine_name} | "
-            "Daily cathode production performance"
+            f"{localize_report_label('daily_cathode_production_performance', language)}"
         )
 
         headers = [
-            "Report Date",
-            "Operation",
-            "Production Plan",
-            "Production Actual",
-            "Variance",
-            "Achievement",
-            "Created At",
+            localize_report_label("report_date", language),
+            localize_report_label("operation", language),
+            localize_report_label("production_plan", language),
+            localize_report_label("production_actual", language),
+            localize_report_label("variance", language),
+            localize_report_label("achievement", language),
+            localize_report_label("created_at", language),
         ]
 
         total_columns = 7
 
     else:
         title = (
-            "Production Performance"
+            localize_report_label(
+                "production_performance",
+                language,
+            )
         )
 
         subtitle = (
             f"{branding.company_name} | "
             f"{branding.mine_name} | "
-            "Daily mining production performance"
+            f"{localize_report_label('daily_mining_production_performance', language)}"
         )
 
         headers = [
-            "Report Date",
-            "Mine",
-            "Ore Plan",
-            "Ore Actual",
-            "Ore Variance",
-            "Ore Achievement",
-            "Waste Plan",
-            "Waste Actual",
-            "Waste Variance",
-            "Created At",
+            localize_report_label("report_date", language),
+            localize_report_label("mine", language),
+            localize_report_label("ore_plan", language),
+            localize_report_label("ore_actual", language),
+            localize_report_label("ore_variance", language),
+            localize_report_label("ore_achievement", language),
+            localize_report_label("waste_plan", language),
+            localize_report_label("waste_actual", language),
+            localize_report_label("waste_variance", language),
+            localize_report_label("created_at", language),
         ]
 
         total_columns = 10
@@ -1568,10 +1733,7 @@ def _create_production_sheet(
                     "report_date"
                 ),
                 (
-                    record.get(
-                        "mine_name"
-                    )
-                    or branding.mine_name
+                    branding.mine_name
                 ),
                 ore_plan,
                 ore_actual,
@@ -1604,10 +1766,7 @@ def _create_production_sheet(
                     "report_date"
                 ),
                 (
-                    record.get(
-                        "mine_name"
-                    )
-                    or branding.mine_name
+                    branding.mine_name
                 ),
                 ore_plan,
                 ore_actual,
@@ -1770,11 +1929,11 @@ def _create_production_sheet(
     if is_sxew:
         widths = {
             "A": 14,
-            "B": 34,
-            "C": 18,
-            "D": 18,
+            "B": 38 if normalize_report_language(language) == "mn" else 34,
+            "C": 23 if normalize_report_language(language) == "mn" else 18,
+            "D": 23 if normalize_report_language(language) == "mn" else 18,
             "E": 16,
-            "F": 17,
+            "F": 19 if normalize_report_language(language) == "mn" else 17,
             "G": 20,
         }
 
@@ -1813,9 +1972,13 @@ def _create_fleet_sheet(
     rows: List[
         Dict[str, Any]
     ],
+    language: str = "en",
 ) -> None:
     worksheet = workbook.create_sheet(
-        "Fleet"
+        localize_report_label(
+            "excel_sheet_fleet",
+            language,
+        )
     )
 
     _set_sheet_view(
@@ -1825,12 +1988,15 @@ def _create_fleet_sheet(
     subtitle = (
         f"{branding.company_name} | "
         f"{branding.mine_name} | "
-        "Fleet availability and utilization"
+        f"{localize_report_label('fleet_availability_and_utilization', language)}"
     )
 
     header_row = _style_title(
         worksheet,
-        "Fleet Performance",
+        localize_report_label(
+            "fleet_performance_title",
+            language,
+        ),
         subtitle,
         styles,
         5,
@@ -1842,11 +2008,11 @@ def _create_fleet_sheet(
     )
 
     headers = [
-        "Report Date",
-        "Mine",
-        "Availability",
-        "Utilization",
-        "Created At",
+        localize_report_label("report_date", language),
+        localize_report_label("mine", language),
+        localize_report_label("availability", language),
+        localize_report_label("utilization", language),
+        localize_report_label("created_at", language),
     ]
 
     _style_table_header(
@@ -1877,10 +2043,7 @@ def _create_fleet_sheet(
                 "report_date"
             ),
             (
-                record.get(
-                    "mine_name"
-                )
-                or branding.mine_name
+                branding.mine_name
             ),
             availability
             / 100,
@@ -1975,9 +2138,13 @@ def _create_plant_sheet(
     rows: List[
         Dict[str, Any]
     ],
+    language: str = "en",
 ) -> None:
     worksheet = workbook.create_sheet(
-        "Plant"
+        localize_report_label(
+            "excel_sheet_plant",
+            language,
+        )
     )
 
     _set_sheet_view(
@@ -1987,12 +2154,15 @@ def _create_plant_sheet(
     subtitle = (
         f"{branding.company_name} | "
         f"{branding.mine_name} | "
-        "Plant throughput and recovery"
+        f"{localize_report_label('plant_throughput_and_recovery', language)}"
     )
 
     header_row = _style_title(
         worksheet,
-        "Plant Performance",
+        localize_report_label(
+            "plant_performance_title",
+            language,
+        ),
         subtitle,
         styles,
         8,
@@ -2004,14 +2174,14 @@ def _create_plant_sheet(
     )
 
     headers = [
-        "Report Date",
-        "Operation",
-        "Throughput Plan",
-        "Throughput Actual",
-        "Variance",
-        "Achievement",
-        "Recovery",
-        "Created At",
+        localize_report_label("report_date", language),
+        localize_report_label("operation", language),
+        localize_report_label("throughput_plan", language),
+        localize_report_label("throughput_actual", language),
+        localize_report_label("variance", language),
+        localize_report_label("achievement", language),
+        localize_report_label("recovery", language),
+        localize_report_label("created_at", language),
     ]
 
     _style_table_header(
@@ -2048,10 +2218,7 @@ def _create_plant_sheet(
                 "report_date"
             ),
             (
-                record.get(
-                    "mine_name"
-                )
-                or branding.mine_name
+                branding.mine_name
             ),
             plan,
             actual,
@@ -2139,12 +2306,12 @@ def _create_plant_sheet(
         worksheet,
         {
             "A": 14,
-            "B": 32,
-            "C": 19,
-            "D": 19,
+            "B": 38 if normalize_report_language(language) == "mn" else 32,
+            "C": 25 if normalize_report_language(language) == "mn" else 19,
+            "D": 25 if normalize_report_language(language) == "mn" else 19,
             "E": 15,
-            "F": 16,
-            "G": 15,
+            "F": 19 if normalize_report_language(language) == "mn" else 16,
+            "G": 18 if normalize_report_language(language) == "mn" else 15,
             "H": 20,
         },
     )
@@ -2165,9 +2332,13 @@ def _create_safety_sheet(
     rows: List[
         Dict[str, Any]
     ],
+    language: str = "en",
 ) -> None:
     worksheet = workbook.create_sheet(
-        "Safety"
+        localize_report_label(
+            "excel_sheet_safety",
+            language,
+        )
     )
 
     _set_sheet_view(
@@ -2177,12 +2348,15 @@ def _create_safety_sheet(
     subtitle = (
         f"{branding.company_name} | "
         f"{branding.mine_name} | "
-        "Safety performance and critical risk indicators"
+        f"{localize_report_label('safety_performance_and_critical_risk_indicators', language)}"
     )
 
     header_row = _style_title(
         worksheet,
-        "Safety Performance",
+        localize_report_label(
+            "safety_performance_title",
+            language,
+        ),
         subtitle,
         styles,
         7,
@@ -2194,13 +2368,13 @@ def _create_safety_sheet(
     )
 
     headers = [
-        "Report Date",
-        "Operation",
-        "Incidents",
-        "Near Misses",
-        "Critical Risks",
-        "Safety Score",
-        "Created At",
+        localize_report_label("report_date", language),
+        localize_report_label("operation", language),
+        localize_report_label("incidents", language),
+        localize_report_label("near_misses", language),
+        localize_report_label("critical_risks", language),
+        localize_report_label("safety_score", language),
+        localize_report_label("created_at", language),
     ]
 
     _style_table_header(
@@ -2219,10 +2393,7 @@ def _create_safety_sheet(
                 "report_date"
             ),
             (
-                record.get(
-                    "mine_name"
-                )
-                or branding.mine_name
+                branding.mine_name
             ),
             int(
                 _number(
@@ -2312,11 +2483,11 @@ def _create_safety_sheet(
         worksheet,
         {
             "A": 14,
-            "B": 32,
+            "B": 38 if normalize_report_language(language) == "mn" else 32,
             "C": 14,
-            "D": 16,
-            "E": 16,
-            "F": 16,
+            "D": 24 if normalize_report_language(language) == "mn" else 16,
+            "E": 20 if normalize_report_language(language) == "mn" else 16,
+            "F": 22 if normalize_report_language(language) == "mn" else 16,
             "G": 20,
         },
     )
@@ -2335,9 +2506,13 @@ def _create_kpi_definitions_sheet(
     branding: ReportBranding,
     styles: Dict[str, Any],
     operation_profile: str,
+    language: str = "en",
 ) -> None:
     worksheet = workbook.create_sheet(
-        "KPI Definitions"
+        localize_report_label(
+            "excel_sheet_kpi_definitions",
+            language,
+        )
     )
 
     _set_sheet_view(
@@ -2351,12 +2526,15 @@ def _create_kpi_definitions_sheet(
     subtitle = (
         f"{branding.company_name} | "
         f"{branding.mine_name} | "
-        "Definitions used in this workbook"
+        f"{localize_report_label('definitions_used_in_workbook', language)}"
     )
 
     header_row = _style_title(
         worksheet,
-        "KPI Definitions",
+        localize_report_label(
+            "excel_sheet_kpi_definitions",
+            language,
+        ),
         subtitle,
         styles,
         5,
@@ -2368,11 +2546,11 @@ def _create_kpi_definitions_sheet(
     )
 
     headers = [
-        "Category",
+        localize_report_label("category", language),
         "KPI",
-        "Definition",
-        "Calculation",
-        "Interpretation",
+        localize_report_label("definition", language),
+        localize_report_label("calculation", language),
+        localize_report_label("interpretation", language),
     ]
 
     _style_table_header(
@@ -2385,226 +2563,127 @@ def _create_kpi_definitions_sheet(
     if is_sxew:
         definitions = [
             (
-                "Production",
-                "Cathode Production Achievement",
-                (
-                    "Actual cathode production compared "
-                    "with planned cathode production."
-                ),
-                (
-                    "Production Actual ÷ "
-                    "Production Plan"
-                ),
-                (
-                    "100% or above indicates "
-                    "plan was achieved."
-                ),
+                localize_report_label("production", language),
+                localize_report_label("cathode_production_achievement_definition_name", language),
+                localize_report_label("cathode_production_achievement_definition", language),
+                localize_report_label("cathode_production_achievement_calculation", language),
+                localize_report_label("plan_achieved_interpretation", language),
             ),
             (
-                "Plant",
-                "Throughput Achievement",
-                (
-                    "Actual processing throughput "
-                    "compared with plan."
-                ),
-                (
-                    "Throughput Actual ÷ "
-                    "Throughput Plan"
-                ),
-                (
-                    "100% or above indicates "
-                    "plan was achieved."
-                ),
+                localize_report_label("plant", language),
+                localize_report_label("throughput_achievement", language),
+                localize_report_label("throughput_achievement_definition", language),
+                localize_report_label("throughput_achievement_calculation", language),
+                localize_report_label("plan_achieved_interpretation", language),
             ),
             (
-                "Plant",
-                "Recovery",
-                (
-                    "Percentage of valuable material "
-                    "recovered through processing."
-                ),
-                (
-                    "Recovered Value ÷ Feed Value"
-                ),
-                "Higher is generally better.",
+                localize_report_label("plant", language),
+                localize_report_label("recovery", language),
+                localize_report_label("recovery_definition", language),
+                localize_report_label("recovery_calculation", language),
+                localize_report_label("higher_is_better", language),
             ),
             (
-                "Safety",
-                "Incidents",
-                (
-                    "Recorded safety incidents for "
-                    "the reporting date."
-                ),
-                "Count",
-                "Zero is preferred.",
+                localize_report_label("safety", language),
+                localize_report_label("incidents", language),
+                localize_report_label("incidents_definition", language),
+                localize_report_label("count", language),
+                localize_report_label("zero_is_preferred", language),
             ),
             (
-                "Safety",
-                "Near Misses",
-                (
-                    "Reported events that could have "
-                    "caused harm or loss."
-                ),
-                "Count",
-                "Requires review and follow-up.",
+                localize_report_label("safety", language),
+                localize_report_label("near_misses", language),
+                localize_report_label("near_misses_definition", language),
+                localize_report_label("count", language),
+                localize_report_label("requires_review_follow_up", language),
             ),
             (
-                "Safety",
-                "Critical Risks",
-                (
-                    "Open or observed critical "
-                    "risk exposures."
-                ),
-                "Count",
-                (
-                    "Zero unresolved critical "
-                    "exposures is preferred."
-                ),
+                localize_report_label("safety", language),
+                localize_report_label("critical_risks", language),
+                localize_report_label("critical_risks_definition", language),
+                localize_report_label("count", language),
+                localize_report_label("zero_unresolved_critical_exposures", language),
             ),
             (
-                "Safety",
-                "Safety Score",
-                (
-                    "Composite safety "
-                    "performance indicator."
-                ),
-                (
-                    "Configured safety "
-                    "scoring methodology"
-                ),
-                "Higher is generally better.",
+                localize_report_label("safety", language),
+                localize_report_label("safety_score", language),
+                localize_report_label("safety_score_definition", language),
+                localize_report_label("safety_score_calculation", language),
+                localize_report_label("higher_is_better", language),
             ),
         ]
 
     else:
         definitions = [
             (
-                "Production",
-                "Ore Plan Achievement",
-                (
-                    "Actual ore movement compared "
-                    "with planned ore movement."
-                ),
-                "Ore Actual ÷ Ore Plan",
-                (
-                    "100% or above indicates "
-                    "plan was achieved."
-                ),
+                localize_report_label("production", language),
+                localize_report_label("ore_plan_achievement", language),
+                localize_report_label("ore_plan_achievement_definition", language),
+                localize_report_label("ore_plan_achievement_calculation", language),
+                localize_report_label("plan_achieved_interpretation", language),
             ),
             (
-                "Production",
-                "Waste Plan Achievement",
-                (
-                    "Actual waste movement compared "
-                    "with planned waste movement."
-                ),
-                (
-                    "Waste Actual ÷ Waste Plan"
-                ),
-                (
-                    "100% or above indicates "
-                    "plan was achieved."
-                ),
+                localize_report_label("production", language),
+                localize_report_label("waste_plan_achievement", language),
+                localize_report_label("waste_plan_achievement_definition", language),
+                localize_report_label("waste_plan_achievement_calculation", language),
+                localize_report_label("plan_achieved_interpretation", language),
             ),
             (
-                "Fleet",
-                "Availability",
-                (
-                    "Percentage of scheduled time "
-                    "that equipment is available."
-                ),
-                (
-                    "Available Time ÷ "
-                    "Scheduled Time"
-                ),
-                "Higher is generally better.",
+                localize_report_label("fleet", language),
+                localize_report_label("availability", language),
+                localize_report_label("availability_definition", language),
+                localize_report_label("availability_calculation", language),
+                localize_report_label("higher_is_better", language),
             ),
             (
-                "Fleet",
-                "Utilization",
-                (
-                    "Percentage of available time "
-                    "that equipment is operating."
-                ),
-                (
-                    "Operating Time ÷ "
-                    "Available Time"
-                ),
-                "Higher is generally better.",
+                localize_report_label("fleet", language),
+                localize_report_label("utilization", language),
+                localize_report_label("utilization_definition", language),
+                localize_report_label("utilization_calculation", language),
+                localize_report_label("higher_is_better", language),
             ),
             (
-                "Plant",
-                "Throughput Achievement",
-                (
-                    "Actual processing throughput "
-                    "compared with plan."
-                ),
-                (
-                    "Throughput Actual ÷ "
-                    "Throughput Plan"
-                ),
-                (
-                    "100% or above indicates "
-                    "plan was achieved."
-                ),
+                localize_report_label("plant", language),
+                localize_report_label("throughput_achievement", language),
+                localize_report_label("throughput_achievement_definition", language),
+                localize_report_label("throughput_achievement_calculation", language),
+                localize_report_label("plan_achieved_interpretation", language),
             ),
             (
-                "Plant",
-                "Recovery",
-                (
-                    "Percentage of valuable material "
-                    "recovered through processing."
-                ),
-                (
-                    "Recovered Value ÷ Feed Value"
-                ),
-                "Higher is generally better.",
+                localize_report_label("plant", language),
+                localize_report_label("recovery", language),
+                localize_report_label("recovery_definition", language),
+                localize_report_label("recovery_calculation", language),
+                localize_report_label("higher_is_better", language),
             ),
             (
-                "Safety",
-                "Incidents",
-                (
-                    "Recorded safety incidents for "
-                    "the reporting date."
-                ),
-                "Count",
-                "Zero is preferred.",
+                localize_report_label("safety", language),
+                localize_report_label("incidents", language),
+                localize_report_label("incidents_definition", language),
+                localize_report_label("count", language),
+                localize_report_label("zero_is_preferred", language),
             ),
             (
-                "Safety",
-                "Near Misses",
-                (
-                    "Reported events that could have "
-                    "caused harm or loss."
-                ),
-                "Count",
-                "Requires review and follow-up.",
+                localize_report_label("safety", language),
+                localize_report_label("near_misses", language),
+                localize_report_label("near_misses_definition", language),
+                localize_report_label("count", language),
+                localize_report_label("requires_review_follow_up", language),
             ),
             (
-                "Safety",
-                "Critical Risks",
-                (
-                    "Open or observed critical "
-                    "risk exposures."
-                ),
-                "Count",
-                (
-                    "Zero unresolved critical "
-                    "exposures is preferred."
-                ),
+                localize_report_label("safety", language),
+                localize_report_label("critical_risks", language),
+                localize_report_label("critical_risks_definition", language),
+                localize_report_label("count", language),
+                localize_report_label("zero_unresolved_critical_exposures", language),
             ),
             (
-                "Safety",
-                "Safety Score",
-                (
-                    "Composite safety performance "
-                    "indicator."
-                ),
-                (
-                    "Configured safety "
-                    "scoring methodology"
-                ),
-                "Higher is generally better.",
+                localize_report_label("safety", language),
+                localize_report_label("safety_score", language),
+                localize_report_label("safety_score_definition", language),
+                localize_report_label("safety_score_calculation", language),
+                localize_report_label("higher_is_better", language),
             ),
         ]
 
@@ -2644,13 +2723,22 @@ def _create_kpi_definitions_sheet(
     _set_column_widths(
         worksheet,
         {
-            "A": 17,
-            "B": 30,
-            "C": 48,
-            "D": 34,
-            "E": 43,
+            "A": 24 if normalize_report_language(language) == "mn" else 17,
+            "B": 36 if normalize_report_language(language) == "mn" else 30,
+            "C": 55 if normalize_report_language(language) == "mn" else 48,
+            "D": 44 if normalize_report_language(language) == "mn" else 34,
+            "E": 50 if normalize_report_language(language) == "mn" else 43,
         },
     )
+
+    if normalize_report_language(language) == "mn":
+        for row_index in range(
+            header_row + 1,
+            header_row + len(definitions) + 1,
+        ):
+            worksheet.row_dimensions[
+                row_index
+            ].height = 42
 
     worksheet.freeze_panes = (
         f"A{header_row + 1}"
@@ -2670,6 +2758,7 @@ def _set_workbook_properties(
     workbook: Workbook,
     branding: ReportBranding,
     operation_profile: str,
+    language: str = "en",
 ) -> None:
     is_sxew = _is_sxew_operation(
         operation_profile
@@ -2677,12 +2766,19 @@ def _set_workbook_properties(
 
     workbook.properties.title = (
         f"{branding.company_name} "
-        "Executive Operations Export"
+        f"{localize_report_label('executive_operations_export', language)}"
     )
 
     workbook.properties.subject = (
-        f"Operational KPI workbook for "
-        f"{branding.mine_name}"
+        (
+            "Үйл ажиллагааны KPI ажлын ном: "
+            f"{branding.mine_name}"
+        )
+        if normalize_report_language(language) == "mn"
+        else (
+            f"Operational KPI workbook for "
+            f"{branding.mine_name}"
+        )
     )
 
     workbook.properties.creator = (
@@ -2695,15 +2791,31 @@ def _set_workbook_properties(
 
     workbook.properties.description = (
         (
-            "Executive operations workbook generated "
-            "from cathode production, plant, and "
-            "safety data."
+            (
+                "Катодын үйлдвэрлэл, боловсруулах үйлдвэр болон аюулгүй "
+                "ажиллагааны өгөгдлөөс үүсгэсэн удирдлагын үйл ажиллагааны "
+                "ажлын ном."
+            )
+            if normalize_report_language(language) == "mn"
+            else (
+                "Executive operations workbook generated "
+                "from cathode production, plant, and "
+                "safety data."
+            )
         )
         if is_sxew
         else (
-            "Executive operations workbook generated "
-            "from production, fleet, plant, and "
-            "safety data."
+            (
+                "Үйлдвэрлэл, техникийн парк, боловсруулах үйлдвэр болон "
+                "аюулгүй ажиллагааны өгөгдлөөс үүсгэсэн удирдлагын үйл "
+                "ажиллагааны ажлын ном."
+            )
+            if normalize_report_language(language) == "mn"
+            else (
+                "Executive operations workbook generated "
+                "from production, fleet, plant, and "
+                "safety data."
+            )
         )
     )
 
@@ -2726,6 +2838,7 @@ def generate_executive_excel_export(
     company_id: int,
     mine_id: int,
     operation_profile: str = "standard_mine",
+    language: str = "en",
 ) -> BytesIO:
     """
     Generate a tenant-isolated, operation-aware executive
@@ -2767,6 +2880,9 @@ def generate_executive_excel_export(
             operation_profile
         )
     )
+    report_language = normalize_report_language(
+        language
+    )
 
     is_sxew = _is_sxew_operation(
         normalized_operation_profile
@@ -2781,9 +2897,14 @@ def generate_executive_excel_export(
             mine_id
         ),
     )
+    branding = resolve_report_branding(
+        branding,
+        report_language,
+    )
 
     styles = _build_styles(
-        branding
+        branding,
+        report_language,
     )
 
     production_rows = (
@@ -2832,6 +2953,7 @@ def generate_executive_excel_export(
         operation_profile=(
             normalized_operation_profile
         ),
+        language=report_language,
     )
 
     _create_executive_summary_sheet(
@@ -2853,6 +2975,7 @@ def generate_executive_excel_export(
         operation_profile=(
             normalized_operation_profile
         ),
+        language=report_language,
     )
 
     _create_production_sheet(
@@ -2863,14 +2986,15 @@ def generate_executive_excel_export(
         operation_profile=(
             normalized_operation_profile
         ),
+        language=report_language,
     )
-
     if not is_sxew:
         _create_fleet_sheet(
             workbook=workbook,
             branding=branding,
             styles=styles,
             rows=fleet_rows,
+            language=report_language,
         )
 
     _create_plant_sheet(
@@ -2878,6 +3002,7 @@ def generate_executive_excel_export(
         branding=branding,
         styles=styles,
         rows=plant_rows,
+        language=report_language,
     )
 
     _create_safety_sheet(
@@ -2885,6 +3010,7 @@ def generate_executive_excel_export(
         branding=branding,
         styles=styles,
         rows=safety_rows,
+        language=report_language,
     )
 
     _create_kpi_definitions_sheet(
@@ -2894,6 +3020,7 @@ def generate_executive_excel_export(
         operation_profile=(
             normalized_operation_profile
         ),
+        language=report_language,
     )
 
     buffer = BytesIO()

@@ -111,8 +111,6 @@ def resolve_authenticated_tenant(
             "sx-ew",
             "hydrometallurgical copper processing",
         }
-        or mine.mine_name
-        == "Achit-Ikht Copper Cathode Operation"
     )
 
     return {
@@ -120,7 +118,11 @@ def resolve_authenticated_tenant(
         "company_id": int(company.id),
         "mine_id": int(mine.id),
         "company_name": company.company_name,
+        "company_name_en": company.company_name_en,
+        "company_name_mn": company.company_name_mn,
         "mine_name": mine.mine_name,
+        "mine_name_en": mine.mine_name_en,
+        "mine_name_mn": mine.mine_name_mn,
         "mine_type": mine.mine_type,
         "operation_profile": (
             "sxew_copper"

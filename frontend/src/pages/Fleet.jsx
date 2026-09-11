@@ -13,7 +13,9 @@ import ExecutiveActionDialog from "../components/executive/ExecutiveActionDialog
 import { getFleetTrend, getTodayFleet } from "../api/fleetApi";
 import { createExecutiveAction, getExecutiveActions } from "../api/executiveActionsApi";
 import { useLanguage } from "../context/LanguageContext";
+import { formatDisplayDate } from "../utils/displayDateTime";
 import { useConfig } from "../context/ConfigContext";
+import { resolveCompanyDisplayName, resolveMineDisplayName } from "../utils/customerIdentity";
 import "./Plant.css";
 
 const FLEET_RANGES = ["30D", "90D", "1Y", "3Y", "5Y"];
@@ -84,11 +86,7 @@ function signedPercent(value) {
 
 function reportingDate(value, language, t) {
   if (!value) return t("fleet.unavailable");
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(language === "MN" ? "mn-MN" : "en-US", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
+  return formatDisplayDate(value, language, value);
 }
 
 function SummaryRow({ dotClass, label, value }) {
@@ -193,6 +191,16 @@ function Fleet() {
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(false);
   const [error, setError] = useState("");
+  const displayMineName = resolveMineDisplayName(
+    mine,
+    language,
+    today?.mine_name || t("fleet.unavailable")
+  );
+  const displayCompanyName = resolveCompanyDisplayName(
+    company,
+    language,
+    today?.company_name || t("fleet.unavailable")
+  );
   const [trendError, setTrendError] = useState("");
   const [recommendation, setRecommendation] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -453,7 +461,7 @@ function Fleet() {
         <button type="button" className="plant-refresh-button" onClick={refresh}><FiRefreshCw /></button>
       </header>
       <Alert severity="info" sx={{ mt: 2 }}>
-        {today?.mine_name || mine?.mine_name || t("fleet.unavailable")} · {today?.company_name || company?.company_name || t("fleet.unavailable")} — {today?.not_applicable_reason || t("fleet.noDatasetConfigured")}
+        {displayMineName} · {displayCompanyName} — {today?.not_applicable_reason || t("fleet.noDatasetConfigured")}
       </Alert>
     </Box>
   );
@@ -498,7 +506,7 @@ function Fleet() {
       <Box className="plant-page-header">
         <Box className="plant-heading-copy">
           <Typography component="h1" className="plant-page-title">{t("fleet.title")}</Typography>
-          <Typography className="plant-page-context">{today?.mine_name || mine?.mine_name || t("fleet.unavailable")}</Typography>
+          <Typography className="plant-page-context">{displayMineName}</Typography>
         </Box>
         <Stack direction="row" spacing={1} alignItems="center" className="plant-header-controls">
           <button type="button" className="plant-back-button" onClick={() => navigate("/")} aria-label={t("fleet.backToDashboard")}><FiArrowLeft /><span>{t("fleet.backToDashboard")}</span></button>
