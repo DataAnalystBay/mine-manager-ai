@@ -1,1 +1,37 @@
-Generic single-database configuration.
+Mine Manager AI database schema management
+===========================================
+
+There are two deliberately separate database paths.
+
+NEW EMPTY INSTALLATION
+----------------------
+
+The historical Alembic chain begins with a marker for a pre-existing database
+and cannot build an empty database. From the backend directory, configure the
+new empty PostgreSQL database in `.env`, then run:
+
+    python -m app.scripts.bootstrap_v1_0_database \
+        --confirm-empty-installation \
+        --confirm-database-name <exact DB_NAME>
+
+The command refuses Azure/blocked hosts and any database containing user
+relations or Alembic state. It transactionally applies the immutable schema in
+`schema/v1_0_c4e91a7b2d30.sql`, verifies the versioned structural contract,
+stamps `c4e91a7b2d30`, and runs `alembic upgrade head`.
+
+Never run the V1.0 bootstrap against an existing or partially initialized
+database. It is not an upgrade or repair command.
+
+EXISTING INSTALLATION
+---------------------
+
+For an existing database already managed by Alembic:
+
+    alembic current
+    alembic heads
+    alembic upgrade head
+    alembic current
+
+Do not run the consolidated bootstrap and do not stamp a revision merely to
+bypass a failed migration. Back up the database and follow the approved change
+process before applying normal forward migrations.

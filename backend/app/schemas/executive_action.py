@@ -72,6 +72,16 @@ class ExecutiveActionBase(BaseModel):
 
     expected_benefit: Optional[str] = None
 
+    source: Optional[str] = Field(
+        default=None,
+        max_length=50,
+    )
+
+    category: Optional[str] = Field(
+        default=None,
+        max_length=100,
+    )
+
     status: str = Field(
         default="open",
         max_length=50,

@@ -147,6 +147,16 @@ class ExecutiveAction(Base):
         nullable=True,
     )
 
+    source = Column(
+        String(50),
+        nullable=True,
+    )
+
+    category = Column(
+        String(100),
+        nullable=True,
+    )
+
     status = Column(
         String(50),
         nullable=False,

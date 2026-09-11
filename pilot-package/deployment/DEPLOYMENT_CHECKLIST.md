@@ -288,7 +288,33 @@ Expected:
 
 ---
 
-# 11. Database Migration Readiness
+# 11. Database Bootstrap and Migration Readiness
+
+Select exactly one path:
+
+### New installation — empty PostgreSQL database
+
+- [ ] Target database is confirmed as a new empty installation
+- [ ] Target is not Azure, production, customer, or otherwise blocked
+- [ ] Exact `DB_NAME` confirmation is recorded
+- [ ] Guarded V1.0 bootstrap succeeds
+- [ ] Schema fingerprint matches `c4e91a7b2d30`
+- [ ] `alembic current` reports `c4e91a7b2d30`
+- [ ] `alembic upgrade head` succeeds as a no-op at the current head
+
+Verification:
+
+```cmd
+python -m app.scripts.bootstrap_v1_0_database --confirm-empty-installation --confirm-database-name mine_manager_ai
+alembic current
+alembic heads
+```
+
+Never run the V1.0 bootstrap against an existing or partially initialized
+database. Do not run the historical migration chain directly on an empty
+database.
+
+### Existing installation — Alembic-managed database
 
 - [ ] `alembic.ini` exists
 - [ ] Alembic migration directory exists
@@ -310,6 +336,8 @@ alembic heads
 alembic upgrade head
 alembic current
 ```
+
+- [ ] The consolidated V1.0 bootstrap was not run
 
 ---
 

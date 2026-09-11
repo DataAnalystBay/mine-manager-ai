@@ -10,6 +10,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME")
+DB_SSLMODE = os.getenv("DB_SSLMODE", "require")
 
 DATABASE_URL = (
     f"postgresql://"
@@ -22,7 +23,7 @@ DATABASE_URL = (
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"sslmode": "require"},
+    connect_args={"sslmode": DB_SSLMODE},
     pool_pre_ping=True,
 )
 

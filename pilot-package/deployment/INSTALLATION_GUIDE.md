@@ -520,9 +520,55 @@ If this fails, verify:
 
 ---
 
-# 12. Database Migrations
+# 12. Database Bootstrap and Migrations
 
-## 12.1 Confirm Alembic
+## 12.1 Choose the correct database path
+
+Mine Manager AI has two separate database procedures:
+
+- **New installation:** the target PostgreSQL database is genuinely empty and
+  must use the guarded consolidated V1.0 bootstrap.
+- **Existing installation:** the database already contains Mine Manager AI
+  tables and an Alembic revision and must use normal Alembic upgrades only.
+
+Never run the V1.0 bootstrap against an existing or partially initialized
+database. The bootstrap is not a repair utility.
+
+---
+
+## 12.2 New empty installation
+
+From the backend directory, verify that `.env` identifies the newly created
+empty database. Then run, replacing the placeholder with the exact `DB_NAME`:
+
+```cmd
+python -m app.scripts.bootstrap_v1_0_database --confirm-empty-installation --confirm-database-name mine_manager_ai
+```
+
+The command performs all of the following as one guarded workflow:
+
+1. Rejects Azure/explicitly blocked hosts.
+2. Requires exact database-name confirmation.
+3. Refuses any database containing user relations or Alembic state.
+4. Applies the immutable V1.0 schema artifact transactionally.
+5. Verifies tables, columns, types, nullability, keys, constraints, indexes,
+   sequences, and important server defaults.
+6. Stamps `c4e91a7b2d30` only after verification succeeds.
+7. Runs `alembic upgrade head` to join normal forward migration management.
+
+Expected final message:
+
+```text
+V1.0 database bootstrap complete: database=mine_manager_ai, revision=c4e91a7b2d30, tables=15.
+```
+
+Do not run `alembic upgrade head` directly on an empty database. The historical
+Alembic root represents an existing pre-Alembic schema and does not create the
+required foundational tables.
+
+---
+
+## 12.3 Existing installation
 
 From the backend directory:
 
@@ -531,26 +577,12 @@ dir /B alembic.ini
 dir /B alembic
 ```
 
-If both are present, check status:
+If both are present, check status and apply approved forward migrations:
 
 ```cmd
 alembic current
 alembic heads
-```
-
----
-
-## 12.2 Apply migrations
-
-Apply all approved migrations:
-
-```cmd
 alembic upgrade head
-```
-
-Verify:
-
-```cmd
 alembic current
 ```
 
@@ -561,7 +593,7 @@ migration management.
 
 ---
 
-## 12.3 Migration safety
+## 12.4 Migration safety
 
 Before applying migrations to a customer environment:
 
