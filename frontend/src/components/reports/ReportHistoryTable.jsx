@@ -1,4 +1,4 @@
-﻿import React, {
+﻿import {
   useCallback,
   useEffect,
   useState,
@@ -32,8 +32,29 @@ import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 
 import { getReportHistory } from "../../api/reportHistoryApi";
+import { useConfig } from "../../context/ConfigContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { resolveMineDisplayName } from "../../utils/customerIdentity";
 import { formatDisplayDateTime } from "../../utils/displayDateTime";
+
+const REPORT_NAME_TRANSLATION_KEYS = Object.freeze({
+  daily_executive_report: "reports.dailyExecutiveReport",
+  weekly_operations_report: "reports.weeklyOperationsReport",
+  monthly_kpi_pack: "reports.monthlyKpiPack",
+  executive_board_pack: "reports.executiveBoardPack",
+  executive_excel_export: "reports.excel",
+});
+
+function getReportDisplayName(report, t) {
+  const translationKey =
+    REPORT_NAME_TRANSLATION_KEYS[
+      String(report?.report_key || "").trim().toLowerCase()
+    ];
+
+  return translationKey
+    ? t(translationKey)
+    : report?.report_name || t("reports.unnamedReport");
+}
 
 /* ============================================================
    FORMAT THEME
@@ -85,6 +106,7 @@ function getFormatTheme(format) {
 
 function ReportHistoryTable({ refreshKey = 0 }) {
   const { t, language } = useLanguage();
+  const { mine } = useConfig();
 
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +143,8 @@ function ReportHistoryTable({ refreshKey = 0 }) {
   }, [t]);
 
   useEffect(() => {
+    // The report history loader intentionally refreshes component state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHistory();
   }, [loadHistory, refreshKey]);
 
@@ -143,12 +167,29 @@ function ReportHistoryTable({ refreshKey = 0 }) {
   const getStatusTheme = (status) => {
     const normalized = String(status || "").toLowerCase();
 
-    if (
-      normalized === "completed" ||
-      normalized === "success"
-    ) {
+    if (normalized === "completed") {
+      return {
+        label: t("reports.completed"),
+        color: "#15803d",
+        soft: "#f0fdf4",
+        border: "#bbf7d0",
+        Icon: CheckCircleRoundedIcon,
+      };
+    }
+
+    if (normalized === "done" || normalized === "success") {
       return {
         label: t("reports.done"),
+        color: "#15803d",
+        soft: "#f0fdf4",
+        border: "#bbf7d0",
+        Icon: CheckCircleRoundedIcon,
+      };
+    }
+
+    if (normalized === "generated") {
+      return {
+        label: t("reports.generated"),
         color: "#15803d",
         soft: "#f0fdf4",
         border: "#bbf7d0",
@@ -166,6 +207,16 @@ function ReportHistoryTable({ refreshKey = 0 }) {
         soft: "#fef2f2",
         border: "#fecaca",
         Icon: ErrorRoundedIcon,
+      };
+    }
+
+    if (normalized === "pending") {
+      return {
+        label: t("reports.pending"),
+        color: "#b45309",
+        soft: "#fffbeb",
+        border: "#fde68a",
+        Icon: ScheduleRoundedIcon,
       };
     }
 
@@ -555,6 +606,16 @@ function ReportHistoryTable({ refreshKey = 0 }) {
 
             <TableBody>
               {history.map((report) => {
+                const reportDisplayName =
+                  getReportDisplayName(report, t);
+
+                const mineDisplayName =
+                  resolveMineDisplayName(
+                    mine,
+                    language,
+                    report.mine_name || "—"
+                  );
+
                 const formatTheme =
                   getFormatTheme(
                     report.report_format
@@ -599,10 +660,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
                       }}
                     >
                       <Tooltip
-                        title={
-                          report.report_name ||
-                          ""
-                        }
+                        title={reportDisplayName}
                         placement="top-start"
                       >
                         <Typography
@@ -621,10 +679,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
                               "nowrap",
                           }}
                         >
-                          {report.report_name ||
-                            t(
-                              "reports.unnamedReport"
-                            )}
+                          {reportDisplayName}
                         </Typography>
                       </Tooltip>
 
@@ -711,10 +766,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
                       }}
                     >
                       <Tooltip
-                        title={
-                          report.mine_name ||
-                          ""
-                        }
+                        title={mineDisplayName}
                       >
                         <Typography
                           sx={{
@@ -732,8 +784,7 @@ function ReportHistoryTable({ refreshKey = 0 }) {
                               "nowrap",
                           }}
                         >
-                          {report.mine_name ||
-                            "—"}
+                          {mineDisplayName}
                         </Typography>
                       </Tooltip>
                     </TableCell>
