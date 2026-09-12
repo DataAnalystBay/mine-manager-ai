@@ -59,7 +59,12 @@ import {
 import {
   useLanguage,
 } from "../context/LanguageContext";
+import useAuth from "../hooks/useAuth";
 import { formatDisplayDate } from "../utils/displayDateTime";
+import {
+  canCreateExecutiveAction,
+  createManualExecutiveActionKey,
+} from "../utils/executiveActionUi";
 
 import "./Production.css";
 
@@ -1042,6 +1047,12 @@ function Production() {
   const navigate =
     useNavigate();
 
+  const { user } =
+    useAuth();
+
+  const canCreateActions =
+    canCreateExecutiveAction(user);
+
   const {
     language,
     t,
@@ -1106,6 +1117,13 @@ function Production() {
   const [
     selectedAiRecommendation,
     setSelectedAiRecommendation,
+  ] = useState(
+    null
+  );
+
+  const [
+    actionCreationMode,
+    setActionCreationMode,
   ] = useState(
     null
   );
@@ -2324,6 +2342,51 @@ function Production() {
       ]
     );
 
+  const manualActionDraft =
+    useMemo(
+      () => ({
+        action_title:
+          "",
+
+        description:
+          "",
+
+        priority:
+          "Medium",
+
+        status:
+          "Open",
+
+        category:
+          "Production",
+
+        source:
+          "Manual",
+
+        owner_name:
+          "",
+
+        due_date:
+          "",
+      }),
+      []
+    );
+
+
+  const actionDialogDraft =
+    useMemo(
+      () =>
+        actionCreationMode ===
+        "manual"
+          ? manualActionDraft
+          : selectedAiActionDraft,
+      [
+        actionCreationMode,
+        manualActionDraft,
+        selectedAiActionDraft,
+      ]
+    );
+
 
   const buildAiActionKey =
     useCallback(
@@ -2343,6 +2406,18 @@ function Production() {
           "_"
         );
       },
+      [
+        today?.report_date,
+      ]
+    );
+
+  const buildManualActionKey =
+    useCallback(
+      () =>
+        createManualExecutiveActionKey(
+          "production",
+          today?.report_date
+        ),
       [
         today?.report_date,
       ]
@@ -2418,8 +2493,11 @@ function Production() {
                 response?.data ||
                 [];
 
-          const prefix =
+          const aiPrefix =
             `production_ai_${relatedActionsReportDate}_`;
+
+          const manualPrefix =
+            `production_manual_${relatedActionsReportDate}_`;
 
           const canonicalTitles =
             new Set(
@@ -2446,7 +2524,10 @@ function Production() {
 
                 if (
                   actionKey.startsWith(
-                    prefix
+                    aiPrefix
+                  ) ||
+                  actionKey.startsWith(
+                    manualPrefix
                   )
                 ) {
                   return true;
@@ -2699,8 +2780,35 @@ function Production() {
           ""
         );
 
+        setActionCreationMode(
+          "ai"
+        );
+
         setSelectedAiRecommendation(
           recommendation
+        );
+
+        setActionDialogOpen(
+          true
+        );
+      },
+      []
+    );
+
+
+  const handleCreateManualAction =
+    useCallback(
+      () => {
+        setActionSaveError(
+          ""
+        );
+
+        setSelectedAiRecommendation(
+          null
+        );
+
+        setActionCreationMode(
+          "manual"
         );
 
         setActionDialogOpen(
@@ -2721,74 +2829,93 @@ function Production() {
         setSelectedAiRecommendation(
           null
         );
+
+        setActionCreationMode(
+          null
+        );
       },
       []
     );
 
 
-  const handleSaveAiAction =
+  const handleSaveExecutiveAction =
     useCallback(
       async (
         payload
       ) => {
+        const isManualAction =
+          actionCreationMode ===
+          "manual";
+
         if (
+          !isManualAction &&
           !selectedAiRecommendation
         ) {
           return;
         }
 
         const actionKey =
-          buildAiActionKey(
-            selectedAiRecommendation
-          );
-
-        const alreadyExists =
-          relatedExecutiveActions.some(
-            (
-              action
-            ) =>
-              action
-                ?.action_key ===
-                actionKey ||
-              (
-                String(
-                  action?.source ||
-                  ""
-                )
-                  .trim()
-                  .toLowerCase() ===
-                  "ai" &&
-                String(
-                  action?.category ||
-                  ""
-                )
-                  .trim()
-                  .toLowerCase() ===
-                  "production" &&
-                String(
-                  action?.title ||
-                  action?.action_title ||
-                  ""
-                ).trim() ===
-                  selectedAiRecommendation
-                    .canonicalTitle
-              )
-          );
+          isManualAction
+            ? buildManualActionKey()
+            : buildAiActionKey(
+                selectedAiRecommendation
+              );
 
         if (
-          alreadyExists
+          !isManualAction
         ) {
-          setActionDialogOpen(
-            false
-          );
+          const alreadyExists =
+            relatedExecutiveActions.some(
+              (
+                action
+              ) =>
+                action
+                  ?.action_key ===
+                  actionKey ||
+                (
+                  String(
+                    action?.source ||
+                    ""
+                  )
+                    .trim()
+                    .toLowerCase() ===
+                    "ai" &&
+                  String(
+                    action?.category ||
+                    ""
+                  )
+                    .trim()
+                    .toLowerCase() ===
+                    "production" &&
+                  String(
+                    action?.title ||
+                    action?.action_title ||
+                    ""
+                  ).trim() ===
+                    selectedAiRecommendation
+                      .canonicalTitle
+                )
+            );
 
-          setSelectedAiRecommendation(
-            null
-          );
+          if (
+            alreadyExists
+          ) {
+            setActionDialogOpen(
+              false
+            );
 
-          await loadRelatedExecutiveActions();
+            setSelectedAiRecommendation(
+              null
+            );
 
-          return;
+            setActionCreationMode(
+              null
+            );
+
+            await loadRelatedExecutiveActions();
+
+            return;
+          }
         }
 
         setSavingAction(
@@ -2801,16 +2928,21 @@ function Production() {
 
         try {
           await createExecutiveAction({
-              ...payload,
+            ...payload,
 
-              action_key:
-                actionKey,
+            action_key:
+              actionKey,
 
-              source:
-                "AI",
+            kpi_key:
+              "production",
 
-              category:
-                "Production",
+            source:
+              isManualAction
+                ? "Manual"
+                : "AI",
+
+            category:
+              "Production",
           });
 
           await loadRelatedExecutiveActions();
@@ -2822,21 +2954,20 @@ function Production() {
           setSelectedAiRecommendation(
             null
           );
+
+          setActionCreationMode(
+            null
+          );
         } catch (
           requestError
         ) {
           console.error(
-            "Unable to create AI executive action:",
+            "Unable to create executive action:",
             requestError
           );
 
           setActionSaveError(
-            requestError
-              ?.response
-              ?.data
-              ?.detail ||
-            requestError
-              ?.message ||
+            requestError?.userMessage ||
             (
               language === "MN"
                 ? "Арга хэмжээг үүсгэж чадсангүй."
@@ -2850,9 +2981,11 @@ function Production() {
         }
       },
       [
+        actionCreationMode,
         language,
         selectedAiRecommendation,
         buildAiActionKey,
+        buildManualActionKey,
         relatedExecutiveActions,
         loadRelatedExecutiveActions,
       ]
@@ -4148,7 +4281,7 @@ function Production() {
                                 </Button>
                               </Box>
                             )
-                          : (
+                          : canCreateActions ? (
                               <Button
                                 type="button"
                                 variant="text"
@@ -4203,7 +4336,7 @@ function Production() {
                                   ? "Арга хэмжээ үүсгэх"
                                   : "Create Action"}
                               </Button>
-                            )}
+                            ) : null}
                       </Box>
                     </div>
                   );
@@ -4239,24 +4372,87 @@ function Production() {
 
                 <p>
                   {language === "MN"
-                    ? "Үйлдвэрлэлийн зөвлөмжөөс үүсгэсэн удирдлагын арга хэмжээний хэрэгжилтийг хянах."
-                    : "Track management actions created from production recommendations."}
+                    ? "Үйлдвэрлэлтэй холбоотой удирдлагын арга хэмжээ болон хэрэгжилтийг хянах."
+                    : "Track production management actions and follow-up."}
                 </p>
               </div>
             </div>
 
-            <Link
-              to="/executive-actions"
-              className="production-related-actions-link"
+            <Box
+              sx={{
+                display:
+                  "flex",
+                alignItems:
+                  "center",
+                gap:
+                  1,
+                flexShrink:
+                  0,
+              }}
             >
-              <span>
-                {language === "MN"
-                  ? "Action Center нээх"
-                  : "Open Action Center"}
-              </span>
+              {canCreateActions && (
+                <Button
+                type="button"
+                variant="contained"
+                size="small"
+                startIcon={
+                  <AddIcon
+                    fontSize="small"
+                  />
+                }
+                onClick={
+                  handleCreateManualAction
+                }
+                disabled={
+                  savingAction
+                }
+                sx={{
+                  minHeight:
+                    34,
+                  px:
+                    1.5,
+                  borderRadius:
+                    "8px",
+                  bgcolor:
+                    "#0f172a",
+                  color:
+                    "#ffffff",
+                  fontSize:
+                    11,
+                  fontWeight:
+                    800,
+                  textTransform:
+                    "none",
+                  boxShadow:
+                    "none",
+                  whiteSpace:
+                    "nowrap",
 
-              <FiArrowRight />
-            </Link>
+                  "&:hover": {
+                    bgcolor:
+                      "#020617",
+                    boxShadow:
+                      "none",
+                  },
+                }}
+              >
+                  {t("relatedExecutiveActions.newAction")}
+                </Button>
+              )}
+
+              <Link
+                to="/executive-actions"
+                className="production-related-actions-link"
+              >
+                <span>
+                  {language === "MN"
+                    ? "Action Center нээх"
+                    : "Open Action Center"}
+                </span>
+
+                <FiArrowRight />
+              </Link>
+            </Box>
           </div>
 
 
@@ -4482,35 +4678,24 @@ function Production() {
       )}
 
 
-      {actionSaveError && (
-        <Alert
-          severity="error"
-          sx={{
-            mt: 1.5,
-            borderRadius:
-              "10px",
-          }}
-        >
-          {actionSaveError}
-        </Alert>
-      )}
-
-
       <ExecutiveActionDialog
         open={
           actionDialogOpen
         }
         action={
-          selectedAiActionDraft
+          actionDialogDraft
         }
         onClose={
           handleCloseActionDialog
         }
         onSave={
-          handleSaveAiAction
+          handleSaveExecutiveAction
         }
         saving={
           savingAction
+        }
+        errorMessage={
+          actionSaveError
         }
         primaryColor={
           "#2563eb"

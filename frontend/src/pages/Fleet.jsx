@@ -13,9 +13,11 @@ import ExecutiveActionDialog from "../components/executive/ExecutiveActionDialog
 import { getFleetTrend, getTodayFleet } from "../api/fleetApi";
 import { createExecutiveAction, getExecutiveActions } from "../api/executiveActionsApi";
 import { useLanguage } from "../context/LanguageContext";
+import useAuth from "../hooks/useAuth";
 import { formatDisplayDate } from "../utils/displayDateTime";
 import { useConfig } from "../context/ConfigContext";
 import { resolveCompanyDisplayName, resolveMineDisplayName } from "../utils/customerIdentity";
+import { canCreateExecutiveAction, createManualExecutiveActionKey } from "../utils/executiveActionUi";
 import "./Plant.css";
 
 const FLEET_RANGES = ["30D", "90D", "1Y", "3Y", "5Y"];
@@ -181,6 +183,8 @@ function summarizeFleet(rows, targets, aggregation) {
 
 function Fleet() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateActions = canCreateExecutiveAction(user);
   const { language, t } = useLanguage();
   const { company, mine, kpi_targets: kpiTargets } = useConfig();
   const initialTranslation = useRef(t);
@@ -203,6 +207,7 @@ function Fleet() {
   );
   const [trendError, setTrendError] = useState("");
   const [recommendation, setRecommendation] = useState(null);
+  const [actionCreationMode, setActionCreationMode] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -373,11 +378,13 @@ function Fleet() {
       const response = await getExecutiveActions({ skip: 0, limit: 100 });
       const all = Array.isArray(response)
         ? response : response?.items || response?.actions || response?.data || [];
-      const prefix = `fleet_ai_${today.report_date}_`;
+      const aiPrefix = `fleet_ai_${today.report_date}_`;
+      const manualPrefix = `fleet_manual_${today.report_date}_`;
       const titles = new Set(actions.map((item) => item.canonical));
       setRelated(all.filter((item) => {
         const key = String(item?.action_key || "");
-        return key.startsWith(prefix) || (
+        return key.startsWith(aiPrefix) ||
+          key.startsWith(manualPrefix) || (
           key.startsWith("manual_action_") &&
           titles.has(String(item?.title || item?.action_title || "").trim())
         );
@@ -411,15 +418,36 @@ function Fleet() {
   const closeDialog = useCallback(() => {
     setDialogOpen(false);
     setRecommendation(null);
+    setActionCreationMode(null);
+  }, []);
+
+  const openAiActionDialog = useCallback((item) => {
+    setSaveError("");
+    setActionCreationMode("ai");
+    setRecommendation(item);
+    setDialogOpen(true);
+  }, []);
+
+  const openManualActionDialog = useCallback(() => {
+    setSaveError("");
+    setRecommendation(null);
+    setActionCreationMode("manual");
+    setDialogOpen(true);
   }, []);
 
   const saveAction = useCallback(async (payload) => {
-    if (!recommendation) return;
-    const key = actionKey(recommendation);
-    if (findRelatedAction(recommendation)) {
+    const isManual = actionCreationMode === "manual";
+    if (!isManual && !recommendation) return;
+
+    const key = isManual
+      ? createManualExecutiveActionKey("fleet", today?.report_date)
+      : actionKey(recommendation);
+
+    if (!isManual && findRelatedAction(recommendation)) {
       closeDialog();
       return;
     }
+
     setSaving(true);
     setSaveError("");
     try {
@@ -427,23 +455,33 @@ function Fleet() {
         ...payload,
         action_key: key,
         kpi_key: "fleet",
-        source: "AI",
+        source: isManual ? "Manual" : "AI",
         category: "Fleet",
       });
       await loadRelated();
       closeDialog();
     } catch (requestError) {
-      if (requestError?.response?.status === 409) {
+      if (!isManual && requestError?.response?.status === 409) {
         await loadRelated();
         closeDialog();
         return;
       }
       console.error("Unable to create Fleet executive action:", requestError);
-      setSaveError(requestError?.message || t("fleet.actionCreateError"));
+      setSaveError(requestError?.userMessage || t("fleet.actionCreateError"));
     } finally {
       setSaving(false);
     }
-  }, [actionKey, closeDialog, findRelatedAction, loadRelated, recommendation, t]);
+  }, [
+    actionCreationMode,
+    actionKey,
+    closeDialog,
+    findRelatedAction,
+    loadRelated,
+    recommendation,
+    t,
+    today?.report_date,
+  ]);
+
 
   if (loading) return (
     <Box className="plant-loading"><Stack spacing={2} alignItems="center">
@@ -475,7 +513,11 @@ function Fleet() {
       value={metric.average === null ? "—" : `${metric.average.toFixed(1)}%`} />
   </>;
 
-  const draft = recommendation ? {
+  const draft = actionCreationMode === "manual" ? {
+    action_title: "", description: "",
+    priority: "Medium", status: "Open", category: "Fleet",
+    source: "Manual", owner_name: "", due_date: "",
+  } : recommendation ? {
     action_title: recommendation.title, description: recommendation.text,
     priority: recommendation.priorityValue, status: "Open", category: "Fleet",
     source: "AI", owner_name: "", due_date: "",
@@ -570,18 +612,17 @@ function Fleet() {
           <aside className="plant-ai-actions-card"><div className="plant-ai-card-header"><div className="plant-ai-card-heading"><div className="plant-ai-heading-icon plant-ai-heading-icon--green"><FiCheck /></div><div><h2>{t("fleet.aiRecommendedActions")}</h2><p>{t("fleet.aiActionsDescription")}</p></div></div><span className="plant-ai-action-count">{actions.length} {t("fleet.actionsCountLabel")}</span></div>
             <div className="plant-ai-action-list">{actions.map((item, index) => { const existing = findRelatedAction(item); return <div key={item.id} className="plant-ai-action-row">
               <div className="plant-ai-action-number">{index + 1}</div><div className="plant-ai-action-icon">{index === 0 ? <FiActivity /> : index === 1 ? <FiTarget /> : <FiCheck />}</div><p title={item.title}>{item.text}</p><span className={`plant-ai-action-priority plant-ai-action-priority--${item.tone}`}>{item.priority}</span><Box className="plant-ai-action-control">
-              {existing ? <Button size="small" onClick={() => navigate(`/executive-actions?action_id=${encodeURIComponent(existing.id || existing.action_id)}`)}>{t("fleet.viewAction")}</Button> : <Button size="small" startIcon={<AddIcon />} onClick={() => { setRecommendation(item); setDialogOpen(true); }}>{t("fleet.createAction")}</Button>}</Box>
+              {existing ? <Button size="small" onClick={() => navigate(`/executive-actions?action_id=${encodeURIComponent(existing.id || existing.action_id)}`)}>{t("fleet.viewAction")}</Button> : canCreateActions ? <Button size="small" startIcon={<AddIcon />} onClick={() => openAiActionDialog(item)}>{t("fleet.createAction")}</Button> : null}</Box>
             </div>; })}</div>
           </aside>
         </section>
-        <section className="plant-related-actions-card"><div className="plant-related-actions-header"><div className="plant-related-actions-heading"><div className="plant-related-actions-heading-icon"><FiCheck /></div><div><h2>{t("fleet.relatedExecutiveActions")}</h2><p>{t("fleet.relatedActionsDescription")}</p></div></div><Link to="/executive-actions" className="plant-related-actions-link">{t("fleet.openActionCenter")} <FiArrowRight /></Link></div>
+        <section className="plant-related-actions-card"><div className="plant-related-actions-header"><div className="plant-related-actions-heading"><div className="plant-related-actions-heading-icon"><FiCheck /></div><div><h2>{t("fleet.relatedExecutiveActions")}</h2><p>{t("fleet.relatedActionsDescription")}</p></div></div><Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>{canCreateActions && <Button type="button" variant="contained" size="small" startIcon={<AddIcon fontSize="small" />} onClick={openManualActionDialog} disabled={saving} sx={{ height: 34, minHeight: 34, px: 1.5, borderRadius: "8px", bgcolor: "#0f172a", color: "#ffffff", fontSize: 11, fontWeight: 800, textTransform: "none", boxShadow: "none", whiteSpace: "nowrap", "&:hover": { bgcolor: "#020617", boxShadow: "none" } }}>{t("relatedExecutiveActions.newAction")}</Button>}<Link to="/executive-actions" className="plant-related-actions-link">{t("fleet.openActionCenter")} <FiArrowRight /></Link></Box></div>
           {relatedLoading ? <Box className="plant-related-actions-state"><CircularProgress /></Box> : relatedError ? <Alert severity="error">{relatedError}</Alert> : <><div className="plant-related-actions-grid">{[
             ["open", "actionStatusOpen", actionStats.open, "notStarted", FiClock], ["progress", "actionStatusInProgress", actionStats.inProgress, "beingExecuted", FiActivity], ["completed", "actionStatusCompleted", actionStats.completed, "successfullyClosed", FiCheck], ["blocked", "actionStatusBlocked", actionStats.blocked, "requiresIntervention", FiSlash], ["completion", "completion", `${actionStats.completion.toFixed(0)}%`, "overallCompletion", FiTrendingUp],
           ].map(([tone, label, value, support, Icon]) => <div key={tone} className="plant-related-action-metric"><div className={`plant-related-action-icon plant-related-action-icon--${tone}`}><Icon /></div><div><span>{t(`fleet.${label}`)}</span><strong>{value}</strong><small>{t(`fleet.${support}`)}</small></div></div>)}</div>
             <div className="plant-related-actions-progress"><div className="plant-related-actions-progress-copy"><div><span>{t("fleet.executiveActionCompletion")}</span><small>{actionStats.completed} / {actionStats.total} {t("fleet.actionsCompleted")}</small></div><strong>{actionStats.completion.toFixed(0)}%</strong></div><div className="plant-related-actions-progress-track"><span style={{ width: `${actionStats.completion}%` }} /></div></div></>}
         </section>
-        {saveError && <Alert severity="error">{saveError}</Alert>}
-        <ExecutiveActionDialog open={dialogOpen} action={draft} onClose={closeDialog} onSave={saveAction} saving={saving} primaryColor="#2563eb" />
+        <ExecutiveActionDialog open={dialogOpen} action={draft} onClose={closeDialog} onSave={saveAction} saving={saving} errorMessage={saveError} primaryColor="#2563eb" />
       </>}
     </Box>
   );

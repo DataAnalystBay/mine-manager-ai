@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -287,6 +288,7 @@ function ExecutiveActionDialog({
   onClose,
   onSave,
   saving = false,
+  errorMessage = "",
   primaryColor = "#16a34a",
 }) {
   const { t } = useLanguage();
@@ -835,6 +837,12 @@ function ExecutiveActionDialog({
         }}
       >
         <Stack spacing={2.75}>
+          {errorMessage && (
+            <Alert severity="error">
+              {errorMessage}
+            </Alert>
+          )}
+
           <Box>
             <Typography
               sx={{
@@ -1181,6 +1189,7 @@ function ExecutiveActionDialog({
                   {[
                     "Operations",
                     "Production",
+                    "Fleet",
                     "Maintenance",
                     "Safety",
                     "Geotechnical",

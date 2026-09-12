@@ -45,9 +45,11 @@ import {
   getExecutiveActions,
 } from "../api/executiveActionsApi";
 import { useLanguage } from "../context/LanguageContext";
+import useAuth from "../hooks/useAuth";
 import { formatDisplayDate } from "../utils/displayDateTime";
 import { useConfig } from "../context/ConfigContext";
 import { resolveMineDisplayName } from "../utils/customerIdentity";
+import { canCreateExecutiveAction, createManualExecutiveActionKey } from "../utils/executiveActionUi";
 
 import "./Plant.css";
 
@@ -271,6 +273,8 @@ function calculatePlantPeriodSummary(trend, aggregation, recoveryTarget) {
 
 function Plant() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateActions = canCreateExecutiveAction(user);
   const { language, t } = useLanguage();
   const { company, mine, kpi_targets: kpiTargets } = useConfig();
 
@@ -287,6 +291,7 @@ function Plant() {
   );
   const [trendError, setTrendError] = useState("");
   const [selectedAiRecommendation, setSelectedAiRecommendation] = useState(null);
+  const [actionCreationMode, setActionCreationMode] = useState(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [savingAction, setSavingAction] = useState(false);
   const [actionSaveError, setActionSaveError] = useState("");
@@ -606,12 +611,33 @@ function Plant() {
     };
   }, [selectedAiRecommendation]);
 
+  const manualActionDraft = useMemo(() => ({
+    action_title: "",
+    description: "",
+    priority: "Medium",
+    status: "Open",
+    category: "Plant",
+    source: "Manual",
+    owner_name: "",
+    due_date: "",
+  }), []);
+
+  const actionDialogDraft = useMemo(
+    () => actionCreationMode === "manual" ? manualActionDraft : selectedAiActionDraft,
+    [actionCreationMode, manualActionDraft, selectedAiActionDraft]
+  );
+
   const buildAiActionKey = useCallback(
     (recommendation) => [
       "plant_ai",
       today?.report_date || "unknown_date",
       recommendation?.id || "recommendation",
     ].join("_"),
+    [today?.report_date]
+  );
+
+  const buildManualActionKey = useCallback(
+    () => createManualExecutiveActionKey("plant", today?.report_date),
     [today?.report_date]
   );
 
@@ -643,7 +669,8 @@ function Plant() {
       const allActions = Array.isArray(response)
         ? response
         : response?.items || response?.actions || response?.data || [];
-      const prefix = `plant_ai_${relatedActionsReportDate}_`;
+      const aiPrefix = `plant_ai_${relatedActionsReportDate}_`;
+      const manualPrefix = `plant_manual_${relatedActionsReportDate}_`;
       const canonicalTitles = new Set(
         aiRecommendedActions.map((recommendation) => recommendation.canonicalTitle)
       );
@@ -651,7 +678,7 @@ function Plant() {
       setRelatedExecutiveActions(
         allActions.filter((action) => {
           const actionKey = String(action?.action_key || "");
-          if (actionKey.startsWith(prefix)) return true;
+          if (actionKey.startsWith(aiPrefix) || actionKey.startsWith(manualPrefix)) return true;
 
           return (
             actionKey.startsWith("manual_action_") &&
@@ -717,22 +744,33 @@ function Plant() {
 
   const handleCreateActionFromRecommendation = useCallback((recommendation) => {
     setActionSaveError("");
+    setActionCreationMode("ai");
     setSelectedAiRecommendation(recommendation);
+    setActionDialogOpen(true);
+  }, []);
+
+  const handleCreateManualAction = useCallback(() => {
+    setActionSaveError("");
+    setSelectedAiRecommendation(null);
+    setActionCreationMode("manual");
     setActionDialogOpen(true);
   }, []);
 
   const handleCloseActionDialog = useCallback(() => {
     setActionDialogOpen(false);
     setSelectedAiRecommendation(null);
+    setActionCreationMode(null);
   }, []);
 
-  const handleSaveAiAction = useCallback(async (payload) => {
-    if (!selectedAiRecommendation) return;
+  const handleSaveExecutiveAction = useCallback(async (payload) => {
+    const isManualAction = actionCreationMode === "manual";
+    if (!isManualAction && !selectedAiRecommendation) return;
 
-    const actionKey = buildAiActionKey(selectedAiRecommendation);
-    const alreadyExists = findRelatedPlantAction(selectedAiRecommendation);
+    const actionKey = isManualAction
+      ? buildManualActionKey()
+      : buildAiActionKey(selectedAiRecommendation);
 
-    if (alreadyExists) {
+    if (!isManualAction && findRelatedPlantAction(selectedAiRecommendation)) {
       handleCloseActionDialog();
       await loadRelatedExecutiveActions();
       return;
@@ -746,29 +784,29 @@ function Plant() {
         ...payload,
         action_key: actionKey,
         kpi_key: "plant",
-        source: "AI",
+        source: isManualAction ? "Manual" : "AI",
         category: "Plant",
       });
-
       await loadRelatedExecutiveActions();
       handleCloseActionDialog();
     } catch (requestError) {
       console.error("Unable to create Plant executive action:", requestError);
-      if (requestError?.response?.status === 409) {
+      if (!isManualAction && requestError?.response?.status === 409) {
         await loadRelatedExecutiveActions();
         handleCloseActionDialog();
         return;
       }
       setActionSaveError(
-        requestError?.response?.data?.detail ||
-          requestError?.message ||
-          t("plant.actionCreateError")
+        requestError?.userMessage ||
+        t("plant.actionCreateError")
       );
     } finally {
       setSavingAction(false);
     }
   }, [
+    actionCreationMode,
     buildAiActionKey,
+    buildManualActionKey,
     findRelatedPlantAction,
     handleCloseActionDialog,
     loadRelatedExecutiveActions,
@@ -1208,7 +1246,7 @@ function Plant() {
                             {t("plant.viewAction")}
                           </Button>
                         </Box>
-                      ) : (
+                      ) : canCreateActions ? (
                         <Button
                           type="button"
                           variant="text"
@@ -1220,7 +1258,7 @@ function Plant() {
                         >
                           {t("plant.createAction")}
                         </Button>
-                      )}
+                      ) : null}
                     </Box>
                   </div>
                 );
@@ -1241,10 +1279,39 @@ function Plant() {
               </div>
             </div>
 
-            <Link to="/executive-actions" className="plant-related-actions-link">
-              <span>{t("plant.openActionCenter")}</span>
-              <FiArrowRight />
-            </Link>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
+              {canCreateActions && (
+                <Button
+                type="button"
+                variant="contained"
+                size="small"
+                startIcon={<AddIcon fontSize="small" />}
+                onClick={handleCreateManualAction}
+                disabled={savingAction}
+                sx={{
+                  height: 34,
+                  minHeight: 34,
+                  px: 1.5,
+                  borderRadius: "8px",
+                  bgcolor: "#0f172a",
+                  color: "#ffffff",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "none",
+                  boxShadow: "none",
+                  whiteSpace: "nowrap",
+                  "&:hover": { bgcolor: "#020617", boxShadow: "none" },
+                }}
+              >
+                  {t("relatedExecutiveActions.newAction")}
+                </Button>
+              )}
+
+              <Link to="/executive-actions" className="plant-related-actions-link">
+                <span>{t("plant.openActionCenter")}</span>
+                <FiArrowRight />
+              </Link>
+            </Box>
           </div>
 
           {relatedActionsLoading ? (
@@ -1297,14 +1364,13 @@ function Plant() {
         </section>
       )}
 
-      {actionSaveError && <Alert severity="error" sx={{ mt: 1.5 }}>{actionSaveError}</Alert>}
-
       <ExecutiveActionDialog
         open={actionDialogOpen}
-        action={selectedAiActionDraft}
+        action={actionDialogDraft}
         onClose={handleCloseActionDialog}
-        onSave={handleSaveAiAction}
+        onSave={handleSaveExecutiveAction}
         saving={savingAction}
+        errorMessage={actionSaveError}
         primaryColor="#2563eb"
       />
 

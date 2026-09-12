@@ -280,7 +280,7 @@ const navItems = [
    Sidebar
    ============================================================ */
 
-function Sidebar() {
+function Sidebar({ onNavigate }) {
   const [
     accountOpen,
     setAccountOpen,
@@ -729,6 +729,10 @@ function Sidebar() {
                   end={
                     item.path ===
                     "/"
+                  }
+
+                  onClick={
+                    onNavigate
                   }
 
                   sx={{

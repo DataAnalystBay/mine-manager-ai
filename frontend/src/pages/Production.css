@@ -2011,7 +2011,8 @@
 
 .production-related-actions-link {
   flex: 0 0 auto;
-  min-height: 30px;
+  height: 34px;
+  min-height: 34px;
   padding: 7px 10px;
   display: inline-flex;
   align-items: center;

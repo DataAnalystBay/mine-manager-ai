@@ -32,7 +32,9 @@ import { getSafetyTrend, getTodaySafety } from "../api/safetyApi";
 import SafetyTrendChart from "../components/SafetyTrendChart";
 import ExecutiveActionDialog from "../components/executive/ExecutiveActionDialog";
 import { useLanguage } from "../context/LanguageContext";
+import useAuth from "../hooks/useAuth";
 import { formatDisplayDate } from "../utils/displayDateTime";
+import { canCreateExecutiveAction, createManualExecutiveActionKey } from "../utils/executiveActionUi";
 import "./Plant.css";
 
 const SAFETY_SCORE_TARGET = 95;
@@ -142,6 +144,8 @@ function normalizeActionStatus(value) {
 
 function Safety() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateActions = canCreateExecutiveAction(user);
   const { language, t } = useLanguage();
   const [today, setToday] = useState(null);
   const [trend, setTrend] = useState([]);
@@ -151,6 +155,7 @@ function Safety() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
+  const [actionCreationMode, setActionCreationMode] = useState(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [savingAction, setSavingAction] = useState(false);
   const [actionSaveError, setActionSaveError] = useState("");
@@ -355,6 +360,11 @@ function Safety() {
     recommendation?.id || "recommendation",
   ].join("_"), [today?.report_date]);
 
+  const buildManualActionKey = useCallback(
+    () => createManualExecutiveActionKey("safety", today?.report_date),
+    [today?.report_date]
+  );
+
   const isSafetyAction = useCallback((action) => {
     const actionKey = String(action?.action_key || "").trim().toLowerCase();
     const kpiKey = String(action?.kpi_key || "").trim().toLowerCase();
@@ -362,9 +372,11 @@ function Safety() {
     const recognizedTitles = new Set(
       safetyRecommendedActions.flatMap((item) => [item.canonicalTitle, item.title])
     );
-    return kpiKey === "safety" || actionKey.startsWith("safety_ai_") || (
-      actionKey.startsWith("manual_action_") && recognizedTitles.has(title)
-    );
+    return kpiKey === "safety" ||
+      actionKey.startsWith("safety_ai_") ||
+      actionKey.startsWith("safety_manual_") || (
+        actionKey.startsWith("manual_action_") && recognizedTitles.has(title)
+      );
   }, [safetyRecommendedActions]);
 
   const findRelatedAction = useCallback((recommendation) => {
@@ -423,26 +435,52 @@ function Safety() {
     };
   }, [relatedActions]);
 
-  const selectedActionDraft = useMemo(() => selectedRecommendation ? {
-    action_title: selectedRecommendation.title,
-    description: selectedRecommendation.description,
-    priority: selectedRecommendation.priorityValue,
-    status: "Open",
-    category: "Safety",
-    source: "AI",
-    owner_name: "",
-    due_date: "",
-  } : null, [selectedRecommendation]);
+  const selectedActionDraft = useMemo(() => {
+    if (actionCreationMode === "manual") {
+      return {
+        action_title: "",
+        description: "",
+        priority: "Medium",
+        status: "Open",
+        category: "Safety",
+        source: "Manual",
+        owner_name: "",
+        due_date: "",
+      };
+    }
+
+    if (!selectedRecommendation) return null;
+
+    return {
+      action_title: selectedRecommendation.title,
+      description: selectedRecommendation.description,
+      priority: selectedRecommendation.priorityValue,
+      status: "Open",
+      category: "Safety",
+      source: "AI",
+      owner_name: "",
+      due_date: "",
+    };
+  }, [actionCreationMode, selectedRecommendation]);
 
   const handleCreateAction = useCallback((recommendation) => {
     setActionSaveError("");
+    setActionCreationMode("ai");
     setSelectedRecommendation(recommendation);
+    setActionDialogOpen(true);
+  }, []);
+
+  const handleCreateManualAction = useCallback(() => {
+    setActionSaveError("");
+    setSelectedRecommendation(null);
+    setActionCreationMode("manual");
     setActionDialogOpen(true);
   }, []);
 
   const handleCloseActionDialog = useCallback(() => {
     setActionDialogOpen(false);
     setSelectedRecommendation(null);
+    setActionCreationMode(null);
   }, []);
 
   const handleViewAction = useCallback((action) => {
@@ -453,41 +491,52 @@ function Safety() {
   }, [navigate]);
 
   const handleSaveAction = useCallback(async (payload) => {
-    if (!selectedRecommendation) return;
-    if (findRelatedAction(selectedRecommendation)) {
+    const isManualAction = actionCreationMode === "manual";
+    if (!isManualAction && !selectedRecommendation) return;
+
+    const actionKey = isManualAction
+      ? buildManualActionKey()
+      : buildActionKey(selectedRecommendation);
+
+    if (!isManualAction && findRelatedAction(selectedRecommendation)) {
       handleCloseActionDialog();
       await loadRelatedActions();
       return;
     }
+
     setSavingAction(true);
     setActionSaveError("");
+
     try {
       await createExecutiveAction({
         ...payload,
-        action_key: buildActionKey(selectedRecommendation),
+        action_key: actionKey,
         kpi_key: "safety",
-        source: "AI",
+        source: isManualAction ? "Manual" : "AI",
         category: "Safety",
       });
+
       await loadRelatedActions();
       handleCloseActionDialog();
     } catch (requestError) {
-      if (requestError?.response?.status === 409) {
+      if (!isManualAction && requestError?.response?.status === 409) {
         await loadRelatedActions();
         handleCloseActionDialog();
         return;
       }
+
       console.error("Unable to create Safety executive action:", requestError);
       setActionSaveError(
-        requestError?.response?.data?.detail ||
-        requestError?.message ||
+        requestError?.userMessage ||
         t("safety.actionCreateError")
       );
     } finally {
       setSavingAction(false);
     }
   }, [
+    actionCreationMode,
     buildActionKey,
+    buildManualActionKey,
     findRelatedAction,
     handleCloseActionDialog,
     loadRelatedActions,
@@ -761,7 +810,7 @@ function Safety() {
                               {t("safety.viewAction")}
                             </Button>
                           </Box>
-                        ) : (
+                        ) : canCreateActions ? (
                           <Button
                             type="button"
                             variant="text"
@@ -773,7 +822,7 @@ function Safety() {
                           >
                             {t("safety.createAction")}
                           </Button>
-                        )}
+                        ) : null}
                       </Box>
                     </div>
                   );
@@ -788,9 +837,49 @@ function Safety() {
                 <div className="plant-related-actions-heading-icon"><FiCheck /></div>
                 <div><h2>{t("safety.relatedExecutiveActions")}</h2><p>{t("safety.relatedActionsDescription")}</p></div>
               </div>
-              <Link to="/executive-actions" className="plant-related-actions-link">
-                <span>{t("safety.openActionCenter")}</span><FiArrowRight />
-              </Link>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexShrink: 0,
+                }}
+              >
+                {canCreateActions && (
+                  <Button
+                  type="button"
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon fontSize="small" />}
+                  onClick={handleCreateManualAction}
+                  disabled={savingAction}
+                  sx={{
+                    height: 34,
+                    minHeight: 34,
+                    px: 1.5,
+                    borderRadius: "8px",
+                    bgcolor: "#0f172a",
+                    color: "#ffffff",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    textTransform: "none",
+                    boxShadow: "none",
+                    whiteSpace: "nowrap",
+                    "&:hover": {
+                      bgcolor: "#020617",
+                      boxShadow: "none",
+                    },
+                  }}
+                >
+                    {t("relatedExecutiveActions.newAction")}
+                  </Button>
+                )}
+
+                <Link to="/executive-actions" className="plant-related-actions-link">
+                  <span>{t("safety.openActionCenter")}</span>
+                  <FiArrowRight />
+                </Link>
+              </Box>
             </div>
 
             {relatedActionsLoading ? (
@@ -834,13 +923,13 @@ function Safety() {
             )}
           </section>
 
-          {actionSaveError && <Alert severity="error" sx={{ mt: 1.5 }}>{actionSaveError}</Alert>}
           <ExecutiveActionDialog
             open={actionDialogOpen}
             action={selectedActionDraft}
             onClose={handleCloseActionDialog}
             onSave={handleSaveAction}
             saving={savingAction}
+            errorMessage={actionSaveError}
             primaryColor="#2563eb"
           />
         </>
