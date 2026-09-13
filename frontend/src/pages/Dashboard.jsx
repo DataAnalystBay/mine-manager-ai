@@ -25,6 +25,7 @@ import {
 } from "../utils/displayDateTime";
 import {
   getExecutiveSummary,
+  getHealthHistory,
   getSharedAnalytics,
 } from "../services/dashboardApi";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
@@ -56,9 +57,14 @@ const ExecutiveKpiDetailDialog = lazy(() =>
 );
  
  
-const GRID_LINES = Object.freeze([30, 60, 90]);
-const TREND_POINTS = Object.freeze([78, 74, 91, 79, 94, 82, 96]);
-const TREND_DAYS = Object.freeze(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+const TREND_PLOT_LEFT = 34;
+const TREND_PLOT_RIGHT = 338;
+const TREND_PLOT_TOP = 20;
+const TREND_PLOT_BOTTOM = 104;
+const TREND_PLOT_WIDTH = TREND_PLOT_RIGHT - TREND_PLOT_LEFT;
+const TREND_PLOT_HEIGHT = TREND_PLOT_BOTTOM - TREND_PLOT_TOP;
+const MINE_HEALTH_THRESHOLD = 85;
+
 const RISK_LEVELS = Object.freeze([1, 2, 3, 4]);
 const RISK_LABELS = Object.freeze(["Low", "Medium", "High", "Extreme"]);
 const RISK_ROWS = Object.freeze([
@@ -68,11 +74,7 @@ const RISK_ROWS = Object.freeze([
   Object.freeze({ label: "Geotechnical", values: Object.freeze([1, 2, 3, 4]) }),
   Object.freeze({ label: "External", values: Object.freeze([1, 1, 3, 4]) }),
 ]);
- 
-const CHART_POINTS = TREND_POINTS
-  .map((value, index) => `${index * 53 + 14},${118 - value}`)
-  .join(" ");
- 
+
 const KPI_ICONS = Object.freeze({
   ore: <FiBarChart2 />,
   waste: <FaMountain />,
@@ -85,6 +87,78 @@ const KPI_ICONS = Object.freeze({
   risk: <FiShield />,
 });
  
+function normalizeMineHealthHistory(rawHistory) {
+  if (!Array.isArray(rawHistory)) {
+    return [];
+  }
+
+  return rawHistory
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const rawDate =
+        item.report_date ??
+        item.date ??
+        item.day ??
+        item.timestamp ??
+        item.recorded_at ??
+        item.created_at ??
+        item.period;
+
+      const rawScore =
+        item.health ??
+        item.mine_health_score ??
+        item.mineHealthScore ??
+        item.health_score ??
+        item.healthScore ??
+        item.score ??
+        item.value;
+
+      if (
+        rawScore === null ||
+        rawScore === undefined ||
+        rawScore === "" ||
+        typeof rawScore === "boolean"
+      ) {
+        return null;
+      }
+
+      const dateOnlyMatch = String(rawDate || "").match(
+        /^(\d{4})-(\d{2})-(\d{2})$/
+      );
+      const date = dateOnlyMatch
+        ? new Date(
+            Number(dateOnlyMatch[1]),
+            Number(dateOnlyMatch[2]) - 1,
+            Number(dateOnlyMatch[3])
+          )
+        : rawDate
+        ? new Date(rawDate)
+        : null;
+      const score = Number(rawScore);
+
+      if (
+        !(date instanceof Date) ||
+        Number.isNaN(date.getTime()) ||
+        !Number.isFinite(score) ||
+        score < 0 ||
+        score > 100
+      ) {
+        return null;
+      }
+
+      return {
+        date,
+        score,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+
 function translateTemplate(t, key, variables = {}) {
   let text = t(key);
  
@@ -605,6 +679,14 @@ export default function Dashboard() {
  
   const [toast, setToast] = useState(null);
   const [demoScenario, setDemoScenario] = useState("High Performing Mine");
+  const [hoveredHealthTrendIndex, setHoveredHealthTrendIndex] = useState(null);
+  const [selectedHealthTrendIndex, setSelectedHealthTrendIndex] = useState(null);
+  const [healthHistoryState, setHealthHistoryState] = useState({
+    mineName: null,
+    data: [],
+    loading: true,
+    error: false,
+  });
   const [scenarioTransition, setScenarioTransition] = useState(false);
   const [scenarioTransitionLabel, setScenarioTransitionLabel] = useState(
     t("dashboard.updatingDashboard")
@@ -622,6 +704,7 @@ export default function Dashboard() {
  
   const kpiDetailRequestIdRef = useRef(0);
   const kpiDialogClosingRef = useRef(false);
+  const healthHistoryRequestIdRef = useRef(0);
  
   const companyName = company?.company_name || "Mine Manager AI";
   const mineName = mine?.mine_name || "Demo Mine";
@@ -741,23 +824,6 @@ export default function Dashboard() {
     [t]
   );
  
-  const getTrendDayLabel = useCallback(
-    (value) => {
-      const keys = {
-        Mon: "dashboard.dayMon",
-        Tue: "dashboard.dayTue",
-        Wed: "dashboard.dayWed",
-        Thu: "dashboard.dayThu",
-        Fri: "dashboard.dayFri",
-        Sat: "dashboard.daySat",
-        Sun: "dashboard.daySun",
-      };
- 
-      return keys[value] ? t(keys[value]) : value;
-    },
-    [t]
-  );
- 
   const currentDate = useMemo(() => {
     const now = new Date();
 
@@ -810,6 +876,51 @@ export default function Dashboard() {
   useEffect(() => {
     loadExecutiveSummary();
   }, [loadExecutiveSummary]);
+
+  useEffect(() => {
+    if (loading) {
+      return undefined;
+    }
+
+    const requestId = healthHistoryRequestIdRef.current + 1;
+    healthHistoryRequestIdRef.current = requestId;
+
+    getHealthHistory(mineName)
+      .then((response) => {
+        if (healthHistoryRequestIdRef.current !== requestId) {
+          return;
+        }
+
+        setHoveredHealthTrendIndex(null);
+        setSelectedHealthTrendIndex(null);
+        setHealthHistoryState({
+          mineName,
+          data: normalizeMineHealthHistory(response?.history),
+          loading: false,
+          error: false,
+        });
+      })
+      .catch((error) => {
+        console.error("Mine Health history load failed:", error);
+
+        if (healthHistoryRequestIdRef.current !== requestId) {
+          return;
+        }
+
+        setHoveredHealthTrendIndex(null);
+        setSelectedHealthTrendIndex(null);
+        setHealthHistoryState({
+          mineName,
+          data: [],
+          loading: false,
+          error: true,
+        });
+      });
+
+    return () => {
+      healthHistoryRequestIdRef.current += 1;
+    };
+  }, [loading, mineName]);
  
   const runScenarioTransition = useCallback(
     async ({
@@ -1229,6 +1340,110 @@ export default function Dashboard() {
     };
   }, [baseValues, demoLoaded, demoScenario, t, uiLanguage]);
  
+  const healthHistoryIsCurrent = healthHistoryState.mineName === mineName;
+  const healthTrendData = useMemo(
+    () => (healthHistoryIsCurrent ? healthHistoryState.data : []),
+    [healthHistoryIsCurrent, healthHistoryState.data]
+  );
+  const healthTrendLoading =
+    loading || !healthHistoryIsCurrent || healthHistoryState.loading;
+  const healthTrendError =
+    healthHistoryIsCurrent && healthHistoryState.error;
+
+  const healthTrendScale = useMemo(() => {
+    const values = healthTrendData.map((item) => item.score);
+    const dataMin = Math.min(...values, MINE_HEALTH_THRESHOLD);
+    const dataMax = Math.max(...values, MINE_HEALTH_THRESHOLD);
+    const min = Math.max(0, Math.floor((dataMin - 4) / 5) * 5);
+    const max = Math.min(
+      100,
+      Math.max(min + 10, Math.ceil((dataMax + 3) / 5) * 5)
+    );
+    const range = Math.max(max - min, 1);
+
+    const yForScore = (score) =>
+      TREND_PLOT_TOP +
+      ((max - score) / range) * TREND_PLOT_HEIGHT;
+
+    return {
+      min,
+      max,
+      yForScore,
+      ticks: Array.from({ length: 3 }, (_, index) => {
+        const ratio = index / 2;
+        return {
+          value: Math.round(max - ratio * range),
+          y: TREND_PLOT_TOP + ratio * TREND_PLOT_HEIGHT,
+        };
+      }),
+    };
+  }, [healthTrendData]);
+
+  const healthTrendPoints = useMemo(
+    () =>
+      healthTrendData
+        .map((item, index) => {
+          const x =
+            TREND_PLOT_LEFT +
+            index *
+              (TREND_PLOT_WIDTH /
+                Math.max(healthTrendData.length - 1, 1));
+          const y = healthTrendScale.yForScore(item.score);
+          return `${x},${y}`;
+        })
+        .join(" "),
+    [healthTrendData, healthTrendScale]
+  );
+
+  const healthTrendLabelIndexes = useMemo(() => {
+    if (healthTrendData.length <= 7) {
+      return new Set(healthTrendData.map((_, index) => index));
+    }
+
+    return new Set(
+      Array.from({ length: 5 }, (_, index) =>
+        Math.round((index * (healthTrendData.length - 1)) / 4)
+      )
+    );
+  }, [healthTrendData]);
+
+  const activeHealthTrendIndex =
+    hoveredHealthTrendIndex ?? selectedHealthTrendIndex;
+
+  const activeHealthTrendPoint =
+    activeHealthTrendIndex === null
+      ? null
+      : healthTrendData[activeHealthTrendIndex] || null;
+
+  const formatTrendAxisDate = useCallback(
+    (date) => {
+      if (!(date instanceof Date)) {
+        return "";
+      }
+
+      if (uiLanguage === "MN") {
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }
+
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    },
+    [uiLanguage]
+  );
+
+  const formatTrendTooltipDate = useCallback(
+    (date) => {
+      if (!(date instanceof Date)) {
+        return "";
+      }
+
+      return formatDisplayDate(date, uiLanguage);
+    },
+    [uiLanguage]
+  );
+
   const executiveBriefing = useMemo(
     () =>
       generateExecutiveBriefing(
@@ -1902,69 +2117,350 @@ setKpiDialogOpen(false);
             </p>
           </div>
  
-          <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
             <div
               style={{
                 marginBottom: 8,
+                paddingLeft: 34,
+                paddingRight: 22,
                 fontSize: 12,
+                lineHeight: 1.2,
                 opacity: 0.82,
                 fontWeight: 800,
+                textAlign: "center",
               }}
             >
               {t("dashboard.mineHealthTrend")}
             </div>
- 
+
+            {healthTrendLoading ? (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  height: 132,
+                  display: "grid",
+                  placeItems: "center",
+                  padding: "0 20px",
+                  color: "rgba(255,255,255,0.76)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textAlign: "center",
+                }}
+              >
+                {t("common.loading")}
+              </div>
+            ) : healthTrendError ? (
+              <div
+                role="alert"
+                style={{
+                  height: 132,
+                  display: "grid",
+                  placeItems: "center",
+                  padding: "0 20px",
+                  color: "rgba(255,255,255,0.82)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  lineHeight: 1.45,
+                  textAlign: "center",
+                }}
+              >
+                {uiLanguage === "MN"
+                  ? "Уурхайн төлөвийн түүхийг ачаалж чадсангүй."
+                  : "Mine Health history could not be loaded."}
+              </div>
+            ) : healthTrendData.length === 0 ? (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  height: 132,
+                  display: "grid",
+                  placeItems: "center",
+                  padding: "0 20px",
+                  color: "rgba(255,255,255,0.76)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textAlign: "center",
+                }}
+              >
+                {t("common.noData")}
+              </div>
+            ) : (
             <svg
-              viewBox="0 0 340 130"
+              viewBox="0 0 360 142"
               role="img"
               aria-label={t("dashboard.mineHealthTrend")}
-              style={{ width: "100%", height: 122, overflow: "visible" }}
+              style={{
+                width: "100%",
+                height: 132,
+                overflow: "visible",
+                display: "block",
+                touchAction: "manipulation",
+              }}
+              onPointerLeave={() => setHoveredHealthTrendIndex(null)}
             >
-              {GRID_LINES.map((y) => (
-                <line
-                  key={y}
-                  x1="12"
-                  x2="330"
-                  y1={y}
-                  y2={y}
-                  stroke="rgba(255,255,255,0.16)"
-                  strokeWidth="1"
-                />
+              {healthTrendScale.ticks.map((tick) => (
+                <React.Fragment key={`${tick.value}-${tick.y}`}>
+                  <text
+                    x="8"
+                    y={tick.y + 3}
+                    fill="rgba(255,255,255,0.62)"
+                    fontSize="8"
+                    fontWeight="700"
+                    textAnchor="start"
+                  >
+                    {tick.value}
+                  </text>
+                  <line
+                    x1={TREND_PLOT_LEFT}
+                    x2={TREND_PLOT_RIGHT}
+                    y1={tick.y}
+                    y2={tick.y}
+                    stroke="rgba(255,255,255,0.16)"
+                    strokeWidth="1"
+                  />
+                </React.Fragment>
               ))}
- 
+
+              <line
+                x1={TREND_PLOT_LEFT}
+                x2={TREND_PLOT_RIGHT}
+                y1={healthTrendScale.yForScore(MINE_HEALTH_THRESHOLD)}
+                y2={healthTrendScale.yForScore(MINE_HEALTH_THRESHOLD)}
+                stroke="rgba(255,255,255,0.38)"
+                strokeWidth="1"
+                strokeDasharray="4 5"
+              />
+              <text
+                x={TREND_PLOT_RIGHT}
+                y={healthTrendScale.yForScore(MINE_HEALTH_THRESHOLD) - 5}
+                fill="rgba(255,255,255,0.68)"
+                fontSize="7.5"
+                fontWeight="700"
+                textAnchor="end"
+              >
+                {uiLanguage === "MN" ? "Зорилтот 85" : "Target 85"}
+              </text>
+
+              {activeHealthTrendIndex !== null &&
+                activeHealthTrendPoint &&
+                (() => {
+                  const x =
+                    TREND_PLOT_LEFT +
+                    activeHealthTrendIndex *
+                      (TREND_PLOT_WIDTH /
+                        Math.max(healthTrendData.length - 1, 1));
+
+                  return (
+                    <line
+                      x1={x}
+                      x2={x}
+                      y1={TREND_PLOT_TOP}
+                      y2={TREND_PLOT_BOTTOM}
+                      stroke="rgba(255,255,255,0.30)"
+                      strokeWidth="1"
+                      strokeDasharray="3 4"
+                      pointerEvents="none"
+                    />
+                  );
+                })()}
+
               <polyline
-                points={CHART_POINTS}
+                points={healthTrendPoints}
                 fill="none"
                 stroke="#6ee7b7"
-                strokeWidth="5"
+                strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                pointerEvents="none"
               />
- 
-              {TREND_POINTS.map((value, index) => (
-                <circle
-                  key={`${value}-${index}`}
-                  cx={index * 53 + 14}
-                  cy={118 - value}
-                  r="4"
-                  fill="#6ee7b7"
-                />
-              ))}
+
+              {healthTrendData.map((item, index) => {
+                if (!healthTrendLabelIndexes.has(index)) {
+                  return null;
+                }
+
+                const x =
+                  TREND_PLOT_LEFT +
+                  index *
+                    (TREND_PLOT_WIDTH /
+                      Math.max(healthTrendData.length - 1, 1));
+                const y = healthTrendScale.yForScore(item.score);
+                const isActive = activeHealthTrendIndex === index;
+
+                return (
+                  <React.Fragment key={`${item.date.toISOString()}-${index}`}>
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={isActive ? 6 : 4}
+                      fill="#6ee7b7"
+                      stroke={isActive ? "#ffffff" : "transparent"}
+                      strokeWidth={isActive ? 2 : 0}
+                      pointerEvents="none"
+                    />
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="12"
+                      fill="transparent"
+                      tabIndex="0"
+                      role="button"
+                      aria-label={`${formatTrendTooltipDate(item.date)}: ${
+                        uiLanguage === "MN"
+                          ? "Уурхайн төлөв"
+                          : "Mine Health"
+                      } ${item.score.toFixed(1)} / 100`}
+                      style={{ cursor: "pointer", outline: "none" }}
+                      onPointerEnter={() =>
+                        setHoveredHealthTrendIndex(index)
+                      }
+                      onFocus={() =>
+                        setHoveredHealthTrendIndex(index)
+                      }
+                      onBlur={() =>
+                        setHoveredHealthTrendIndex(null)
+                      }
+                      onClick={() =>
+                        setSelectedHealthTrendIndex((current) =>
+                          current === index ? null : index
+                        )
+                      }
+                    />
+                  </React.Fragment>
+                );
+              })}
+
+              {healthTrendData.map((item, index) => {
+                const x =
+                  TREND_PLOT_LEFT +
+                  index *
+                    (TREND_PLOT_WIDTH /
+                      Math.max(healthTrendData.length - 1, 1));
+
+                return (
+                  <text
+                    key={`label-${item.date.toISOString()}`}
+                    x={x}
+                    y="132"
+                    fill="rgba(255,255,255,0.72)"
+                    fontSize="8"
+                    fontWeight="600"
+                    textAnchor="middle"
+                  >
+                    {formatTrendAxisDate(item.date)}
+                  </text>
+                );
+              })}
+
+              {activeHealthTrendIndex !== null &&
+                activeHealthTrendPoint &&
+                (() => {
+                  const x =
+                    TREND_PLOT_LEFT +
+                    activeHealthTrendIndex *
+                      (TREND_PLOT_WIDTH /
+                        Math.max(healthTrendData.length - 1, 1));
+                  const y =
+                    healthTrendScale.yForScore(
+                      activeHealthTrendPoint.score
+                    );
+                  const previous =
+                    activeHealthTrendIndex > 0
+                      ? healthTrendData[activeHealthTrendIndex - 1]
+                      : null;
+                  const delta = previous
+                    ? Number(
+                        (
+                          activeHealthTrendPoint.score -
+                          previous.score
+                        ).toFixed(1)
+                      )
+                    : null;
+
+                  const tooltipWidth = 116;
+                  const tooltipHeight = 34;
+                  const tooltipX = Math.max(
+                    4,
+                    Math.min(
+                      356 - tooltipWidth,
+                      x - tooltipWidth / 2
+                    )
+                  );
+                  const tooltipY = Math.max(
+                    2,
+                    Math.min(
+                      TREND_PLOT_BOTTOM - tooltipHeight - 4,
+                      y - tooltipHeight - 12
+                    )
+                  );
+
+                  return (
+                    <g pointerEvents="none">
+                      <rect
+                        x={tooltipX}
+                        y={tooltipY}
+                        width={tooltipWidth}
+                        height={tooltipHeight}
+                        rx="7"
+                        fill="rgba(15,23,42,0.92)"
+                        stroke="rgba(255,255,255,0.24)"
+                      />
+                      <text
+                        x={tooltipX + 8}
+                        y={tooltipY + 12}
+                        fill="rgba(255,255,255,0.76)"
+                        fontSize="7.5"
+                        fontWeight="700"
+                      >
+                        {formatTrendTooltipDate(
+                          activeHealthTrendPoint.date
+                        )}
+                      </text>
+                      <text
+                        x={tooltipX + 8}
+                        y={tooltipY + 25}
+                        fill="#ffffff"
+                        fontSize="8.5"
+                        fontWeight="900"
+                      >
+                        {uiLanguage === "MN"
+                          ? `Уурхайн төлөв ${activeHealthTrendPoint.score.toFixed(1)}`
+                          : `Mine Health ${activeHealthTrendPoint.score.toFixed(1)}`}
+                      </text>
+
+                      {delta !== null && (
+                        <text
+                          x={tooltipX + tooltipWidth - 8}
+                          y={tooltipY + 12}
+                          fill={
+                            delta > 0
+                              ? "#6ee7b7"
+                              : delta < 0
+                              ? "#fecaca"
+                              : "rgba(255,255,255,0.72)"
+                          }
+                          fontSize="7.2"
+                          fontWeight="800"
+                          textAnchor="end"
+                        >
+                          {delta > 0 ? "+" : ""}
+                          {delta.toFixed(1)}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })()}
             </svg>
- 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 10,
-                opacity: 0.72,
-                padding: "0 4px",
-              }}
-            >
-              {TREND_DAYS.map((day) => (
-                <span key={day}>{getTrendDayLabel(day)}</span>
-              ))}
-            </div>
+            )}
           </div>
         </section>
  
