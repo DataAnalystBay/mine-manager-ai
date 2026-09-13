@@ -276,6 +276,64 @@ const navItems = [
 ];
 
 
+const LOCALIZED_ROLE_KEYS = new Set([
+  "administrator",
+  "generalManager",
+  "mineManager",
+  "superintendent",
+  "viewer",
+]);
+
+
+const resolveRoleLabel = (
+  role,
+  t
+) => {
+  const sourceRole =
+    String(role || "").trim();
+
+  if (!sourceRole) {
+    return t("userManagement.viewer");
+  }
+
+  const translationKey =
+    sourceRole
+      .replace(
+        /\s+(\w)/g,
+        (_, character) =>
+          character.toUpperCase()
+      )
+      .replace(
+        /^\w/,
+        (character) =>
+          character.toLowerCase()
+      );
+
+  const canonicalRole =
+    translationKey
+      .replace(
+        /([A-Z])/g,
+        " $1"
+      )
+      .replace(
+        /^\w/,
+        (character) =>
+          character.toUpperCase()
+      );
+
+  return (
+    LOCALIZED_ROLE_KEYS.has(
+      translationKey
+    ) &&
+    sourceRole === canonicalRole
+  )
+    ? t(
+        `userManagement.${translationKey}`
+      )
+    : role;
+};
+
+
 /* ============================================================
    Sidebar
    ============================================================ */
@@ -339,6 +397,19 @@ function Sidebar({ onNavigate }) {
       language === "MN"
         ? "Демо уурхай"
         : "Demo Mine"
+    );
+
+
+  const localizedUserName =
+    user?.full_name ||
+    (language === "MN"
+      ? "Хэрэглэгч"
+      : "User");
+
+  const localizedRole =
+    resolveRoleLabel(
+      user?.role,
+      t
     );
 
 
@@ -1084,12 +1155,7 @@ function Sidebar({ onNavigate }) {
 
               <Typography
                 title={
-                  user?.full_name ||
-                  (
-                    language === "MN"
-                      ? "Хэрэглэгч"
-                      : "User"
-                  )
+                  localizedUserName
                 }
 
                 sx={{
@@ -1116,24 +1182,14 @@ function Sidebar({ onNavigate }) {
                 }}
               >
                 {
-                  user?.full_name ||
-                  (
-                    language === "MN"
-                      ? "Хэрэглэгч"
-                      : "User"
-                  )
+                  localizedUserName
                 }
               </Typography>
 
 
               <Typography
                 title={
-                  user?.role ||
-                  (
-                    language === "MN"
-                      ? "Үзэгч"
-                      : "Viewer"
-                  )
+                  localizedRole
                 }
 
                 sx={{
@@ -1163,12 +1219,7 @@ function Sidebar({ onNavigate }) {
                 }}
               >
                 {
-                  user?.role ||
-                  (
-                    language === "MN"
-                      ? "Үзэгч"
-                      : "Viewer"
-                  )
+                  localizedRole
                 }
               </Typography>
 
