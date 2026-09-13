@@ -2399,7 +2399,7 @@ export const translations = {
       executiveDemoLoaded: "Удирдлагын демо ачаалагдлаа",
       scenarioLoadedSuccessfully: "сценари амжилттай ачаалагдлаа.",
       demoLoadFailed: "Демо ачаалж чадсангүй",
-      checkBackendAndRetry: "Backend холболтыг шалгаад дахин оролдоно уу.",
+      checkBackendAndRetry: "Серверийн холболтыг шалгаад дахин оролдоно уу.",
       restoringLiveView: "Бодит хяналтын самбарыг сэргээж байна...",
       demoReset: "Демо сэргээгдлээ",
       restoredToLiveView: "Хяналтын самбар бодит горимд сэргээгдлээ.",

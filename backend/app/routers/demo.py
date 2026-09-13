@@ -13,7 +13,6 @@ from pydantic import (
 
 from app.auth.dependencies import (
     get_current_user,
-    require_administrator,
     require_general_manager_or_administrator,
 )
 
@@ -23,6 +22,9 @@ from app.services.demo_data_service import (
 
 from app.services.demo_persistence_service import (
     persist_demo_data,
+)
+from app.services.tenant_service import (
+    get_current_tenant,
 )
 
 
@@ -120,6 +122,9 @@ class DemoResetRequest(
 )
 def load_demo_data(
     request: DemoLoadRequest,
+    tenant: dict = Depends(
+        get_current_tenant
+    ),
 ):
     """
     Generate and persist the full Demo Mode dataset.
@@ -145,9 +150,13 @@ def load_demo_data(
         or DEFAULT_DEMO_SCENARIO
     )
 
-    normalized_mine_name = (
+    requested_mine_name = (
         request.mine_name.strip()
         or DEFAULT_DEMO_MINE_NAME
+    )
+
+    normalized_mine_name = str(
+        tenant["mine_name"]
     )
 
     # --------------------------------------------------------
@@ -189,6 +198,12 @@ def load_demo_data(
 
                 mine_name=
                     normalized_mine_name,
+
+                company_id=
+                    tenant["company_id"],
+
+                mine_id=
+                    tenant["mine_id"],
             )
         )
 
@@ -334,6 +349,9 @@ def load_demo_data(
             ),
 
         "requested_mine_name":
+            requested_mine_name,
+
+        "mine_name":
             normalized_mine_name,
 
         "tenant":
@@ -384,11 +402,14 @@ def load_demo_data(
     "/reset",
     dependencies=[
         Depends(
-            require_administrator
+            require_general_manager_or_administrator
         ),
     ],
 )
 def reset_demo_data(
+    tenant: dict = Depends(
+        get_current_tenant
+    ),
     request: Optional[
         DemoResetRequest
     ] = None,
@@ -404,7 +425,7 @@ def reset_demo_data(
     explicit administrative operation.
     """
 
-    mine_name = None
+    requested_mine_name = None
 
     if (
         request is not None
@@ -416,9 +437,13 @@ def reset_demo_data(
         )
 
         if normalized_name:
-            mine_name = (
+            requested_mine_name = (
                 normalized_name
             )
+
+    mine_name = str(
+        tenant["mine_name"]
+    )
 
     return {
         "success":
@@ -429,6 +454,9 @@ def reset_demo_data(
 
         "mine_name":
             mine_name,
+
+        "requested_mine_name":
+            requested_mine_name,
 
         "database_records_deleted":
             False,

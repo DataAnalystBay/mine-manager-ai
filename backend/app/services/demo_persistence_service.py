@@ -20,6 +20,8 @@ from app.database import (
 def resolve_demo_tenant(
     db,
     mine_name: str,
+    company_id: int | None = None,
+    mine_id: int | None = None,
 ) -> Dict[str, Any]:
     """
     Resolve a configured mine or company into the immutable
@@ -39,9 +41,37 @@ def resolve_demo_tenant(
             "mine_name is required."
         )
 
-    tenant = db.execute(
-        text(
-            """
+    if (company_id is None) != (mine_id is None):
+        raise ValueError(
+            "company_id and mine_id must be supplied together."
+        )
+
+    if company_id is not None and mine_id is not None:
+        tenant = db.execute(
+            text(
+                """
+                SELECT
+                    m.id AS mine_id,
+                    m.company_id AS company_id,
+                    m.mine_name AS mine_name,
+                    c.company_name AS company_name
+                FROM public.mine_settings AS m
+                JOIN public.company_settings AS c
+                    ON c.id = m.company_id
+                WHERE m.id = :mine_id
+                  AND m.company_id = :company_id
+                LIMIT 1
+                """
+            ),
+            {
+                "company_id": int(company_id),
+                "mine_id": int(mine_id),
+            },
+        ).mappings().first()
+    else:
+        tenant = db.execute(
+            text(
+                """
             SELECT
                 m.id AS mine_id,
                 m.company_id AS company_id,
@@ -61,12 +91,12 @@ def resolve_demo_tenant(
                 END,
                 m.id
             LIMIT 1
-            """
-        ),
-        {
-            "name": normalized_name,
-        },
-    ).mappings().first()
+                """
+            ),
+            {
+                "name": normalized_name,
+            },
+        ).mappings().first()
 
     if tenant is None:
         raise ValueError(
@@ -1071,6 +1101,8 @@ def _upsert_safety(
 def persist_demo_data(
     demo_data: Dict[str, Any],
     mine_name: str,
+    company_id: int | None = None,
+    mine_id: int | None = None,
 ) -> Dict[str, Any]:
     """
     Persist the complete synthetic operating history using
@@ -1118,6 +1150,8 @@ def persist_demo_data(
             resolve_demo_tenant(
                 db=db,
                 mine_name=mine_name,
+                company_id=company_id,
+                mine_id=mine_id,
             )
         )
 

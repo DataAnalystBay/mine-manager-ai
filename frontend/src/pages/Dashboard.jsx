@@ -860,14 +860,16 @@ export default function Dashboard() {
     try {
       setExecutiveSummaryLoading(true);
       setExecutiveSummaryError("");
- 
+
       const data = await getExecutiveSummary(mineName);
       setExecutiveSummary(data);
+      return true;
     } catch (error) {
       console.error("Executive summary load failed:", error);
       setExecutiveSummaryError(
         t("dashboard.liveSummaryLoadError")
       );
+      return false;
     } finally {
       setExecutiveSummaryLoading(false);
     }
@@ -877,6 +879,11 @@ export default function Dashboard() {
     loadExecutiveSummary();
   }, [loadExecutiveSummary]);
 
+  const fetchHealthHistory = useCallback(async () => {
+    const response = await getHealthHistory(mineName);
+    return normalizeMineHealthHistory(response?.history);
+  }, [mineName]);
+
   useEffect(() => {
     if (loading) {
       return undefined;
@@ -885,8 +892,8 @@ export default function Dashboard() {
     const requestId = healthHistoryRequestIdRef.current + 1;
     healthHistoryRequestIdRef.current = requestId;
 
-    getHealthHistory(mineName)
-      .then((response) => {
+    fetchHealthHistory()
+      .then((data) => {
         if (healthHistoryRequestIdRef.current !== requestId) {
           return;
         }
@@ -895,7 +902,7 @@ export default function Dashboard() {
         setSelectedHealthTrendIndex(null);
         setHealthHistoryState({
           mineName,
-          data: normalizeMineHealthHistory(response?.history),
+          data,
           loading: false,
           error: false,
         });
@@ -920,7 +927,42 @@ export default function Dashboard() {
     return () => {
       healthHistoryRequestIdRef.current += 1;
     };
-  }, [loading, mineName]);
+  }, [fetchHealthHistory, loading, mineName]);
+
+  const refreshHealthHistory = useCallback(async () => {
+    const requestId = healthHistoryRequestIdRef.current + 1;
+    healthHistoryRequestIdRef.current = requestId;
+
+    try {
+      const data = await fetchHealthHistory();
+
+      if (healthHistoryRequestIdRef.current !== requestId) {
+        return false;
+      }
+
+      setHealthHistoryState({
+        mineName,
+        data,
+        loading: false,
+        error: false,
+      });
+      return true;
+    } catch (error) {
+      console.error("Mine Health history refresh failed:", error);
+
+      if (healthHistoryRequestIdRef.current !== requestId) {
+        return false;
+      }
+
+      setHealthHistoryState({
+        mineName,
+        data: [],
+        loading: false,
+        error: true,
+      });
+      return false;
+    }
+  }, [fetchHealthHistory, mineName]);
  
   const runScenarioTransition = useCallback(
     async ({
@@ -978,31 +1020,96 @@ export default function Dashboard() {
     [demoScenario, getScenarioLabel, runScenarioTransition, scenarioTransition, t]
   );
  
+  const loadSharedAnalytics = useCallback(async () => {
+    try {
+      setSharedAnalyticsLoading(true);
+      setSharedAnalyticsError("");
+
+      const data = await getSharedAnalytics(
+        mineName,
+        7,
+        uiLanguage === "MN" ? "mn" : "en"
+      );
+      setSharedAnalytics(data);
+      return true;
+    } catch (error) {
+      console.error("Shared analytics load failed:", error);
+      setSharedAnalyticsError(t("dashboard.sharedAnalyticsLoadError"));
+      return false;
+    } finally {
+      setSharedAnalyticsLoading(false);
+    }
+  }, [mineName, t, uiLanguage]);
+
+  useEffect(() => {
+    loadSharedAnalytics();
+  }, [loadSharedAnalytics]);
+
+  const refreshAuthoritativeDashboardData = useCallback(async () => {
+    setHoveredHealthTrendIndex(null);
+    setSelectedHealthTrendIndex(null);
+    setHealthHistoryState({
+      mineName,
+      data: [],
+      loading: true,
+      error: false,
+    });
+
+    const results = await Promise.all([
+      loadExecutiveSummary(),
+      loadSharedAnalytics(),
+      refreshHealthHistory(),
+    ]);
+
+    return results.every(Boolean);
+  }, [
+    loadExecutiveSummary,
+    loadSharedAnalytics,
+    mineName,
+    refreshHealthHistory,
+  ]);
+
   const handleLoadDemo = useCallback(async () => {
     await runScenarioTransition({
       label: `${t("dashboard.loadingScenario")} ${getScenarioLabel(demoScenario)}`,
       minimumDuration: 850,
       action: async () => {
+        setDemoLoading(true);
+
         try {
-          setDemoLoading(true);
- 
           const result = await loadDemoData({
             scenario: demoScenario,
             mine_name: mineName,
           });
-          console.log("Demo data loaded:", result);
- 
-          setDemoData(result.data);
+
+          if (result?.success !== true) {
+            throw new Error("Demo load did not return a success response.");
+          }
+
+          setDemoData(null);
+
+          const refreshed = await refreshAuthoritativeDashboardData();
+
+          if (!refreshed) {
+            showToast(
+              "error",
+              t("dashboard.demoLoadFailed"),
+              t("dashboard.checkBackendAndRetry")
+            );
+            return;
+          }
+
           setDemoLoaded(true);
- 
+
           showToast(
             "success",
             t("dashboard.executiveDemoLoaded"),
-            `${getScenarioLabel(demoScenario)} ${t("dashboard.scenarioLoadedSuccessfully")}`
+            `${getScenarioLabel(demoScenario)} ${t(
+              "dashboard.scenarioLoadedSuccessfully"
+            )}`
           );
         } catch (error) {
           console.error("Demo load failed:", error);
- 
           showToast(
             "error",
             t("dashboard.demoLoadFailed"),
@@ -1013,24 +1120,47 @@ export default function Dashboard() {
         }
       },
     });
-  }, [demoScenario, getScenarioLabel, mineName, runScenarioTransition, showToast, t]);
- 
+  }, [
+    demoScenario,
+    getScenarioLabel,
+    mineName,
+    refreshAuthoritativeDashboardData,
+    runScenarioTransition,
+    showToast,
+    t,
+  ]);
+
   const handleResetDemo = useCallback(async () => {
     await runScenarioTransition({
       label: t("dashboard.restoringLiveView"),
       minimumDuration: 700,
       action: async () => {
+        setDemoLoading(true);
+
         try {
-          await resetDemoData({
+          const result = await resetDemoData({
             mine_name: mineName,
           });
- 
+
+          if (result?.success !== true) {
+            throw new Error("Demo reset did not return a success response.");
+          }
+
           setDemoData(null);
           setDemoLoaded(false);
           setDemoScenario("High Performing Mine");
- 
-          await loadExecutiveSummary();
- 
+
+          const refreshed = await refreshAuthoritativeDashboardData();
+
+          if (!refreshed) {
+            showToast(
+              "error",
+              t("dashboard.resetFailed"),
+              t("dashboard.checkBackendAndRetry")
+            );
+            return;
+          }
+
           showToast(
             "success",
             t("dashboard.demoReset"),
@@ -1038,53 +1168,32 @@ export default function Dashboard() {
           );
         } catch (error) {
           console.error("Demo reset failed:", error);
- 
           showToast(
             "error",
             t("dashboard.resetFailed"),
             t("dashboard.checkBackendAndRetry")
           );
+        } finally {
+          setDemoLoading(false);
         }
       },
     });
   }, [
-    loadExecutiveSummary,
     mineName,
+    refreshAuthoritativeDashboardData,
     runScenarioTransition,
     showToast,
     t,
   ]);
- 
-  const loadSharedAnalytics = useCallback(async () => {
-    try {
-      setSharedAnalyticsLoading(true);
-      setSharedAnalyticsError("");
- 
-      const data = await getSharedAnalytics(
-        mineName,
-        7,
-        uiLanguage === "MN" ? "mn" : "en"
-      );
-      setSharedAnalytics(data);
-    } catch (error) {
-      console.error("Shared analytics load failed:", error);
-      setSharedAnalyticsError(t("dashboard.sharedAnalyticsLoadError"));
-    } finally {
-      setSharedAnalyticsLoading(false);
-    }
-  }, [mineName, t, uiLanguage]);
- 
-  useEffect(() => {
-    loadSharedAnalytics();
-  }, [loadSharedAnalytics]);
- 
+
+
   const baseValues = useMemo(() => {
     const readNumber = (...values) => {
       for (const value of values) {
         if (value === null || value === undefined || value === "") {
           continue;
         }
- 
+
         const numericValue = Number(value);
  
         if (Number.isFinite(numericValue)) {
@@ -1104,7 +1213,7 @@ export default function Dashboard() {
      * Demo Mode intentionally continues to use the scenario dataset.
      * Live Mode uses /api/dashboard/executive-summary as the source of truth.
      */
-    if (demoLoaded) {
+    if (demoLoaded && demoData) {
       const latestProduction = demoData?.production?.at(-1);
       const latestFleet = demoData?.fleet?.slice(-5) || [];
       const latestPlant = demoData?.plant?.at(-1);
@@ -1309,7 +1418,7 @@ export default function Dashboard() {
   }, [demoData, demoLoaded, executiveSummary]);
  
   const scenarioValues = useMemo(() => {
-    if (demoLoaded) {
+    if (demoLoaded && demoData) {
       return applyScenarioAdjustments(baseValues, demoScenario, t);
     }
  
@@ -1338,7 +1447,7 @@ export default function Dashboard() {
         safety: "0",
       },
     };
-  }, [baseValues, demoLoaded, demoScenario, t, uiLanguage]);
+  }, [baseValues, demoData, demoLoaded, demoScenario, t, uiLanguage]);
  
   const healthHistoryIsCurrent = healthHistoryState.mineName === mineName;
   const healthTrendData = useMemo(
