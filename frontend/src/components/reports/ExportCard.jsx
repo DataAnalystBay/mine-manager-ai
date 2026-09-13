@@ -23,11 +23,11 @@ function ExportCard({ onClick, disabled = false }) {
   const excelBorder = "#bbf7d0";
 
   const includedItems = [
+    t("reports.summary"),
     t("reports.production"),
-    t("reports.fleet"),
     t("reports.plant"),
     t("reports.safety"),
-    t("reports.maintenance"),
+    t("reports.definitions"),
   ];
 
   return (
