@@ -803,10 +803,7 @@ export default function Dashboard() {
         return uiLanguage === "MN" ? "Үйлдвэр" : "Process Plant";
       }
 
-      return t(
-        keys[value] ||
-          "dashboard.riskExternal"
-      );
+      return keys[value] ? t(keys[value]) : value;
     },
     [t, uiLanguage]
   );
@@ -1558,12 +1555,12 @@ export default function Dashboard() {
       generateExecutiveBriefing(
         scenarioValues,
         demoScenario,
-        mineName,
+        displayMineName,
         demoLoaded,
         uiLanguage,
         t
       ),
-    [scenarioValues, demoScenario, mineName, demoLoaded, uiLanguage, t]
+    [scenarioValues, demoScenario, displayMineName, demoLoaded, uiLanguage, t]
   );
  
   const openKpiDetail = useCallback(
@@ -2720,7 +2717,7 @@ setKpiDialogOpen(false);
                 unit="%"
                 target="77%"
                 icon={KPI_ICONS.recovery}
-                badge={uiLanguage === "MN" ? "Процесс KPI" : "Process KPI"}
+                badge={t("dashboard.processKpi")}
                 trend={scenarioValues.trends?.recovery || "0.0%"}
                 accent="#0f766e"
                 soft="#ccfbf1"
