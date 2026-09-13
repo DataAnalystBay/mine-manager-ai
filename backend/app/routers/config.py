@@ -7,7 +7,10 @@ import os
 import uuid
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import (
+    get_current_user,
+    require_administrator,
+)
 
 from app.models.user import User
 from app.models.auth_company import Company
@@ -222,7 +225,7 @@ def get_company_settings(
 def update_company_settings(
     request: CompanyUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_administrator),
 ):
     company = get_user_company(
         db=db,
@@ -254,7 +257,7 @@ def update_company_settings(
 def upload_company_logo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_administrator),
 ):
     allowed_types = [
         "image/png",
@@ -368,7 +371,7 @@ def get_mine_settings(
 def update_mine_settings(
     request: MineUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_administrator),
 ):
     mine = get_user_mine(
         db=db,
@@ -423,7 +426,7 @@ def update_kpi_target(
     kpi_id: int,
     request: KpiTargetUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_administrator),
 ):
     mine = get_user_mine(
         db=db,
@@ -493,7 +496,7 @@ def update_alert_threshold(
     alert_id: int,
     request: AlertThresholdUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_administrator),
 ):
     mine = get_user_mine(
         db=db,
@@ -563,7 +566,7 @@ def update_shift_pattern(
     shift_id: int,
     request: ShiftUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_administrator),
 ):
     mine = get_user_mine(
         db=db,
