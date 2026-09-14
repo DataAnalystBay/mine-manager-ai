@@ -2993,6 +2993,7 @@ setKpiDialogOpen(false);
           <section style={{ marginTop: 24 }}>
             <ExecutiveInsightsPanel
               mineName={mineName}
+              displayMineName={displayMineName}
               scenario={
                 demoLoaded
                   ? demoScenario

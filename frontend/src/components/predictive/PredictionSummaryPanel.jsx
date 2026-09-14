@@ -216,6 +216,21 @@ function getOutlookConfig(outlook, t) {
     };
   }
 
+  if (
+    normalizedOutlook === "insufficient data" ||
+    normalizedOutlook === "unavailable"
+  ) {
+    return {
+      label: t(
+        normalizedOutlook === "insufficient data"
+          ? "predictionSummary.outlook.insufficientData"
+          : "predictionSummary.outlook.unavailable",
+      ),
+      className: "unavailable",
+      icon: <FiActivity />,
+    };
+  }
+
   return {
     label:
       outlook ||
@@ -635,6 +650,8 @@ function PredictionSummaryPanel({
         "predictionSummary.dataQualityStatus.partial",
       limited:
         "predictionSummary.dataQualityStatus.limited",
+      unavailable:
+        "predictionSummary.dataQualityStatus.unavailable",
       unknown:
         "predictionSummary.dataQualityStatus.unknown",
     };

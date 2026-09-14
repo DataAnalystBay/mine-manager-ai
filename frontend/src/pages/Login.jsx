@@ -37,11 +37,25 @@ function Login() {
     } catch (error) {
       console.error("Login flow failed:", error);
 
-      setError(
-        error?.response?.data?.detail ||
-          error?.message ||
-          t("login.unableToSignIn")
-      );
+      if (language === "MN") {
+        const detail = String(
+          error?.response?.data?.detail || "",
+        ).trim().toLowerCase();
+
+        setError(
+          detail === "invalid email or password"
+            ? t("login.invalidCredentials")
+            : !error?.response
+              ? t("login.networkError")
+              : t("login.unableToSignIn"),
+        );
+      } else {
+        setError(
+          error?.response?.data?.detail ||
+            error?.message ||
+            t("login.unableToSignIn")
+        );
+      }
     } finally {
       setLoading(false);
     }

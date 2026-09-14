@@ -25,6 +25,10 @@ import {
   translateDynamicScenario,
 } from "../../i18n/dynamicTranslations";
 
+import {
+  formatDisplayDate,
+} from "../../utils/displayDateTime";
+
 import ExecutiveAiInsightCard from "./ExecutiveAiInsightCard";
 
 import "./ExecutiveInsightsPanel.css";
@@ -521,6 +525,7 @@ function isInapplicableSxewInsight(
 
 function ExecutiveInsightsPanel({
   mineName = "Oyu Tolgoi Surface",
+  displayMineName = mineName,
   scenario = "",
 }) {
   /*
@@ -708,13 +713,6 @@ function ExecutiveInsightsPanel({
         );
       }
 
-      if (isSxewOperation) {
-        return transformSxewText(
-          value,
-          apiLanguage
-        );
-      }
-
       const translatedHeadline =
         translateDynamicExecutiveHeadline(
           value,
@@ -722,14 +720,29 @@ function ExecutiveInsightsPanel({
         ) ||
         value;
 
-      return transformStandardMineText(
-        translatedHeadline,
-        apiLanguage
-      );
+      const operationAwareHeadline =
+        isSxewOperation
+          ? transformSxewText(
+              translatedHeadline,
+              apiLanguage
+            )
+          : transformStandardMineText(
+              translatedHeadline,
+              apiLanguage
+            );
+
+      return apiLanguage === "mn" && displayMineName
+        ? operationAwareHeadline.replaceAll(
+            mineName,
+            displayMineName,
+          )
+        : operationAwareHeadline;
     }, [
       data?.executive_headline,
       isSxewOperation,
       apiLanguage,
+      displayMineName,
+      mineName,
       t,
     ]);
 
@@ -746,6 +759,22 @@ function ExecutiveInsightsPanel({
         return t(
           "executiveInsights.reportingPeriodUnavailable"
         );
+      }
+
+      if (apiLanguage === "mn") {
+        if (value === "Available reporting period") {
+          return t(
+            "executiveInsights.reportingPeriodUnavailable"
+          );
+        }
+
+        const range = value.match(
+          /^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/
+        );
+
+        if (range) {
+          return `${formatDisplayDate(range[1], "MN")} – ${formatDisplayDate(range[2], "MN")}`;
+        }
       }
 
       return isSxewOperation
@@ -1078,6 +1107,8 @@ function areExecutiveInsightsPanelPropsEqual(
   return (
     previousProps.mineName ===
       nextProps.mineName &&
+    previousProps.displayMineName ===
+      nextProps.displayMineName &&
     previousProps.scenario ===
       nextProps.scenario
   );

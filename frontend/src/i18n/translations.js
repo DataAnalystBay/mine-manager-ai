@@ -66,6 +66,8 @@ export const translations = {
       signIn: "Sign In",
       signingIn: "Signing in...",
       unableToSignIn: "Unable to sign in",
+      invalidCredentials: "Invalid email or password",
+      networkError: "Network Error",
       secureAccess: "Secure Access",
       securityDescription:
         "JWT Authentication · Role-Based Access Control",
@@ -422,6 +424,7 @@ export const translations = {
         "improving": "Improving",
         "attentionRequired": "Attention Required",
         "stable": "Stable",
+        "insufficientData": "Insufficient Data",
         "unavailable": "Unavailable"
       },
       "dataQualityStatus": {
@@ -431,6 +434,7 @@ export const translations = {
         "complete": "Complete",
         "partial": "Partial",
         "limited": "Limited",
+        "unavailable": "Unavailable",
         "unknown": "Unknown"
       }
     },
@@ -2258,6 +2262,8 @@ export const translations = {
       signIn: "Нэвтрэх",
       signingIn: "Нэвтэрч байна...",
       unableToSignIn: "Нэвтрэх боломжгүй байна",
+      invalidCredentials: "Имэйл хаяг эсвэл нууц үг буруу байна",
+      networkError: "Сүлжээний холболт амжилтгүй боллоо",
       secureAccess: "Аюулгүй нэвтрэлт",
       securityDescription:
         "JWT баталгаажуулалт · Үүрэгт суурилсан хандалтын хяналт",
@@ -2617,6 +2623,7 @@ export const translations = {
         "improving": "Сайжирч байна",
         "attentionRequired": "Анхаарал шаардлагатай",
         "stable": "Тогтвортой",
+        "insufficientData": "Өгөгдөл хангалтгүй",
         "unavailable": "Боломжгүй"
       },
       "dataQualityStatus": {
@@ -2626,6 +2633,7 @@ export const translations = {
         "complete": "Бүрэн",
         "partial": "Хэсэгчилсэн",
         "limited": "Хязгаарлагдмал",
+        "unavailable": "Боломжгүй",
         "unknown": "Тодорхойгүй"
       }
     },
