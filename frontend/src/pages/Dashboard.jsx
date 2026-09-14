@@ -19,10 +19,7 @@ import {
   resolveCompanyDisplayName,
   resolveMineDisplayName,
 } from "../utils/customerIdentity";
-import {
-  formatDisplayDate,
-  formatDisplayTime,
-} from "../utils/displayDateTime";
+import { formatDisplayDate } from "../utils/displayDateTime";
 import {
   getExecutiveSummary,
   getHealthHistory,
@@ -693,7 +690,7 @@ export default function Dashboard() {
     t("dashboard.updatingDashboard")
   );
  
-  const [sharedAnalytics, setSharedAnalytics] = useState(null);
+  const [, setSharedAnalytics] = useState(null);
   const [sharedAnalyticsLoading, setSharedAnalyticsLoading] = useState(true);
   const [sharedAnalyticsError, setSharedAnalyticsError] = useState("");
  
@@ -710,9 +707,6 @@ export default function Dashboard() {
  
   const companyName = company?.company_name || "Mine Manager AI";
   const mineName = mine?.mine_name || "Demo Mine";
-
-  const timezone = company?.timezone || "Asia/Ulaanbaatar";
-  const shiftPattern = mine?.shift_pattern || "Day / Night Shift";
 
   const displayCompanyName = resolveCompanyDisplayName(
     company,
@@ -840,12 +834,6 @@ export default function Dashboard() {
       year: "numeric",
     });
   }, [uiLanguage]);
-
-  const lastUpdated = useMemo(
-    () =>
-      formatDisplayTime(new Date(), uiLanguage),
-    [demoData, executiveSummary, sharedAnalytics, demoScenario, uiLanguage]
-  );
 
   const showToast = useCallback((type, title, message) => {
     setToast({ type, title, message });
@@ -1871,29 +1859,6 @@ setKpiDialogOpen(false);
     uiLanguage,
   ]);
 
-  const configurationItems = useMemo(
-    () => [
-      [t("dashboard.company"), companyName],
-      [t("dashboard.mine"), mineName],
-      [t("dashboard.timezone"), timezone],
-      [
-        t("dashboard.language"),
-        uiLanguage === "MN"
-          ? "Монгол"
-          : "English",
-      ],
-      [t("dashboard.lastUpdated"), lastUpdated],
-    ],
-    [
-      companyName,
-      mineName,
-      timezone,
-      uiLanguage,
-      lastUpdated,
-      t,
-    ]
-  );
- 
   const handleViewAllKpis = useCallback(() => {
     navigate("/production");
   }, [navigate]);
@@ -2139,50 +2104,7 @@ setKpiDialogOpen(false);
               <span>{t("dashboard.dayShift")}</span>
             </div>
  
-            <div className="executive-shift-card executive-shift-card--reference">
-              <strong>{shiftPattern}</strong>
-            </div>
           </div>
-        </section>
- 
-        {/* Compact configuration strip */}
-        <section className="executive-config-grid">
-          {configurationItems.map(([label, value], index) => (
-            <div
-              key={label}
-              style={{
-                padding: "0 16px",
-                textAlign: "center",
-                borderRight: index < 4 ? "1px solid #e8edf4" : "none",
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "#94a3b8",
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                {label}
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  fontSize: 12,
-                  color: "#0f172a",
-                  fontWeight: 900,
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {value}
-              </div>
-            </div>
-          ))}
         </section>
  
         {/* Mine health hero */}
