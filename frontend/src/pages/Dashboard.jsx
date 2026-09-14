@@ -1467,10 +1467,27 @@ export default function Dashboard() {
   }, [baseValues, demoData, demoLoaded, demoScenario, t, uiLanguage]);
  
   const healthHistoryIsCurrent = healthHistoryState.mineName === mineName;
-  const healthTrendData = useMemo(
-    () => (healthHistoryIsCurrent ? healthHistoryState.data : []),
-    [healthHistoryIsCurrent, healthHistoryState.data]
-  );
+  // Reuse the approved weekly presentation without generating history.
+  const healthTrendData = useMemo(() => {
+    const history = healthHistoryIsCurrent ? healthHistoryState.data : [];
+    if (!history.length) return [];
+    const start = new Date(history[history.length - 1].date);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 6);
+    return history.filter((item) => item.date >= start);
+  }, [healthHistoryIsCurrent, healthHistoryState.data]);
+
+  const healthTrendXForDate = useMemo(() => {
+    // Calendar-day spacing preserves missing days, including across DST.
+    const day = (date) => Date.UTC(
+      date.getFullYear(), date.getMonth(), date.getDate()
+    ) / 86400000;
+    const lastDay = healthTrendData.length
+      ? day(healthTrendData[healthTrendData.length - 1].date)
+      : 0;
+    return (date) => TREND_PLOT_LEFT +
+      ((day(date) - (lastDay - 6)) / 6) * TREND_PLOT_WIDTH;
+  }, [healthTrendData]);
   const healthTrendLoading =
     loading || !healthHistoryIsCurrent || healthHistoryState.loading;
   const healthTrendError =
@@ -1508,29 +1525,24 @@ export default function Dashboard() {
   const healthTrendPoints = useMemo(
     () =>
       healthTrendData
-        .map((item, index) => {
+        .map((item) => {
           const x =
-            TREND_PLOT_LEFT +
-            index *
-              (TREND_PLOT_WIDTH /
-                Math.max(healthTrendData.length - 1, 1));
+            healthTrendXForDate(item.date);
           const y = healthTrendScale.yForScore(item.score);
           return `${x},${y}`;
         })
         .join(" "),
-    [healthTrendData, healthTrendScale]
+    [healthTrendData, healthTrendScale, healthTrendXForDate]
   );
 
   const healthTrendLabelIndexes = useMemo(() => {
-    if (healthTrendData.length <= 7) {
-      return new Set(healthTrendData.map((_, index) => index));
-    }
-
-    return new Set(
-      Array.from({ length: 5 }, (_, index) =>
-        Math.round((index * (healthTrendData.length - 1)) / 4)
-      )
-    );
+    const days = new Set();
+    return new Set(healthTrendData.flatMap((item, index) => {
+      const day = item.date.toDateString();
+      if (days.has(day)) return [];
+      days.add(day);
+      return [index];
+    }));
   }, [healthTrendData]);
 
   const activeHealthTrendIndex =
@@ -1859,9 +1871,6 @@ setKpiDialogOpen(false);
     uiLanguage,
   ]);
 
-  const handleViewAllKpis = useCallback(() => {
-    navigate("/production");
-  }, [navigate]);
  
   const handleViewAllActions = useCallback(() => {
     navigate("/executive-actions");
@@ -2343,10 +2352,7 @@ setKpiDialogOpen(false);
                 activeHealthTrendPoint &&
                 (() => {
                   const x =
-                    TREND_PLOT_LEFT +
-                    activeHealthTrendIndex *
-                      (TREND_PLOT_WIDTH /
-                        Math.max(healthTrendData.length - 1, 1));
+                    healthTrendXForDate(activeHealthTrendPoint.date);
 
                   return (
                     <line
@@ -2373,15 +2379,8 @@ setKpiDialogOpen(false);
               />
 
               {healthTrendData.map((item, index) => {
-                if (!healthTrendLabelIndexes.has(index)) {
-                  return null;
-                }
-
                 const x =
-                  TREND_PLOT_LEFT +
-                  index *
-                    (TREND_PLOT_WIDTH /
-                      Math.max(healthTrendData.length - 1, 1));
+                  healthTrendXForDate(item.date);
                 const y = healthTrendScale.yForScore(item.score);
                 const isActive = activeHealthTrendIndex === index;
 
@@ -2429,11 +2428,12 @@ setKpiDialogOpen(false);
               })}
 
               {healthTrendData.map((item, index) => {
+                if (!healthTrendLabelIndexes.has(index)) {
+                  return null;
+                }
+
                 const x =
-                  TREND_PLOT_LEFT +
-                  index *
-                    (TREND_PLOT_WIDTH /
-                      Math.max(healthTrendData.length - 1, 1));
+                  healthTrendXForDate(item.date);
 
                 return (
                   <text
@@ -2454,10 +2454,7 @@ setKpiDialogOpen(false);
                 activeHealthTrendPoint &&
                 (() => {
                   const x =
-                    TREND_PLOT_LEFT +
-                    activeHealthTrendIndex *
-                      (TREND_PLOT_WIDTH /
-                        Math.max(healthTrendData.length - 1, 1));
+                    healthTrendXForDate(activeHealthTrendPoint.date);
                   const y =
                     healthTrendScale.yForScore(
                       activeHealthTrendPoint.score
@@ -2575,21 +2572,6 @@ setKpiDialogOpen(false);
               {t("dashboard.keyPerformanceIndicators")}
             </h2>
  
-            <button
-              className="executive-type-section-action"
-              type="button"
-              onClick={handleViewAllKpis}
-              style={{
-                border: 0,
-                background: "transparent",
-                color: "#2563eb",
-                fontSize: 12,
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
-            >
-              {t("dashboard.viewAllKpis")} <FiChevronRight />
-            </button>
           </div>
  
           <div className="executive-kpi-grid">

@@ -2245,3 +2245,36 @@
   }
 }
 
+
+/* Recovered approved Dashboard layout; keep narrow screens responsive. */
+.executive-dashboard-header--reference {
+  padding-right: 0;
+  box-sizing: border-box;
+}
+
+.executive-dashboard-controls--reference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+  justify-content: flex-end;
+  justify-self: end;
+  margin-left: 0;
+  margin-right: 0;
+  padding-right: 0;
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.executive-kpi-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.executive-kpi-grid > [role="button"] {
+  /* Preserve the recovered 210px minimum; fill even a wrapped final row. */
+  flex: 1 1 210px;
+  min-width: 0;
+  box-sizing: border-box;
+}
