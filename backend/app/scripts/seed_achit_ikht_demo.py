@@ -5,11 +5,13 @@ from app.models.company import CompanySettings
 from app.models.mine import MineSettings
 from app.models.kpi_target import KpiTarget
 from app.models.alert_threshold import AlertThreshold
+from app.demo.achit_ikht_config import ACHIT_IKHT_CONFIG
 
 
 COMPANY_NAME = "Achit-Ikht LLC"
 MINE_NAME = "Achit-Ikht Copper Cathode Operation"
 MINE_NAME_MN = "Ачит-Ихт Зэсийн Катодын Үйлдвэр"
+COMPANY_NAME_MN = ACHIT_IKHT_CONFIG["company"]["name_mn"]
 
 
 KPI_CONFIG = [
@@ -176,12 +178,19 @@ def get_or_create_company(db: Session) -> CompanySettings:
 
     if company:
         company.company_name_en = COMPANY_NAME
+        company.company_name_mn = COMPANY_NAME_MN
+        company.logo_url = None
+        company.primary_color = "#0F3D5E"
+        company.secondary_color = "#16A34A"
+        company.timezone = "Asia/Ulaanbaatar"
+        company.language = "mn"
         print(f"Company already exists: {company.company_name}")
         return company
 
     company = CompanySettings(
         company_name=COMPANY_NAME,
         company_name_en=COMPANY_NAME,
+        company_name_mn=COMPANY_NAME_MN,
         logo_url=None,
         primary_color="#0F3D5E",
         secondary_color="#16A34A",
@@ -213,6 +222,12 @@ def get_or_create_mine(
     if mine:
         mine.mine_name_en = MINE_NAME
         mine.mine_name_mn = MINE_NAME_MN
+        mine.site_code = "AIK-SXEW"
+        mine.location = "Mongolia"
+        mine.mine_type = "Processing Plant / SX-EW"
+        mine.shift_pattern = "24/7 Continuous"
+        mine.operating_hours = 24
+        mine.calendar_type = "Calendar Year"
         print(f"Operation already exists: {mine.mine_name}")
         return mine
 
