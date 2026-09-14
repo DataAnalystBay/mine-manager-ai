@@ -674,6 +674,7 @@ export default function Dashboard() {
   const [demoData, setDemoData] = useState(null);
  
   const [executiveSummary, setExecutiveSummary] = useState(null);
+  const [executiveSummaryMineName, setExecutiveSummaryMineName] = useState(null);
   const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(true);
   const [executiveSummaryError, setExecutiveSummaryError] = useState("");
  
@@ -705,6 +706,7 @@ export default function Dashboard() {
   const kpiDetailRequestIdRef = useRef(0);
   const kpiDialogClosingRef = useRef(false);
   const healthHistoryRequestIdRef = useRef(0);
+  const executiveSummaryRequestIdRef = useRef(0);
  
   const companyName = company?.company_name || "Mine Manager AI";
   const mineName = mine?.mine_name || "Demo Mine";
@@ -854,27 +856,52 @@ export default function Dashboard() {
   }, []);
  
   const loadExecutiveSummary = useCallback(async () => {
+    const requestId = executiveSummaryRequestIdRef.current + 1;
+    executiveSummaryRequestIdRef.current = requestId;
+
     try {
       setExecutiveSummaryLoading(true);
       setExecutiveSummaryError("");
+      setExecutiveSummary(null);
+      setExecutiveSummaryMineName(mineName);
 
       const data = await getExecutiveSummary(mineName);
+
+      if (executiveSummaryRequestIdRef.current !== requestId) {
+        return false;
+      }
+
       setExecutiveSummary(data);
       return true;
     } catch (error) {
       console.error("Executive summary load failed:", error);
+
+      if (executiveSummaryRequestIdRef.current !== requestId) {
+        return false;
+      }
+
       setExecutiveSummaryError(
         t("dashboard.liveSummaryLoadError")
       );
       return false;
     } finally {
-      setExecutiveSummaryLoading(false);
+      if (executiveSummaryRequestIdRef.current === requestId) {
+        setExecutiveSummaryLoading(false);
+      }
     }
   }, [mineName, t]);
  
   useEffect(() => {
+    if (loading) {
+      return undefined;
+    }
+
     loadExecutiveSummary();
-  }, [loadExecutiveSummary]);
+
+    return () => {
+      executiveSummaryRequestIdRef.current += 1;
+    };
+  }, [loadExecutiveSummary, loading]);
 
   const fetchHealthHistory = useCallback(async () => {
     const response = await getHealthHistory(mineName);
@@ -1433,7 +1460,12 @@ export default function Dashboard() {
             ? "Катодын үйлдвэрлэл, зэс авалт болон аюулгүй ажиллагааны үзүүлэлтүүдэд удирдлагын анхаарал шаардлагатай."
             : "Management attention is required on cathode production, Cu recovery, and safety indicators."
           : t("dashboard.scenarioContent.stable.liveRiskMessage"),
-      healthStatus: "Stable",
+      healthStatus:
+        baseValues.mineHealthScore >= 85
+          ? "Stable"
+          : baseValues.mineHealthScore >= 75
+          ? "Watch"
+          : "Critical Review",
       actionSeverity: "Low",
       trends: {
         ore: "+0.5%",
@@ -1899,9 +1931,38 @@ setKpiDialogOpen(false);
     () => openKpiDetail("mine_health"),
     [openKpiDetail]
   );
+
+  const executiveSummaryIsCurrent =
+    executiveSummaryMineName === mineName;
+  const hasScenarioData = demoLoaded && Boolean(demoData);
+  const liveSummaryPending =
+    !hasScenarioData &&
+    (executiveSummaryLoading || !executiveSummaryIsCurrent);
  
-  if (loading) {
+  if (loading || liveSummaryPending) {
     return <DashboardSkeleton />;
+  }
+
+  if (!hasScenarioData && !executiveSummary) {
+    return (
+      <div
+        className="mma-dashboard executive-dashboard-page"
+        style={{ minHeight: "100%", background: "#f4f7fb" }}
+      >
+        <main className="mma-main">
+          <div className="dashboard-state-banner dashboard-summary-error">
+            <DashboardDataState
+              type="error"
+              title={t("dashboard.liveSummaryUnavailable")}
+              message={t("dashboard.liveSummaryUnavailableMessage")}
+              actionLabel={t("dashboard.retryExecutiveSummary")}
+              onRetry={loadExecutiveSummary}
+              retrying={executiveSummaryLoading}
+            />
+          </div>
+        </main>
+      </div>
+    );
   }
  
   return (

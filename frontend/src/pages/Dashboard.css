@@ -1362,6 +1362,17 @@
   margin-bottom: 14px;
 }
 
+@media (max-width: 900px) {
+  .dashboard-summary-error .dashboard-data-state {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .dashboard-summary-error .dashboard-data-state__action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
 /* ==========================================================
    Sprint 10.13.1
    Responsive Executive Layout
