@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { dashboardCache } from "../services/dashboardCache";
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -7,24 +9,29 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
 
     const [loading, setLoading] = useState(true);
+    const [sessionId, setSessionId] = useState(() => dashboardCache.getSession());
 
     useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
 
-        const token = localStorage.getItem("access_token");
+            const token = localStorage.getItem("access_token");
 
-        const userInfo = localStorage.getItem("user");
+            const userInfo = localStorage.getItem("user");
 
-        if (token && userInfo) {
+            if (token && userInfo) {
 
-            setUser(JSON.parse(userInfo));
+                setSessionId(dashboardCache.resetSession());
+                setUser(JSON.parse(userInfo));
 
-        }
+            }
 
-        setLoading(false);
-
+            setLoading(false);
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
     }, []);
 
     const login = (token, userData) => {
+        setSessionId(dashboardCache.resetSession());
 
         localStorage.setItem("access_token", token);
 
@@ -38,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        setSessionId(dashboardCache.resetSession());
 
         localStorage.removeItem("access_token");
 
@@ -52,6 +60,7 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider
             value={{
                 user,
+                sessionId,
                 login,
                 logout,
                 loading,
@@ -65,4 +74,6 @@ export const AuthProvider = ({ children }) => {
 
 };
 
+// Preserve the established context API for existing consumers.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

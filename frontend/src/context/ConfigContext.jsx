@@ -3,12 +3,15 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
 import { getFullConfig } from "../api/configApi";
 import { useAuth } from "./AuthContext";
 
+
+import { dashboardCache } from "../services/dashboardCache";
 
 const ConfigContext = createContext();
 
@@ -25,6 +28,7 @@ const EMPTY_CONFIG = {
 export const ConfigProvider = ({ children }) => {
   const {
     user,
+    sessionId,
     loading: authLoading,
   } = useAuth();
 
@@ -33,6 +37,9 @@ export const ConfigProvider = ({ children }) => {
   );
 
   const [loading, setLoading] = useState(true);
+  const [configuredSession, setConfiguredSession] = useState(null);
+  const [dashboardScope, setDashboardScope] = useState(null);
+  const requestIdRef = useRef(0);
 
 
   /*
@@ -84,12 +91,18 @@ export const ConfigProvider = ({ children }) => {
 
 
   const loadConfiguration = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    const isCurrent = () => requestIdRef.current === requestId &&
+      dashboardCache.getSession() === sessionId;
+    dashboardCache.configure(sessionId, null, null);
     /*
      * Configuration is tenant-specific and therefore must
      * only be loaded after authentication has completed.
      */
     if (!user) {
       setConfig(EMPTY_CONFIG);
+      setConfiguredSession(sessionId);
+      setDashboardScope(null);
       setLoading(false);
       return;
     }
@@ -98,6 +111,9 @@ export const ConfigProvider = ({ children }) => {
 
     try {
       const data = await getFullConfig();
+      if (!isCurrent()) return;
+      setConfiguredSession(sessionId);
+      setDashboardScope(dashboardCache.configure(sessionId, data?.company?.id, data?.mine?.id));
 
       setConfig({
         company:
@@ -116,6 +132,7 @@ export const ConfigProvider = ({ children }) => {
           data?.shift_patterns || [],
       });
     } catch (error) {
+      if (!isCurrent()) return;
       console.error(
         "Failed to load configuration:",
         error
@@ -126,11 +143,14 @@ export const ConfigProvider = ({ children }) => {
        * after a failed reload or account change.
        */
       setConfig(EMPTY_CONFIG);
+      setConfiguredSession(sessionId);
+      setDashboardScope(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [
     user,
+    sessionId,
   ]);
 
 
@@ -168,10 +188,11 @@ export const ConfigProvider = ({ children }) => {
   return (
     <ConfigContext.Provider
       value={{
-        ...config,
+        ...(configuredSession === sessionId ? config : EMPTY_CONFIG),
+        dashboardScope: !loading && configuredSession === sessionId ? dashboardScope : null,
 
         loading:
-          authLoading || loading,
+          authLoading || loading || configuredSession !== sessionId,
 
         language,
         setLanguage,

@@ -1,3 +1,4 @@
+import { invalidateDashboardAfterWrites } from "../services/dashboardCache";
 import axios from "axios";
 
 import {
@@ -85,5 +86,7 @@ export const deleteReportHistory = async (
   return response.data;
 };
 
+
+invalidateDashboardAfterWrites(reportHistoryClient);
 
 export default reportHistoryClient;

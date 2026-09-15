@@ -1,3 +1,4 @@
+import { invalidateDashboardAfterWrites } from "../services/dashboardCache";
 import axios from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 
@@ -78,5 +79,7 @@ export async function resetDemoData(
 
   return response.data;
 }
+
+invalidateDashboardAfterWrites(demoClient);
 
 export default demoClient;

@@ -1,3 +1,4 @@
+import { invalidateDashboardAfterWrites } from "./dashboardCache";
 import axios from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 
@@ -46,5 +47,7 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
+invalidateDashboardAfterWrites(api);
 
 export default api;

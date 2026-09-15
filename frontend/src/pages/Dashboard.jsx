@@ -20,12 +20,7 @@ import {
   resolveMineDisplayName,
 } from "../utils/customerIdentity";
 import { formatDisplayDate } from "../utils/displayDateTime";
-import {
-  getExecutiveSummary,
-  getHealthHistory,
-  getSharedAnalytics,
-} from "../services/dashboardApi";
-import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
+import useDashboardData from "../hooks/useDashboardData";
 import DashboardDataState from "../components/dashboard/DashboardDataState";
 import ExecutiveInsightsPanel from "../components/executive/ExecutiveInsightsPanel";
 import PredictionSummaryPanel from "../components/predictive/PredictionSummaryPanel";
@@ -34,9 +29,7 @@ import {
   FiBarChart2,
   FiTruck,
   FiShield,
-  FiCalendar,
   FiMoreVertical,
-  FiPlayCircle,
   FiChevronRight,
   FiClock,
   FiActivity,
@@ -46,7 +39,6 @@ import {
   FaMountain,
   FaIndustry,
   FaCheckCircle,
-  FaExclamationTriangle,
 } from "react-icons/fa";
  
 const ExecutiveKpiDetailDialog = lazy(() =>
@@ -659,10 +651,17 @@ function isSupportedKpiKey(kpiKey) {
 }
  
 export default function Dashboard() {
+  const { sessionId } = useAuth();
+  const { company, mine } = useConfig();
+  // Local scenario/dialog/panel state must never survive an identity change.
+  return <DashboardContent key={JSON.stringify([sessionId, company?.id, mine?.id])} />;
+}
+
+function DashboardContent() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedKpiKey = normalizeKpiKey(searchParams.get("kpi_key") || "");
-  const { company, mine, loading } = useConfig();
+  const { company, mine, loading, dashboardScope, reloadConfiguration } = useConfig();
   const { user } = useAuth();
   const { language: uiLanguage, t } = useLanguage();
  
@@ -670,29 +669,14 @@ export default function Dashboard() {
   const [demoLoaded, setDemoLoaded] = useState(false);
   const [demoData, setDemoData] = useState(null);
  
-  const [executiveSummary, setExecutiveSummary] = useState(null);
-  const [executiveSummaryMineName, setExecutiveSummaryMineName] = useState(null);
-  const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(true);
-  const [executiveSummaryError, setExecutiveSummaryError] = useState("");
- 
   const [toast, setToast] = useState(null);
   const [demoScenario, setDemoScenario] = useState("High Performing Mine");
   const [hoveredHealthTrendIndex, setHoveredHealthTrendIndex] = useState(null);
   const [selectedHealthTrendIndex, setSelectedHealthTrendIndex] = useState(null);
-  const [healthHistoryState, setHealthHistoryState] = useState({
-    mineName: null,
-    data: [],
-    loading: true,
-    error: false,
-  });
   const [scenarioTransition, setScenarioTransition] = useState(false);
   const [scenarioTransitionLabel, setScenarioTransitionLabel] = useState(
     t("dashboard.updatingDashboard")
   );
- 
-  const [, setSharedAnalytics] = useState(null);
-  const [sharedAnalyticsLoading, setSharedAnalyticsLoading] = useState(true);
-  const [sharedAnalyticsError, setSharedAnalyticsError] = useState("");
  
   const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
   const [kpiDetailLoading, setKpiDetailLoading] = useState(false);
@@ -702,11 +686,19 @@ export default function Dashboard() {
  
   const kpiDetailRequestIdRef = useRef(0);
   const kpiDialogClosingRef = useRef(false);
-  const healthHistoryRequestIdRef = useRef(0);
-  const executiveSummaryRequestIdRef = useRef(0);
  
   const companyName = company?.company_name || "Mine Manager AI";
   const mineName = mine?.mine_name || "Demo Mine";
+  const { summary, history, refreshSummary: loadExecutiveSummary, refreshHistory: refreshHealthHistory } =
+    useDashboardData(dashboardScope, mineName);
+  const executiveSummary = summary.data;
+  const executiveSummaryLoading = summary.loading;
+  const executiveSummaryError = summary.error;
+  const healthHistoryState = useMemo(() => ({
+    data: normalizeMineHealthHistory(history.data?.history),
+    loading: history.loading,
+    error: Boolean(history.error),
+  }), [history]);
 
   const displayCompanyName = resolveCompanyDisplayName(
     company,
@@ -843,139 +835,6 @@ export default function Dashboard() {
     }, 3500);
   }, []);
  
-  const loadExecutiveSummary = useCallback(async () => {
-    const requestId = executiveSummaryRequestIdRef.current + 1;
-    executiveSummaryRequestIdRef.current = requestId;
-
-    try {
-      setExecutiveSummaryLoading(true);
-      setExecutiveSummaryError("");
-      setExecutiveSummary(null);
-      setExecutiveSummaryMineName(mineName);
-
-      const data = await getExecutiveSummary(mineName);
-
-      if (executiveSummaryRequestIdRef.current !== requestId) {
-        return false;
-      }
-
-      setExecutiveSummary(data);
-      return true;
-    } catch (error) {
-      console.error("Executive summary load failed:", error);
-
-      if (executiveSummaryRequestIdRef.current !== requestId) {
-        return false;
-      }
-
-      setExecutiveSummaryError(
-        t("dashboard.liveSummaryLoadError")
-      );
-      return false;
-    } finally {
-      if (executiveSummaryRequestIdRef.current === requestId) {
-        setExecutiveSummaryLoading(false);
-      }
-    }
-  }, [mineName, t]);
- 
-  useEffect(() => {
-    if (loading) {
-      return undefined;
-    }
-
-    loadExecutiveSummary();
-
-    return () => {
-      executiveSummaryRequestIdRef.current += 1;
-    };
-  }, [loadExecutiveSummary, loading]);
-
-  const fetchHealthHistory = useCallback(async () => {
-    const response = await getHealthHistory(mineName);
-    return normalizeMineHealthHistory(response?.history);
-  }, [mineName]);
-
-  useEffect(() => {
-    if (loading) {
-      return undefined;
-    }
-
-    const requestId = healthHistoryRequestIdRef.current + 1;
-    healthHistoryRequestIdRef.current = requestId;
-
-    fetchHealthHistory()
-      .then((data) => {
-        if (healthHistoryRequestIdRef.current !== requestId) {
-          return;
-        }
-
-        setHoveredHealthTrendIndex(null);
-        setSelectedHealthTrendIndex(null);
-        setHealthHistoryState({
-          mineName,
-          data,
-          loading: false,
-          error: false,
-        });
-      })
-      .catch((error) => {
-        console.error("Mine Health history load failed:", error);
-
-        if (healthHistoryRequestIdRef.current !== requestId) {
-          return;
-        }
-
-        setHoveredHealthTrendIndex(null);
-        setSelectedHealthTrendIndex(null);
-        setHealthHistoryState({
-          mineName,
-          data: [],
-          loading: false,
-          error: true,
-        });
-      });
-
-    return () => {
-      healthHistoryRequestIdRef.current += 1;
-    };
-  }, [fetchHealthHistory, loading, mineName]);
-
-  const refreshHealthHistory = useCallback(async () => {
-    const requestId = healthHistoryRequestIdRef.current + 1;
-    healthHistoryRequestIdRef.current = requestId;
-
-    try {
-      const data = await fetchHealthHistory();
-
-      if (healthHistoryRequestIdRef.current !== requestId) {
-        return false;
-      }
-
-      setHealthHistoryState({
-        mineName,
-        data,
-        loading: false,
-        error: false,
-      });
-      return true;
-    } catch (error) {
-      console.error("Mine Health history refresh failed:", error);
-
-      if (healthHistoryRequestIdRef.current !== requestId) {
-        return false;
-      }
-
-      setHealthHistoryState({
-        mineName,
-        data: [],
-        loading: false,
-        error: true,
-      });
-      return false;
-    }
-  }, [fetchHealthHistory, mineName]);
- 
   const runScenarioTransition = useCallback(
     async ({
       label = t("dashboard.updatingDashboard"),
@@ -1032,52 +891,17 @@ export default function Dashboard() {
     [demoScenario, getScenarioLabel, runScenarioTransition, scenarioTransition, t]
   );
  
-  const loadSharedAnalytics = useCallback(async () => {
-    try {
-      setSharedAnalyticsLoading(true);
-      setSharedAnalyticsError("");
-
-      const data = await getSharedAnalytics(
-        mineName,
-        7,
-        uiLanguage === "MN" ? "mn" : "en"
-      );
-      setSharedAnalytics(data);
-      return true;
-    } catch (error) {
-      console.error("Shared analytics load failed:", error);
-      setSharedAnalyticsError(t("dashboard.sharedAnalyticsLoadError"));
-      return false;
-    } finally {
-      setSharedAnalyticsLoading(false);
-    }
-  }, [mineName, t, uiLanguage]);
-
-  useEffect(() => {
-    loadSharedAnalytics();
-  }, [loadSharedAnalytics]);
-
   const refreshAuthoritativeDashboardData = useCallback(async () => {
     setHoveredHealthTrendIndex(null);
     setSelectedHealthTrendIndex(null);
-    setHealthHistoryState({
-      mineName,
-      data: [],
-      loading: true,
-      error: false,
-    });
-
     const results = await Promise.all([
       loadExecutiveSummary(),
-      loadSharedAnalytics(),
       refreshHealthHistory(),
     ]);
 
     return results.every(Boolean);
   }, [
     loadExecutiveSummary,
-    loadSharedAnalytics,
-    mineName,
     refreshHealthHistory,
   ]);
 
@@ -1466,7 +1290,7 @@ export default function Dashboard() {
     };
   }, [baseValues, demoData, demoLoaded, demoScenario, t, uiLanguage]);
  
-  const healthHistoryIsCurrent = healthHistoryState.mineName === mineName;
+  const healthHistoryIsCurrent = Boolean(dashboardScope);
   // Reuse the approved weekly presentation without generating history.
   const healthTrendData = useMemo(() => {
     const history = healthHistoryIsCurrent ? healthHistoryState.data : [];
@@ -1489,9 +1313,9 @@ export default function Dashboard() {
       ((day(date) - (lastDay - 6)) / 6) * TREND_PLOT_WIDTH;
   }, [healthTrendData]);
   const healthTrendLoading =
-    loading || !healthHistoryIsCurrent || healthHistoryState.loading;
+    !history.data && (loading || !healthHistoryIsCurrent || !history.error);
   const healthTrendError =
-    healthHistoryIsCurrent && healthHistoryState.error;
+    healthHistoryIsCurrent && healthHistoryState.error && !history.data;
 
   const healthTrendScale = useMemo(() => {
     const values = healthTrendData.map((item) => item.score);
@@ -1906,39 +1730,12 @@ setKpiDialogOpen(false);
     [openKpiDetail]
   );
 
-  const executiveSummaryIsCurrent =
-    executiveSummaryMineName === mineName;
   const hasScenarioData = demoLoaded && Boolean(demoData);
-  const liveSummaryPending =
-    !hasScenarioData &&
-    (executiveSummaryLoading || !executiveSummaryIsCurrent);
- 
-  if (loading || liveSummaryPending) {
-    return <DashboardSkeleton />;
-  }
+  const hasSummaryData = Boolean(dashboardScope) && (hasScenarioData || Boolean(executiveSummary));
+  const configurationStatus = loading ? t("common.loading") : t("common.noData");
+  const sectionStatus = executiveSummaryError || (!loading && !dashboardScope)
+    ? t("dashboard.liveSummaryUnavailable") : t("common.loading");
 
-  if (!hasScenarioData && !executiveSummary) {
-    return (
-      <div
-        className="mma-dashboard executive-dashboard-page"
-        style={{ minHeight: "100%", background: "#f4f7fb" }}
-      >
-        <main className="mma-main">
-          <div className="dashboard-state-banner dashboard-summary-error">
-            <DashboardDataState
-              type="error"
-              title={t("dashboard.liveSummaryUnavailable")}
-              message={t("dashboard.liveSummaryUnavailableMessage")}
-              actionLabel={t("dashboard.retryExecutiveSummary")}
-              onRetry={loadExecutiveSummary}
-              retrying={executiveSummaryLoading}
-            />
-          </div>
-        </main>
-      </div>
-    );
-  }
- 
   return (
     <div
       className="mma-dashboard executive-dashboard-page"
@@ -2002,20 +1799,11 @@ setKpiDialogOpen(false);
           </div>
         )}
  
-        {sharedAnalyticsError && (
-          <div className="dashboard-state-banner">
-            <DashboardDataState
-              type="error"
-              title={t("dashboard.analyticsUnavailable")}
-              message={t("dashboard.analyticsUnavailableMessage")}
-              actionLabel={t("dashboard.retryAnalytics")}
-              onRetry={loadSharedAnalytics}
-              retrying={sharedAnalyticsLoading}
-              compact
-            />
-          </div>
+        {!loading && !dashboardScope && (
+          <DashboardDataState type="error" title={t("dashboard.liveSummaryUnavailable")}
+            message={t("dashboard.liveSummaryUnavailableMessage")}
+            actionLabel={t("dashboard.retryExecutiveSummary")} onRetry={reloadConfiguration} />
         )}
- 
         {/* Executive header */}
         <section className="executive-dashboard-header executive-dashboard-header--reference">
           <div className="executive-dashboard-heading">
@@ -2023,18 +1811,18 @@ setKpiDialogOpen(false);
               <h1>{t("dashboard.title")}</h1>
  
               <span className="status-pill green">
-                {demoLoaded ? t("dashboard.demoLoaded") : t("dashboard.live")}
+                {!dashboardScope ? configurationStatus : demoLoaded ? t("dashboard.demoLoaded") : t("dashboard.live")}
               </span>
             </div>
  
             <div className="executive-dashboard-breadcrumb">
-              <span>{displayCompanyName}</span>
+              <span>{dashboardScope ? displayCompanyName : configurationStatus}</span>
               <span className="context-separator">›</span>
-              <span>{displayMineName}</span>
+              <span>{dashboardScope ? displayMineName : configurationStatus}</span>
             </div>
  
             <div className="executive-dashboard-scenario">
-              {demoLoaded
+              {!hasSummaryData ? sectionStatus : demoLoaded
                 ? getScenarioLabel(demoScenario)
                 : isSxewOperation
                 ? uiLanguage === "MN"
@@ -2049,7 +1837,7 @@ setKpiDialogOpen(false);
               className="executive-mine-select"
               value={demoScenario}
               onChange={handleScenarioChange}
-              disabled={demoLoading || scenarioTransition}
+              disabled={!dashboardScope || demoLoading || scenarioTransition}
               aria-label={t("dashboard.selectScenario")}
             >
               <option value="High Performing Mine">
@@ -2076,7 +1864,7 @@ setKpiDialogOpen(false);
               type="button"
               className="executive-demo-button executive-demo-button--reference"
               onClick={handleLoadDemo}
-              disabled={demoLoading || scenarioTransition || demoLoaded}
+              disabled={!dashboardScope || demoLoading || scenarioTransition || demoLoaded}
             >
               {demoLoading || scenarioTransition ? (
                 <>
@@ -2102,7 +1890,7 @@ setKpiDialogOpen(false);
                 type="button"
                 className="executive-reset-button executive-reset-button--reference"
                 onClick={handleResetDemo}
-                disabled={scenarioTransition}
+                disabled={!dashboardScope || scenarioTransition}
               >
                 {t("dashboard.reset")}
               </button>
@@ -2134,7 +1922,7 @@ setKpiDialogOpen(false);
                 fontWeight: 900,
               }}
             >
-              {displayMineName}
+              {dashboardScope ? displayMineName : configurationStatus}
             </h2>
  
             <div
@@ -2154,7 +1942,7 @@ setKpiDialogOpen(false);
                   letterSpacing: "-0.04em",
                 }}
               >
-                {scenarioValues.mineHealthScore}
+                {hasSummaryData ? scenarioValues.mineHealthScore : "—"}
               </span>
               <span
                 className="executive-type-health-unit"
@@ -2198,7 +1986,7 @@ setKpiDialogOpen(false);
           >
             <FiShield style={{ fontSize: 38, color: "#6ee7b7" }} />
             <h3 style={{ margin: "10px 0 5px", fontSize: 20 }}>
-              {getHealthStatusLabel(scenarioValues.healthStatus)}
+              {hasSummaryData ? getHealthStatusLabel(scenarioValues.healthStatus) : sectionStatus}
             </h3>
             <p
               style={{
@@ -2209,7 +1997,7 @@ setKpiDialogOpen(false);
                 opacity: 0.82,
               }}
             >
-              {scenarioValues.mineHealthScore >= 85
+              {!hasSummaryData ? "" : scenarioValues.mineHealthScore >= 85
                 ? t("dashboard.minorRisks")
                 : t("dashboard.attentionRequired")}
             </p>
@@ -2238,6 +2026,12 @@ setKpiDialogOpen(false);
               {t("dashboard.mineHealthTrend")}
             </div>
 
+            {history.error && history.data && (
+              <DashboardDataState type="error" title={t("dashboard.mineHealthTrend")}
+                message={uiLanguage === "MN" ? "Шинэчилж чадсангүй. Өмнөх өгөгдлийг харуулж байна." : "Refresh failed. Showing the last loaded data."}
+                actionLabel={uiLanguage === "MN" ? "Дахин оролдох" : "Retry"} onRetry={refreshHealthHistory}
+                retrying={history.loading} compact />
+            )}
             {healthTrendLoading ? (
               <div
                 role="status"
@@ -2550,6 +2344,11 @@ setKpiDialogOpen(false);
           </div>
         </section>
  
+        {!hasSummaryData ? (
+          <section className="dashboard-state-banner" role="status" aria-busy={!executiveSummaryError}>
+            <h2>{t("dashboard.keyPerformanceIndicators")}</h2><p>{sectionStatus}</p>
+          </section>
+        ) : (<>
         {/* KPI section */}
         <section style={{ marginBottom: 16 }}>
           <div
@@ -2723,6 +2522,21 @@ setKpiDialogOpen(false);
           </div>
         </section>
  
+        </>)}
+        {!hasSummaryData ? (
+          <section className="executive-panels-grid">
+            {[
+              ["dashboard.priorityActions", KPI_ICONS.actions, "dashboard.viewAllActions", handleViewAllActions],
+              ["dashboard.aiDailyBriefing", KPI_ICONS.briefing, "dashboard.viewFullBriefing", handleViewFullBriefing],
+              ["dashboard.riskHeatMap", KPI_ICONS.safety, "dashboard.reviewRisks", handleOpenMineHealth],
+            ].map(([title, icon, actionLabel, onAction]) => (
+              <ExecutivePanel key={title} title={t(title)} icon={icon}
+                actionLabel={t(actionLabel)} onAction={dashboardScope ? onAction : undefined}>
+                <p role="status">{sectionStatus}</p>
+              </ExecutivePanel>
+            ))}
+          </section>
+        ) : (<>
         {/* Executive decision area */}
         <section className="executive-panels-grid">
           <ExecutivePanel
@@ -2971,7 +2785,9 @@ setKpiDialogOpen(false);
           </ExecutivePanel>
         </section>
  
-        {canViewExecutiveInsights && (
+        </>)}
+
+        {dashboardScope && canViewExecutiveInsights && (
           <section style={{ marginTop: 24 }}>
             <ExecutiveInsightsPanel
               mineName={mineName}
@@ -2985,9 +2801,11 @@ setKpiDialogOpen(false);
           </section>
         )}
  
-        <section style={{ marginTop: 24 }}>
-          <PredictionSummaryPanel mineName={mineName} />
-        </section>
+        {dashboardScope && (
+          <section style={{ marginTop: 24 }}>
+            <PredictionSummaryPanel mineName={mineName} />
+          </section>
+        )}
  
         <div
           style={{

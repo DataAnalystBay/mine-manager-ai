@@ -1,4 +1,5 @@
-import React, {
+import { dashboardCache } from "../services/dashboardCache";
+import {
   useMemo,
   useState,
 } from "react";
@@ -968,6 +969,7 @@ function UploadReports() {
         );
 
 
+        const uploadSession = dashboardCache.getSession();
         await axios.post(
           `${API_BASE_URL}${config.endpoint}`,
           formData,
@@ -1039,6 +1041,8 @@ function UploadReports() {
           },
         );
 
+
+        if (dashboardCache.getSession() === uploadSession) dashboardCache.invalidate();
 
         window.dispatchEvent(
           new CustomEvent(

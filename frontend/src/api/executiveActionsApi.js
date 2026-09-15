@@ -1,3 +1,4 @@
+import { invalidateDashboardAfterWrites } from "../services/dashboardCache";
 import axios from "axios";
 import { API_URL } from "../config/apiConfig";
  
@@ -548,4 +549,6 @@ export async function deleteExecutiveAction(
   }
 }
  
+invalidateDashboardAfterWrites(executiveActionsClient);
+
 export default executiveActionsClient;
