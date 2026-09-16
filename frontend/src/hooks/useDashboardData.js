@@ -15,12 +15,20 @@ export default function useDashboardData(scope, mineName) {
     () => dashboardCache.refresh(scope, "history", () => getHealthHistory(mineName)),
     [scope, mineName],
   );
+  const ensureSummary = useCallback(
+    () => dashboardCache.ensure(scope, "summary", () => getExecutiveSummary(mineName)),
+    [scope, mineName],
+  );
+  const ensureHistory = useCallback(
+    () => dashboardCache.ensure(scope, "history", () => getHealthHistory(mineName)),
+    [scope, mineName],
+  );
 
   useEffect(() => {
     if (!current) return;
-    refreshSummary();
-    refreshHistory();
-  }, [current, snapshot.generation, refreshSummary, refreshHistory]);
+    ensureSummary();
+    ensureHistory();
+  }, [current, snapshot.generation, ensureSummary, ensureHistory]);
 
   return {
     summary: current ? snapshot.summary : EMPTY,

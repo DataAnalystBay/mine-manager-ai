@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -19,6 +20,8 @@ import {
 import {
   useLanguage,
 } from "../../context/LanguageContext";
+import { useConfig } from "../../context/ConfigContext";
+import { dashboardCache } from "../../services/dashboardCache";
 
 import {
   translateDynamicExecutiveHeadline,
@@ -528,6 +531,7 @@ function ExecutiveInsightsPanel({
   displayMineName = mineName,
   scenario = "",
 }) {
+  const { dashboardScope } = useConfig();
   /*
    * Important:
    *
@@ -554,16 +558,26 @@ function ExecutiveInsightsPanel({
       [language]
     );
 
+  const cacheKey = useMemo(
+    () => `executive-insights:${JSON.stringify([
+      String(mineName || "").trim(),
+      String(scenario || "").trim(),
+      apiLanguage,
+    ])}`,
+    [mineName, scenario, apiLanguage],
+  );
+  const initialCache = dashboardCache.getResource(dashboardScope, cacheKey);
+
 
   const [data, setData] =
-    useState(null);
+    useState(() => initialCache.data);
 
   const [loading, setLoading] =
-    useState(true);
+    useState(() => !initialCache.data);
 
   const [error, setError] =
     useState("");
-
+  const loadRequestIdRef = useRef(0);
 
   /**
    * Load Executive Insights from the backend.
@@ -571,26 +585,42 @@ function ExecutiveInsightsPanel({
    * The selected UI language is passed to the API.
    */
   const loadInsights =
-    useCallback(async () => {
+    useCallback(async (force = false) => {
+      if (!force && dashboardCache.isFresh(dashboardScope, cacheKey)) {
+        return;
+      }
+      const requestId = ++loadRequestIdRef.current;
       setLoading(true);
       setError("");
 
       try {
-        const response =
-          await getExecutiveInsights(
+        const load = () => getExecutiveInsights(
             mineName,
             scenario,
             apiLanguage
           );
+        const loaded = await (force
+          ? dashboardCache.refresh(dashboardScope, cacheKey, load)
+          : dashboardCache.ensure(dashboardScope, cacheKey, load));
+        const cached = dashboardCache.getResource(dashboardScope, cacheKey);
 
-        setData(response);
+        if (loadRequestIdRef.current !== requestId) return;
+
+        if (!loaded && !cached.data) {
+          throw cached.error || new Error("Executive insights load failed");
+        }
+
+        setData(cached.data);
       } catch (requestError) {
+        if (loadRequestIdRef.current !== requestId) return;
         console.error(
           "Executive insights load failed:",
           requestError
         );
 
-        setData(null);
+        setData(
+          dashboardCache.getResource(dashboardScope, cacheKey).data
+        );
 
         setError(
           t(
@@ -598,13 +628,17 @@ function ExecutiveInsightsPanel({
           )
         );
       } finally {
-        setLoading(false);
+        if (loadRequestIdRef.current === requestId) {
+          setLoading(false);
+        }
       }
     }, [
       mineName,
       scenario,
       apiLanguage,
       t,
+      dashboardScope,
+      cacheKey,
     ]);
 
 
@@ -616,7 +650,9 @@ function ExecutiveInsightsPanel({
    * - language changes
    */
   useEffect(() => {
-    loadInsights();
+    // The async loader owns the request lifecycle state for this mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadInsights(false);
   }, [
     loadInsights,
   ]);
@@ -975,7 +1011,7 @@ function ExecutiveInsightsPanel({
             type="button"
             className="executive-insights-refresh"
             onClick={
-              loadInsights
+              () => loadInsights(true)
             }
             disabled={
               loading
