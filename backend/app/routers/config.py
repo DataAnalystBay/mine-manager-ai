@@ -19,6 +19,7 @@ from app.models.mine import MineSettings
 from app.models.kpi_target import KpiTarget
 from app.models.alert_threshold import AlertThreshold
 from app.models.shift_pattern import ShiftPattern
+from app.operation_profiles.coal_surface_profile import COAL_SURFACE_PROFILE
 
 
 router = APIRouter(
@@ -189,12 +190,15 @@ class ShiftUpdateRequest(BaseModel):
 
 class KpiTargetUpdateRequest(BaseModel):
     kpi_name: Optional[str] = None
+    kpi_code: Optional[str] = None
     kpi_category: Optional[str] = None
     target_value: Optional[float] = None
     unit: Optional[str] = None
     warning_threshold: Optional[float] = None
     critical_threshold: Optional[float] = None
     direction: Optional[str] = None
+    is_executive: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 
 class AlertThresholdUpdateRequest(BaseModel):
@@ -663,4 +667,11 @@ def get_full_configuration(
         "kpi_targets": kpi_targets,
         "alert_thresholds": alert_thresholds,
         "shift_patterns": shift_patterns,
+        "operation_profile": (
+            COAL_SURFACE_PROFILE
+            if str(mine.mine_type or "").strip().lower() in {
+                "coal surface mining", "surface coal mining", "open pit coal"
+            }
+            else None
+        ),
     }

@@ -112,6 +112,9 @@ def resolve_authenticated_tenant(
             "hydrometallurgical copper processing",
         }
     )
+    is_coal_surface = mine_type in {
+        "coal surface mining", "surface coal mining", "open pit coal",
+    }
 
     return {
         "auth_company_id": int(auth_company.id),
@@ -127,7 +130,7 @@ def resolve_authenticated_tenant(
         "operation_profile": (
             "sxew_copper"
             if is_sxew_operation
-            else "standard_mine"
+            else ("coal_surface_v1" if is_coal_surface else "standard_mine")
         ),
         "waste_applicable": (
             not is_sxew_operation

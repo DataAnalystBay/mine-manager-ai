@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Boolean
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -9,11 +9,14 @@ class KpiTarget(Base):
     id = Column(Integer, primary_key=True, index=True)
     mine_id = Column(Integer, ForeignKey("mine_settings.id", ondelete="CASCADE"))
     kpi_name = Column(String(255), nullable=False)
+    kpi_code = Column(String(100), nullable=True)
     kpi_category = Column(String(100))
     target_value = Column(Numeric(18, 2))
     unit = Column(String(50))
     warning_threshold = Column(Numeric(18, 2))
     critical_threshold = Column(Numeric(18, 2))
     direction = Column(String(50), default="higher_is_better")
+    is_executive = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
