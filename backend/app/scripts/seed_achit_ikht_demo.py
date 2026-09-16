@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.auth.security import hash_password
+from app.auth.security import hash_password, verify_password
 from app.database import SessionLocal
 from app.models.auth_company import Company
 from app.models.company import CompanySettings
@@ -9,6 +9,8 @@ from app.models.user import User
 from app.models.kpi_target import KpiTarget
 from app.models.alert_threshold import AlertThreshold
 from app.demo.achit_ikht_config import ACHIT_IKHT_CONFIG
+from app.services.demo_data_service import generate_all_demo_data
+from app.services.demo_persistence_service import persist_demo_data
 
 
 COMPANY_NAME = "Achit-Ikht LLC"
@@ -17,8 +19,8 @@ MINE_NAME_MN = "Ачит-Ихт Зэсийн Катодын Үйлдвэр"
 COMPANY_NAME_MN = ACHIT_IKHT_CONFIG["company"]["name_mn"]
 DEMO_USER_EMAIL = "demo@achit-ikht.mn"
 DEMO_USER_NAME = "Achit-Ikht Demo Manager"
-# Keep the demo credential aligned with the existing login-page demo default.
-DEMO_USER_PASSWORD = "admin123"
+# Intended credential for the tenant-scoped Achit-Ikht demo account.
+DEMO_USER_PASSWORD = "test1234"
 
 
 KPI_CONFIG = [
@@ -207,6 +209,13 @@ def seed_authentication(db: Session) -> tuple[Company, User]:
         if demo_user.company_id != auth_company.id:
             raise RuntimeError(
                 "Achit-Ikht demo email belongs to another tenant."
+            )
+        if not verify_password(
+            DEMO_USER_PASSWORD,
+            demo_user.hashed_password,
+        ):
+            demo_user.hashed_password = hash_password(
+                DEMO_USER_PASSWORD
             )
         return auth_company, demo_user
 
@@ -404,6 +413,16 @@ def seed_achit_ikht_demo():
 
         db.commit()
 
+        operational_result = persist_demo_data(
+            demo_data=generate_all_demo_data(
+                mine_name=MINE_NAME,
+                operation_profile="sxew_copper",
+            ),
+            mine_name=MINE_NAME,
+            company_id=company.id,
+            mine_id=mine.id,
+        )
+
         print()
         print("=" * 60)
         print("Achit-Ikht configuration saved successfully.")
@@ -420,6 +439,13 @@ def seed_achit_ikht_demo():
         print("Language: Mongolian")
         print(f"KPI targets configured: {len(KPI_CONFIG)}")
         print(f"Alert thresholds configured: {len(ALERT_CONFIG)}")
+        print(
+            "Operational demo rows upserted: "
+            f"production={operational_result['production']['upserted']}, "
+            f"fleet={operational_result['fleet']['upserted']}, "
+            f"plant={operational_result['plant']['upserted']}, "
+            f"safety={operational_result['safety']['upserted']}"
+        )
 
     except Exception as exc:
         db.rollback()

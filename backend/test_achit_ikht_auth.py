@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from fastapi import HTTPException
 
@@ -9,6 +10,7 @@ from app.models.company import CompanySettings
 from app.models.mine import MineSettings
 from app.models.user import User
 from app.routers.auth import login_user
+from app.routers import demo
 from app.scripts.seed_achit_ikht_demo import (
     DEMO_USER_EMAIL,
     DEMO_USER_PASSWORD,
@@ -17,6 +19,7 @@ from app.scripts.seed_achit_ikht_demo import (
     seed_authentication,
 )
 from app.services.tenant_service import resolve_authenticated_tenant
+from app.services.demo_data_service import generate_all_demo_data
 
 
 VALID_PASSWORD = DEMO_USER_PASSWORD
@@ -153,6 +156,72 @@ class AchitIkhtAuthenticationTests(unittest.TestCase):
         self.assertTrue(demo_user.is_active)
         self.assertNotEqual(demo_user.hashed_password, VALID_PASSWORD)
         self.assertTrue(verify_password(VALID_PASSWORD, demo_user.hashed_password))
+
+    def test_sxew_demo_uses_bundled_achit_dataset(self):
+        data = generate_all_demo_data(
+            mine_name="Achit-Ikht Copper Cathode Operation",
+            operation_profile="sxew_copper",
+        )
+
+        self.assertEqual(data["scenario_status"], "sxew_copper_demo")
+        self.assertEqual(data["reporting_days"], 60)
+        self.assertEqual(len(data["production"]), 60)
+        self.assertEqual(len(data["fleet"]), 60)
+        self.assertEqual(len(data["plant"]), 60)
+        self.assertEqual(len(data["safety"]), 60)
+        self.assertEqual(data["production"][0]["waste_plan"], 0.0)
+        self.assertEqual(data["production"][0]["waste_actual"], 0.0)
+        self.assertEqual(
+            data["fleet"][0]["equipment"],
+            "SX-EW process equipment",
+        )
+
+    def test_achit_load_demo_uses_resolved_sxew_tenant(self):
+        generated_calls = []
+        persistence_calls = []
+
+        def generate(**kwargs):
+            generated_calls.append(kwargs)
+            return generate_all_demo_data(**kwargs)
+
+        def persist(**kwargs):
+            persistence_calls.append(kwargs)
+            return {
+                "success": True,
+                "tenant": {
+                    "company_id": 2,
+                    "mine_id": 2,
+                    "mine_name": "Achit-Ikht Copper Cathode Operation",
+                },
+            }
+
+        tenant = {
+            "company_id": 2,
+            "mine_id": 2,
+            "mine_name": "Achit-Ikht Copper Cathode Operation",
+            "operation_profile": "sxew_copper",
+        }
+
+        with (
+            patch.object(demo, "generate_all_demo_data", generate),
+            patch.object(demo, "persist_demo_data", persist),
+        ):
+            response = demo.load_demo_data(
+                request=demo.DemoLoadRequest(
+                    scenario="High Performing Mine",
+                    mine_name="Oyu Tolgoi Surface",
+                ),
+                tenant=tenant,
+            )
+
+        self.assertEqual(generated_calls[0]["operation_profile"], "sxew_copper")
+        self.assertEqual(
+            generated_calls[0]["mine_name"],
+            "Achit-Ikht Copper Cathode Operation",
+        )
+        self.assertEqual(persistence_calls[0]["company_id"], 2)
+        self.assertEqual(persistence_calls[0]["mine_id"], 2)
+        self.assertEqual(response["mine_name"], tenant["mine_name"])
 
     def test_achit_seed_is_idempotent_in_isolated_context(self):
         db = _Db(

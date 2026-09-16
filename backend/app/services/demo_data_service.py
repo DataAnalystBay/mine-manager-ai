@@ -1,5 +1,7 @@
 from datetime import date, timedelta
+import csv
 import math
+from pathlib import Path
 import random
 from typing import Any, Dict, List, Optional
 
@@ -2023,6 +2025,12 @@ def generate_all_demo_data(
         days
     )
 
+    if str(operation_profile).strip().lower() == "sxew_copper":
+        return generate_sxew_copper_demo(
+            normalized_mine_name,
+            normalized_days,
+        )
+
     if str(operation_profile).strip().lower() == "coal_surface_v1":
         return generate_coal_surface_demo(normalized_mine_name, min(normalized_days, 30))
 
@@ -2384,6 +2392,107 @@ def generate_all_demo_data(
 
         "workforce":
             workforce,
+    }
+
+
+def generate_sxew_copper_demo(
+    mine_name: str,
+    days: int | None = None,
+) -> Dict[str, Any]:
+    """Load the bundled deterministic synthetic Achit-Ikht SX-EW history."""
+    source_path = (
+        Path(__file__).resolve().parents[1]
+        / "demo"
+        / "data"
+        / "achit_ikht"
+        / "achit_ikht_master_2021_2025.csv"
+    )
+
+    with source_path.open("r", encoding="utf-8-sig", newline="") as source:
+        source_rows = list(csv.DictReader(source))
+
+    if not source_rows:
+        raise ValueError("Achit-Ikht synthetic demo dataset is empty.")
+
+    selected_days = max(1, min(int(days or len(source_rows)), len(source_rows)))
+    source_rows = source_rows[-selected_days:]
+    production, fleet, plant, safety = [], [], [], []
+
+    for row in source_rows:
+        report_date = row["date"]
+        production_plan = float(row["cathode_production_plan_t"])
+        production_actual = float(row["cathode_production_actual_t"])
+        availability = float(row["plant_availability_pct"])
+        utilization = float(row["plant_utilization_pct"])
+        recovery = float(row["cu_recovery_pct"])
+        incidents = int(row["lti"])
+        near_misses = int(row["near_misses"])
+        trifr = float(row["trifr"])
+        critical_risks = int(
+            incidents > 0
+            or near_misses >= 6
+            or trifr >= 2.6
+        )
+
+        safety_score = 100.0
+        safety_score -= incidents * 18
+        safety_score -= min(near_misses * 1.5, 12)
+        if trifr > 2.0:
+            safety_score -= min((trifr - 2.0) * 8, 12)
+
+        production.append(
+            {
+                "report_date": report_date,
+                "ore_plan": production_plan,
+                "ore_actual": production_actual,
+                "waste_plan": 0.0,
+                "waste_actual": 0.0,
+            }
+        )
+        plant.append(
+            {
+                "report_date": report_date,
+                "throughput_plan": production_plan,
+                "throughput_actual": production_actual,
+                "recovery": recovery,
+                "availability": availability,
+            }
+        )
+        fleet.append(
+            {
+                "report_date": report_date,
+                "equipment": "SX-EW process equipment",
+                "availability": availability,
+                "utilization": utilization,
+            }
+        )
+        safety.append(
+            {
+                "report_date": report_date,
+                "incidents": incidents,
+                "near_misses": near_misses,
+                "critical_risks": critical_risks,
+                "safety_score": round(max(0.0, safety_score), 2),
+            }
+        )
+
+    return {
+        "scenario": "Achit-Ikht SX-EW — Synthetic Demo",
+        "scenario_status": "sxew_copper_demo",
+        "mine_name": mine_name,
+        "historical_start_date": production[0]["report_date"],
+        "historical_end_date": production[-1]["report_date"],
+        "reporting_days": len(production),
+        "synthetic_data": True,
+        "synthetic_targets": {},
+        "generated_performance": {},
+        "latest_30_day_performance": {},
+        "production": production,
+        "fleet": fleet,
+        "plant": plant,
+        "safety": safety,
+        "maintenance": [],
+        "workforce": [],
     }
 
 
