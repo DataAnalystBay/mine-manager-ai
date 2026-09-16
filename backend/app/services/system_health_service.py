@@ -22,7 +22,7 @@ from app.database import engine
 
 APP_VERSION = os.getenv(
     "APP_VERSION",
-    "1.0.3",
+    "1.0.4",
 )
 
 ENVIRONMENT = os.getenv(

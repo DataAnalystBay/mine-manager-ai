@@ -3014,7 +3014,9 @@ function Production() {
       <Box className="production-loading">
         <Stack
           spacing={2}
-          alignItems="center"
+          sx={{
+            alignItems: "center",
+          }}
         >
           <CircularProgress />
 
@@ -3068,12 +3070,14 @@ function Production() {
         <Stack
           direction="row"
           spacing={1}
-          alignItems="center"
-          justifyContent={{
-            xs: "flex-start",
-            md: "flex-end",
-          }}
           className="production-header-controls"
+          sx={{
+            alignItems: "center",
+            justifyContent: {
+              xs: "flex-start",
+              md: "flex-end",
+            },
+          }}
         >
           <button
             type="button"
@@ -4502,7 +4506,9 @@ function Production() {
             >
               <Stack
                 spacing={1.25}
-                alignItems="center"
+                sx={{
+                  alignItems: "center",
+                }}
               >
                 <CircularProgress
                   size={28}
