@@ -15,6 +15,7 @@ TENANT = {
     "mine_id": 73,
     "company_name": "Synthetic Company A",
     "mine_name": "Synthetic Mine A",
+    "operation_profile": "standard_mine",
 }
 
 
@@ -76,6 +77,7 @@ class DemoContractTests(unittest.TestCase):
                     "scenario": "High Performing Mine",
                     "mine_name": "Synthetic Mine A",
                     "days": None,
+                    "operation_profile": "standard_mine",
                 }
             ],
         )

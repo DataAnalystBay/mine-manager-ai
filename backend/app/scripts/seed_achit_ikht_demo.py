@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Session
 
+from app.auth.security import hash_password
 from app.database import SessionLocal
+from app.models.auth_company import Company
 from app.models.company import CompanySettings
 from app.models.mine import MineSettings
+from app.models.user import User
 from app.models.kpi_target import KpiTarget
 from app.models.alert_threshold import AlertThreshold
 from app.demo.achit_ikht_config import ACHIT_IKHT_CONFIG
@@ -12,6 +15,10 @@ COMPANY_NAME = "Achit-Ikht LLC"
 MINE_NAME = "Achit-Ikht Copper Cathode Operation"
 MINE_NAME_MN = "Ачит-Ихт Зэсийн Катодын Үйлдвэр"
 COMPANY_NAME_MN = ACHIT_IKHT_CONFIG["company"]["name_mn"]
+DEMO_USER_EMAIL = "demo@achit-ikht.mn"
+DEMO_USER_NAME = "Achit-Ikht Demo Manager"
+# Keep the demo credential aligned with the existing login-page demo default.
+DEMO_USER_PASSWORD = "admin123"
 
 
 KPI_CONFIG = [
@@ -167,6 +174,53 @@ ALERT_CONFIG = [
         "alert_level": "critical",
     },
 ]
+
+
+def seed_authentication(db: Session) -> tuple[Company, User]:
+    auth_company = (
+        db.query(Company)
+        .filter(
+            Company.company_name == COMPANY_NAME,
+            Company.mine_name == MINE_NAME,
+        )
+        .first()
+    )
+
+    if not auth_company:
+        auth_company = Company(
+            company_name=COMPANY_NAME,
+            mine_name=MINE_NAME,
+            is_active=True,
+        )
+        db.add(auth_company)
+        db.flush()
+    else:
+        auth_company.is_active = True
+
+    demo_user = (
+        db.query(User)
+        .filter(User.email == DEMO_USER_EMAIL)
+        .first()
+    )
+
+    if demo_user:
+        if demo_user.company_id != auth_company.id:
+            raise RuntimeError(
+                "Achit-Ikht demo email belongs to another tenant."
+            )
+        return auth_company, demo_user
+
+    demo_user = User(
+        company_id=auth_company.id,
+        full_name=DEMO_USER_NAME,
+        email=DEMO_USER_EMAIL,
+        hashed_password=hash_password(DEMO_USER_PASSWORD),
+        role="General Manager",
+        is_active=True,
+    )
+    db.add(demo_user)
+    db.flush()
+    return auth_company, demo_user
 
 
 def get_or_create_company(db: Session) -> CompanySettings:
@@ -336,6 +390,8 @@ def seed_achit_ikht_demo():
             company,
         )
 
+        auth_company, demo_user = seed_authentication(db)
+
         seed_kpis(
             db,
             mine,
@@ -355,6 +411,8 @@ def seed_achit_ikht_demo():
 
         print(f"Company ID: {company.id}")
         print(f"Operation ID: {mine.id}")
+        print(f"Auth Company ID: {auth_company.id}")
+        print(f"Demo User ID: {demo_user.id}")
         print(f"Company: {company.company_name}")
         print(f"Operation: {mine.mine_name}")
         print("Currency: MNT (demo/business context)")
