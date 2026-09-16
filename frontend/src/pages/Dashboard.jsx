@@ -314,6 +314,16 @@ function generateExecutiveBriefing(
   t
 ) {
   const isSxew = values.operationProfile === "sxew_copper";
+  const isCoal = values.operationProfile === "coal_surface_v1";
+
+  if (!demoLoaded && isCoal) {
+    if (uiLanguage === "MN") {
+      const fleetAvailability = values.executiveKpiDetails?.fleet_availability?.value ?? values.fleetAvailability;
+      const plantAvailability = values.executiveKpiDetails?.plant_availability?.value;
+      return `Нүүрсний ил уурхайн эрүүл мэндийн үнэлгээ ${values.mineHealthScore}/100 байна. ROM нүүрсний олборлолт ${values.orePerformance}%, хөрс хуулалт ${values.wastePerformance}%, техникийн бэлэн байдал ${fleetAvailability}%, үйлдвэрийн бэлэн байдал ${plantAvailability}%, аюулгүй ажиллагааны тохиолдол ${values.safetyIncidents} байна. Удирдлагын тэргүүлэх чиглэл нь техникийн бэлэн байдлыг сайжруулж, нүүрс ил гаргалтын төлөвлөгөөний биелэлтийг хангах явдал юм.`;
+    }
+    return `${mineName} is operating with a Mine Health Score of ${values.mineHealthScore}/100. ROM coal production is ${values.orePerformance}% of plan, waste movement is ${values.wastePerformance}%, fleet performance is ${values.fleetPerformance}%, CHPP performance is ${values.plantPerformance}%, and serious safety incidents are ${values.safetyIncidents}. Priority should be given to restoring haul-fleet availability and protecting near-term coal exposure.`;
+  }
 
   if (!demoLoaded && isSxew) {
     if (uiLanguage === "MN") {
@@ -813,7 +823,7 @@ function DashboardContent() {
     const now = new Date();
 
     if (uiLanguage === "MN") {
-      const mongolianWeekdays = ["Ня", "Да", "Мя", "Лха", "Пү", "Ба", "Бя"];
+      const mongolianWeekdays = ["Ня", "Да", t("dashboard.dayTue"), "Лха", "Пү", "Ба", "Бя"];
       const weekday = mongolianWeekdays[now.getDay()];
 
       return `${formatDisplayDate(now, uiLanguage)} · ${weekday}`;
@@ -825,7 +835,7 @@ function DashboardContent() {
       day: "numeric",
       year: "numeric",
     });
-  }, [uiLanguage]);
+  }, [t, uiLanguage]);
 
   const showToast = useCallback((type, title, message) => {
     setToast({ type, title, message });
@@ -1250,6 +1260,9 @@ function DashboardContent() {
       mineHealthScore,
       operationProfile,
       applicability,
+      actuals: summary.actuals || null,
+      coalQuality: summary.coal_quality || null,
+      executiveKpiDetails: summary.executive_kpi_details || null,
     };
   }, [demoData, demoLoaded, executiveSummary]);
  
@@ -1265,13 +1278,21 @@ function DashboardContent() {
           ? uiLanguage === "MN"
             ? "Катодын үйлдвэрлэл, үйлдвэрийн гүйцэтгэл болон аюулгүй ажиллагааг хянах"
             : "Review cathode production, process plant performance, and safety"
-          : t("dashboard.scenarioContent.stable.priorityAction"),
+          : baseValues.operationProfile === "coal_surface_v1"
+            ? uiLanguage === "MN"
+              ? "Техникийн бэлэн байдлыг сайжруулж, нүүрс ил гаргалтын төлөвлөгөөний биелэлтийг хангах"
+              : "Restore haul-fleet availability and protect coal exposure"
+            : t("dashboard.scenarioContent.stable.priorityAction"),
       riskMessage:
         baseValues.operationProfile === "sxew_copper"
           ? uiLanguage === "MN"
             ? "Катодын үйлдвэрлэл, зэс авалт болон аюулгүй ажиллагааны үзүүлэлтүүдэд удирдлагын анхаарал шаардлагатай."
             : "Management attention is required on cathode production, Cu recovery, and safety indicators."
-          : t("dashboard.scenarioContent.stable.liveRiskMessage"),
+          : baseValues.operationProfile === "coal_surface_v1"
+            ? uiLanguage === "MN"
+              ? "Техникийн бэлэн байдал зорилтоос доогуур; ROM нүүрсний олборлолт болон хөрс хуулалт анхаарах түвшинд байна. Нүүрсний чанар стандартын шаардлагад нийцэж байна."
+              : "Fleet availability is below target; ROM coal production and waste movement are on watch. Coal quality remains within specification."
+            : t("dashboard.scenarioContent.stable.liveRiskMessage"),
       healthStatus:
         baseValues.mineHealthScore >= 85
           ? "Stable"
@@ -1577,8 +1598,17 @@ setKpiDialogOpen(false);
  
   const isSxewOperation =
     !demoLoaded && scenarioValues.operationProfile === "sxew_copper";
+  const isCoalOperation = scenarioValues.operationProfile === "coal_surface_v1";
 
   const operationLabels = useMemo(() => {
+    if (isCoalOperation) {
+      return {
+        production: t("coal.romProduction"),
+        plant: t("coal.chpp"),
+        recovery: t("coal.coalRecovery"),
+        safety: t("dashboard.safetyIncidents"),
+      };
+    }
     if (!isSxewOperation) {
       return {
         production: t("dashboard.orePerformance"),
@@ -1603,9 +1633,16 @@ setKpiDialogOpen(false);
       recovery: "Cu Recovery",
       safety: "Safety Incidents",
     };
-  }, [isSxewOperation, t, uiLanguage]);
+  }, [isCoalOperation, isSxewOperation, t, uiLanguage]);
 
   const priorityActions = useMemo(() => {
+    if (isCoalOperation) {
+      return [
+        { id: "coal-fleet", title: uiLanguage === "MN" ? "Техникийн бэлэн байдлыг сайжруулах" : "Restore haul-fleet availability", priority: "High", due: "Due Today" },
+        { id: "coal-production", title: uiLanguage === "MN" ? "ROM нүүрсний олборлолтын төлөвлөгөөний зөрүүг арилгах" : "Close the ROM coal production gap", priority: "Medium", due: "Due Today" },
+        { id: "coal-exposure", title: uiLanguage === "MN" ? "Хөрс хуулалт, нүүрс ил гаргалтын төлөвлөгөөний биелэлтийг хангах" : "Protect waste movement and near-term coal exposure", priority: "Medium", due: "Due Tomorrow" },
+      ];
+    }
     if (isSxewOperation) {
       const actions = [];
 
@@ -1685,6 +1722,7 @@ setKpiDialogOpen(false);
     ];
   }, [
     baseValues.safetyScore,
+    isCoalOperation,
     isSxewOperation,
     scenarioValues.actionSeverity,
     scenarioValues.orePerformance,
@@ -1693,6 +1731,43 @@ setKpiDialogOpen(false);
     scenarioValues.safetyIncidents,
     t,
     uiLanguage,
+  ]);
+
+  const coalRiskRows = useMemo(() => {
+    const severityForPerformance = (value) => {
+      const numericValue = Number(value);
+      if (!Number.isFinite(numericValue)) return 1;
+      if (numericValue < 85) return 4;
+      if (numericValue < 95) return 3;
+      if (numericValue < 100) return 2;
+      return 1;
+    };
+    const singleActiveCell = (severity) =>
+      RISK_LEVELS.map((level) => (level === severity ? level : 0));
+    const productionSeverity = severityForPerformance(
+      Math.min(Number(scenarioValues.orePerformance), Number(scenarioValues.wastePerformance))
+    );
+    const equipmentSeverity = severityForPerformance(
+      baseValues.executiveKpiDetails?.fleet_availability?.value ?? baseValues.fleetAvailability
+    );
+    const safetySeverity = Number(scenarioValues.safetyIncidents) > 0
+      ? 4
+      : severityForPerformance(baseValues.safetyScore);
+
+    return [
+      { label: "Production", values: singleActiveCell(productionSeverity) },
+      { label: "Equipment", values: singleActiveCell(equipmentSeverity) },
+      { label: "Safety", values: singleActiveCell(safetySeverity) },
+      { label: "Geotechnical", values: singleActiveCell(1) },
+      { label: "External", values: singleActiveCell(1) },
+    ];
+  }, [
+    baseValues.executiveKpiDetails,
+    baseValues.fleetAvailability,
+    baseValues.safetyScore,
+    scenarioValues.orePerformance,
+    scenarioValues.safetyIncidents,
+    scenarioValues.wastePerformance,
   ]);
 
  
@@ -1877,11 +1952,15 @@ setKpiDialogOpen(false);
                   {t("dashboard.demoLoaded")}
                 </>
               ) : (
-                <>
-                  <span>{t("dashboard.load")}</span>
-                  <span>{t("dashboard.executive")}</span>
-                  <span>{t("dashboard.demo")}</span>
-                </>
+                uiLanguage === "MN" ? (
+                  <span>{t("coal.loadExecutiveDemo")}</span>
+                ) : (
+                  <>
+                    <span>{t("dashboard.load")}</span>
+                    <span>{t("dashboard.executive")}</span>
+                    <span>{t("dashboard.demo")}</span>
+                  </>
+                )
               )}
             </button>
  
@@ -2374,6 +2453,64 @@ setKpiDialogOpen(false);
           </div>
  
           <div className="executive-kpi-grid">
+            {isCoalOperation && [
+              {
+                key: "rom_coal_production", title: t("coal.romProduction"),
+                ...baseValues.executiveKpiDetails?.rom_coal_production,
+                icon: KPI_ICONS.ore, accent: "#16a34a", soft: "#dcfce7", onClick: handleOpenOre,
+              },
+              {
+                key: "waste_movement", title: t("coal.wasteMovement"),
+                ...baseValues.executiveKpiDetails?.waste_movement,
+                icon: KPI_ICONS.waste, accent: "#f97316", soft: "#ffedd5", onClick: handleOpenWaste,
+              },
+              {
+                key: "fleet_availability", title: t("coal.fleetAvailability"),
+                ...baseValues.executiveKpiDetails?.fleet_availability,
+                icon: KPI_ICONS.fleet, accent: "#2563eb", soft: "#dbeafe", onClick: handleOpenFleet,
+              },
+              {
+                key: "plant_availability", title: t("coal.plantAvailability"),
+                ...baseValues.executiveKpiDetails?.plant_availability,
+                icon: KPI_ICONS.plant, accent: "#7c3aed", soft: "#ede9fe", onClick: handleOpenPlant,
+              },
+              {
+                key: "serious_safety_incidents", title: operationLabels.safety,
+                ...baseValues.executiveKpiDetails?.serious_safety_incidents,
+                icon: KPI_ICONS.safety, accent: "#ef4444", soft: "#fee2e2", onClick: handleOpenSafety,
+              },
+            ].map((card) => {
+              const localizedUnit = uiLanguage === "MN"
+                ? card.unit === "t" ? "тн" : card.unit === "bcm" ? "м³" : card.unit === "count" ? "" : card.unit
+                : card.unit;
+              const localizedValue = uiLanguage === "MN" && Number.isFinite(Number(card.value))
+                ? Number(card.value).toLocaleString("en-US")
+                : card.value;
+              const localizedTarget = uiLanguage === "MN" && Number.isFinite(Number(card.target))
+                ? Number(card.target).toLocaleString("en-US")
+                : card.target;
+
+              return (
+              <ExecutiveKpiCard
+                key={card.key}
+                title={card.title}
+                value={localizedValue ?? "—"}
+                unit={localizedUnit}
+                target={`${localizedTarget ?? "—"}${localizedUnit && card.unit !== "count" ? ` ${localizedUnit}` : ""}`}
+                icon={card.icon}
+                badge={card.status ? t(`common.${card.status}`) : t("dashboard.live")}
+                trend="—"
+                accent={card.accent}
+                soft={card.soft}
+                onClick={card.onClick}
+                analysisAriaLabel={translateTemplate(t, "dashboard.openOperationalDetails", { title: card.title })}
+                targetLabel={t("dashboard.target")}
+                versusYesterdayLabel={t("dashboard.versusYesterday")}
+              />
+              );
+            })}
+
+            {!isCoalOperation && <>
             <ExecutiveKpiCard
               title={operationLabels.production}
               value={scenarioValues.orePerformance}
@@ -2519,6 +2656,7 @@ setKpiDialogOpen(false);
               targetLabel={t("dashboard.target")}
               versusYesterdayLabel={t("dashboard.versusYesterday")}
             />
+            </>}
           </div>
         </section>
  
@@ -2665,8 +2803,6 @@ setKpiDialogOpen(false);
           <ExecutivePanel
             title={t("dashboard.riskHeatMap")}
             icon={KPI_ICONS.safety}
-            actionLabel={t("dashboard.reviewRisks")}
-            onAction={handleOpenMineHealth}
           >
             <div
               style={{
@@ -2741,7 +2877,9 @@ setKpiDialogOpen(false);
                 </span>
               ))}
  
-              {(isSxewOperation
+              {(isCoalOperation
+                ? coalRiskRows
+                : isSxewOperation
                 ? [
                     { label: "Production", values: [2, 0, 0, 0] },
                     { label: "Process Plant", values: [0, 2, 0, 0] },
@@ -2874,7 +3012,8 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
   targetLabel,
   versusYesterdayLabel,
 }) {
-  const trendValue = trend || "0.0%";
+  const trendValue = trend || "";
+  const hasTrendComparison = Boolean(trendValue && trendValue !== "—");
   const isDown = String(trendValue).startsWith("-");
   const isUp = String(trendValue).startsWith("+");
  
@@ -2909,8 +3048,9 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "center",
+          position: "relative",
         }}
       >
         <div
@@ -2928,7 +3068,7 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
           {icon}
         </div>
  
-        <FiMoreVertical style={{ color: "#64748b" }} />
+        <FiMoreVertical style={{ color: "#64748b", position: "absolute", right: 0 }} />
       </div>
  
       <div
@@ -2987,7 +3127,7 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
         </span>
       </div>
  
-      <div
+      {hasTrendComparison && <div
         className="executive-type-kpi-trend"
         style={{
           marginTop: 9,
@@ -2999,7 +3139,7 @@ const ExecutiveKpiCard = memo(function ExecutiveKpiCard({
         }}
       >
         {isDown ? "▼" : isUp ? "▲" : "→"} {trendValue} {versusYesterdayLabel}
-      </div>
+      </div>}
  
       <div
         className="executive-type-kpi-target"
@@ -3104,7 +3244,7 @@ const ExecutivePanel = memo(function ExecutivePanel({
  
       <div style={{ flex: 1, padding: "12px 14px" }}>{children}</div>
  
-      <button
+      {actionLabel && onAction && <button
         className="executive-type-panel-action"
         type="button"
         onClick={onAction}
@@ -3120,7 +3260,7 @@ const ExecutivePanel = memo(function ExecutivePanel({
         }}
       >
         {actionLabel} <FiChevronRight />
-      </button>
+      </button>}
     </section>
   );
 });

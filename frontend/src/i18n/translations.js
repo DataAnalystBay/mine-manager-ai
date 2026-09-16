@@ -1,5 +1,17 @@
 export const translations = {
   EN: {
+    coal: {
+      commodity: "Coal", mineName: "Coal Surface Operations",
+      romProduction: "ROM Coal Production", productCoal: "Product Coal",
+      wasteMovement: "Waste Movement", strippingRatio: "Stripping Ratio",
+      coalRecovery: "Coal Recovery", quality: "Coal Quality", ash: "Ash",
+      moisture: "Moisture", calorificValue: "Calorific Value",
+      chpp: "Coal Handling / Preparation Plant",
+      fleetAvailability: "Availability",
+      plantAvailability: "Coal Handling / Preparation Plant",
+      loadExecutiveDemo: "Load Executive Demo",
+      specificationCompliance: "Product Specification Compliance",
+    },
     common: {
       appName: "Mine Manager AI",
       loading: "Loading...",
@@ -2194,6 +2206,18 @@ export const translations = {
   },
  
   MN: {
+    coal: {
+      commodity: "Нүүрс", mineName: "Нүүрсний ил уурхайн үйл ажиллагаа",
+      romProduction: "ROM нүүрсний олборлолт", productCoal: "Бүтээгдэхүүн нүүрс",
+      wasteMovement: "Хөрс хуулалт", strippingRatio: "Хөрс хуулалтын коэффициент",
+      coalRecovery: "Нүүрс авалт", quality: "Нүүрсний чанар", ash: "Үнслэг",
+      moisture: "Чийглэг", calorificValue: "Илчлэг",
+      chpp: "Нүүрс баяжуулах / боловсруулах үйлдвэр",
+      fleetAvailability: "Техникийн бэлэн байдал",
+      plantAvailability: "Нүүрс боловсруулах үйлдвэрийн бэлэн байдал",
+      loadExecutiveDemo: "Удирдлагын демо ачаалах",
+      specificationCompliance: "Бүтээгдэхүүний стандартын нийцэл",
+    },
     common: {
       appName: "Mine Manager AI",
       loading: "Уншиж байна...",
@@ -2322,7 +2346,7 @@ export const translations = {
       dayShift: "Өдрийн ээлж",
  
       selectScenario: "Демо нөхцөл сонгох",
-      highPerformingMine: "Өндөр гүйцэтгэл",
+      highPerformingMine: "Өндөр гүйцэтгэлтэй уурхай",
       fleetBreakdown: "Техникийн эвдрэл",
       plantBottleneck: "Үйлдвэрийн хүчин чадлын хязгаарлалт",
       safetyIncident: "Аюулгүй ажиллагааны тохиолдол",
@@ -2382,7 +2406,7 @@ export const translations = {
       riskExternal: "Гадаад эрсдэл",
  
       dayMon: "Да",
-      dayTue: "Мя",
+      dayTue: "Мягмар",
       dayWed: "Лх",
       dayThu: "Пү",
       dayFri: "Ба",
