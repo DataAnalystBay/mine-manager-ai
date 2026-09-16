@@ -36,6 +36,14 @@ function getPredictionKpiDisplayName(
   const normalizedValue = rawValue.toLowerCase();
 
   if (uiLanguage === "MN") {
+    if (normalizedValue === "rom coal production") {
+      return "ROM нүүрсний олборлолт";
+    }
+
+    if (normalizedValue === "chpp performance") {
+      return "Нүүрс боловсруулах үйлдвэрийн гүйцэтгэл";
+    }
+
     if (
       normalizedValue === "cathode production" ||
       normalizedValue === "ore production" ||

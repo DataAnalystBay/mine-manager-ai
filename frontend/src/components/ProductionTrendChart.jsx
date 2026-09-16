@@ -882,6 +882,7 @@ function ProductionTrendChart({
     )
       .trim()
       .toLowerCase();
+  const isCoalOperation = operationProfile === "coal_surface_v1";
 
 
   const isSxewOperation =
@@ -1449,9 +1450,9 @@ function ProductionTrendChart({
               <ToggleButton
                 value="ore"
               >
-                {t(
-                  "production.ore"
-                )}
+                {isCoalOperation
+                  ? (language === "MN" ? "ROM нүүрс" : "ROM Coal")
+                  : t("production.ore")}
               </ToggleButton>
 
               <ToggleButton

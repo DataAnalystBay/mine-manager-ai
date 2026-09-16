@@ -289,6 +289,7 @@ function Plant() {
     language,
     today?.mine_name || t("plant.operationFallback")
   );
+  const isCoalOperation = today?.operation_profile === "coal_surface_v1";
   const [trendError, setTrendError] = useState("");
   const [selectedAiRecommendation, setSelectedAiRecommendation] = useState(null);
   const [actionCreationMode, setActionCreationMode] = useState(null);
@@ -399,10 +400,13 @@ function Plant() {
   const throughputMetric = toFiniteMetric(today?.throughput_performance);
   const recoveryMetric = toFiniteMetric(today?.recovery);
   const plantMetric = toFiniteMetric(today?.plant_performance);
-  const metricsReady = throughputMetric !== null && recoveryMetric !== null && plantMetric !== null;
+  const availabilityMetric = toFiniteMetric(today?.availability);
+  const metricsReady = throughputMetric !== null && recoveryMetric !== null && plantMetric !== null && (!isCoalOperation || availabilityMetric !== null);
   const throughputPerformance = throughputMetric ?? 0;
   const recovery = recoveryMetric ?? 0;
   const plantPerformance = plantMetric ?? 0;
+  const availability = availabilityMetric ?? 0;
+  const availabilityTarget = 92;
 
   const plantStatus = getStatus(plantPerformance, plantTarget);
   const overallTone = getTone(plantPerformance, plantTarget);
@@ -527,16 +531,20 @@ function Plant() {
           ? `${t("plant.aiHappeningBelow")} ${plantPerformance.toFixed(1)}%.`
           : `${t("plant.aiHappeningOnTarget")} ${plantPerformance.toFixed(1)}%.`,
       why:
-        plantPerformance < plantTarget
-          ? t("plant.aiWhyBelow")
-          : t("plant.aiWhyOnTarget"),
+        isCoalOperation
+          ? (language === "MN"
+              ? "Тогтвортой CHPP ажиллагаа нь нүүрсний боловсруулалт, бүтээгдэхүүний чанар болон зардлын гүйцэтгэлийг хамгаална."
+              : "Stable CHPP performance protects coal processing, product quality, and operating-cost performance.")
+          : plantPerformance < plantTarget
+            ? t("plant.aiWhyBelow")
+            : t("plant.aiWhyOnTarget"),
       contributors,
       priority:
         focusAreas.length > 0
           ? t("plant.aiManagementPriorityRecovery")
           : t("plant.aiManagementPriorityMaintain"),
     };
-  }, [focusAreas.length, plantPerformance, plantTarget, recoveryGap, t, throughputGap]);
+  }, [focusAreas.length, isCoalOperation, language, plantPerformance, plantTarget, recoveryGap, t, throughputGap]);
 
   const aiRecommendedActions = useMemo(() => {
     const actions = [];
@@ -834,7 +842,7 @@ function Plant() {
       <Box className="plant-page-header">
         <Box className="plant-heading-copy">
           <Typography component="h1" className="plant-page-title">
-            {t("plant.title")}
+            {isCoalOperation ? t("coal.chpp") : t("plant.title")}
           </Typography>
           <Typography className="plant-page-context">
             {displayMineName}
@@ -948,16 +956,18 @@ function Plant() {
               <FiTrendingUp />
             </div>
             <div className="plant-kpi-content">
-              <div className="plant-kpi-label">{t("plant.plantPerformance")}</div>
+              <div className="plant-kpi-label">
+                {isCoalOperation ? (language === "MN" ? "Үйлдвэрийн бэлэн байдал" : "Plant Availability") : t("plant.plantPerformance")}
+              </div>
               <div className={`plant-kpi-value plant-kpi-value--${overallTone}`}>
-                {plantPerformance.toFixed(1)}%
+                {(isCoalOperation ? availability : plantPerformance).toFixed(1)}%
               </div>
               <div className="plant-kpi-supporting">
-                {t("plant.target")}: <strong>{plantTarget.toFixed(1)}%</strong>
+                {t("plant.target")}: <strong>{(isCoalOperation ? availabilityTarget : plantTarget).toFixed(1)}%</strong>
               </div>
               <div className={`plant-kpi-detail plant-kpi-detail--${overallTone}`}>
-                {getVarianceIcon(plantGap)}
-                <span>{formatSignedPercent(plantGap)}</span>
+                {getVarianceIcon(isCoalOperation ? availability - availabilityTarget : plantGap)}
+                <span>{formatSignedPercent(isCoalOperation ? availability - availabilityTarget : plantGap)}</span>
               </div>
             </div>
           </div>

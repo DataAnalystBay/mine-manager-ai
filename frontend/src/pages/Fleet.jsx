@@ -284,6 +284,7 @@ function Fleet() {
     ]);
     const utilizationTarget = findFleetTarget(kpiTargets, [
       "Fleet Utilization",
+      "Fleet Utilisation",
       "Fleet Utilization Target",
       "Utilization",
     ]);

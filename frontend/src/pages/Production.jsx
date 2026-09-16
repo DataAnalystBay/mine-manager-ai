@@ -1186,6 +1186,7 @@ function Production() {
   const isSxewOperation =
     operationProfile ===
     "sxew_copper";
+  const isCoalOperation = operationProfile === "coal_surface_v1";
 
 
   const wasteApplicable =
@@ -1355,7 +1356,7 @@ function Production() {
                   "Daily Production Performance",
 
                 oreDelivery:
-                  "Ore Production",
+                  isCoalOperation ? "ROM Coal Production" : "Ore Production",
 
                 wasteDelivery:
                   "Waste Movement",
@@ -1514,6 +1515,7 @@ function Production() {
       },
       [
         language,
+        isCoalOperation,
         isSxewOperation,
         today
           ?.production_label,
@@ -1985,12 +1987,16 @@ function Production() {
             ? combinedPerformance < 100
               ? isSxewOperation
                 ? "Төлөвлөгөөнөөс тогтвортой доогуур үйлдвэрлэл нь сарын катодын зэсийн хэмжээг бууруулж, тогтмол зардлыг цөөн тонн бүтээгдэхүүнд хуваарилах эрсдэлтэй."
-                : "Төлөвлөгөөнөөс тогтвортой доогуур үйлдвэрлэл нь сарын хүдрийн олборлолт болон хөрс хуулалтын төлөвлөгөөг тасалдуулж, уурхайн дараагийн үе шатны гүйцэтгэлд дарамт үүсгэх эрсдэлтэй."
+                : isCoalOperation
+                  ? "Төлөвлөгөөнөөс тогтвортой доогуур үйлдвэрлэл нь сарын нүүрсний олборлолт болон хөрс хуулалтын төлөвлөгөөг тасалдуулж, уурхайн дараагийн үе шатны гүйцэтгэлд дарамт үүсгэх эрсдэлтэй."
+                  : "Төлөвлөгөөнөөс тогтвортой доогуур үйлдвэрлэл нь сарын хүдрийн олборлолт болон хөрс хуулалтын төлөвлөгөөг тасалдуулж, уурхайн дараагийн үе шатны гүйцэтгэлд дарамт үүсгэх эрсдэлтэй."
               : "Төлөвлөгөөний түвшинд тогтвортой ажиллах нь сарын үйлдвэрлэлийн төлөвлөгөө болон зардлын гүйцэтгэлийг хамгаална."
             : combinedPerformance < 100
               ? isSxewOperation
                 ? "Sustained production below plan reduces monthly cathode volume and can increase unit-cost pressure when fixed costs are spread across fewer tonnes."
-                : "Sustained production below plan puts monthly ore and waste delivery at risk and can constrain downstream mining and processing performance."
+                : isCoalOperation
+                  ? "Sustained ROM coal production below plan puts monthly coal and waste delivery at risk and can constrain downstream handling and preparation."
+                  : "Sustained production below plan puts monthly ore and waste delivery at risk and can constrain downstream mining and processing performance."
               : "Sustaining production at or above plan protects monthly volume delivery and cost performance.";
 
         const contributors = [
@@ -2065,12 +2071,16 @@ function Production() {
             ? combinedPerformance < 100
               ? isSxewOperation
                 ? "Өдөр тутмын үйлдвэрлэлийг тогтворжуулж, төлөвлөгөөний зөрүү давтагдаж буй шалтгааныг баталгаажуулан сэргээх арга хэмжээг хариуцагчтайгаар хэрэгжүүлэх."
-                : "Өдөр тутмын хүдэр болон хөрс хуулалтын гүйцэтгэлийг тогтворжуулж, төлөвлөгөөний зөрүү давтагдаж буй шалтгааныг баталгаажуулан сэргээх арга хэмжээг хариуцагчтайгаар хэрэгжүүлэх."
+                : isCoalOperation
+                  ? "Өдөр тутмын нүүрс болон хөрс хуулалтын гүйцэтгэлийг тогтворжуулж, төлөвлөгөөний зөрүү давтагдаж буй шалтгааныг баталгаажуулан сэргээх арга хэмжээг хариуцагчтайгаар хэрэгжүүлэх."
+                  : "Өдөр тутмын хүдэр болон хөрс хуулалтын гүйцэтгэлийг тогтворжуулж, төлөвлөгөөний зөрүү давтагдаж буй шалтгааныг баталгаажуулан сэргээх арга хэмжээг хариуцагчтайгаар хэрэгжүүлэх."
               : "Төлөвлөгөөний гүйцэтгэлийг хадгалж, сөрөг чиг хандлага үүсэж байгаа эсэхийг үргэлжлүүлэн хянах."
             : combinedPerformance < 100
               ? isSxewOperation
                 ? "Stabilize daily cathode output, confirm the recurring causes of the gap to plan, and assign recovery actions before the shortfall compounds."
-                : "Stabilize daily ore and waste delivery, confirm the recurring causes of the gap to plan, and assign recovery actions before the shortfall compounds."
+                : isCoalOperation
+                  ? "Stabilize daily ROM coal and waste delivery, confirm the recurring causes of the gap to plan, and assign recovery actions before the shortfall compounds."
+                  : "Stabilize daily ore and waste delivery, confirm the recurring causes of the gap to plan, and assign recovery actions before the shortfall compounds."
               : "Maintain plan performance and continue monitoring for early signs of deterioration.";
 
         return {
@@ -2087,6 +2097,7 @@ function Production() {
         trendSummary
           .recentTrendTone,
         isSxewOperation,
+        isCoalOperation,
         language,
       ]
     );
@@ -3047,6 +3058,8 @@ function Production() {
         >
           {isSxewOperation
             ? copy.pageTitle
+            : isCoalOperation
+              ? t("coal.romProduction")
             : t(
                 "production.productionPerformance"
               )}
@@ -3242,6 +3255,8 @@ function Production() {
                         ? "КАТОДЫН ЗЭСИЙН ҮЙЛДВЭРЛЭЛ"
                         : "CATHODE PRODUCTION"
                     )
+                  : isCoalOperation
+                    ? (language === "MN" ? "ROM НҮҮРСНИЙ ОЛБОРЛОЛТ" : "ROM COAL PRODUCTION")
                   : (
                       language === "MN"
                         ? "ХҮДРИЙН ҮЙЛДВЭРЛЭЛ"
@@ -3464,6 +3479,26 @@ function Production() {
               </div>
             </div>
           </div>
+        </section>
+      )}
+
+      {!error && isCoalOperation && (
+        <section className="production-kpi-overview production-kpi-overview--positive" aria-label={t("coal.quality")}>
+          {[
+            [t("coal.productCoal"), today?.product_coal, "t"],
+            [t("coal.ash"), today?.ash_pct, "%"],
+            [t("coal.moisture"), today?.moisture_pct, "%"],
+            [t("coal.calorificValue"), today?.calorific_value, "kcal/kg"],
+          ].map(([label, value, unit]) => (
+            <div className="production-kpi-cell" key={label}>
+              <div className="production-kpi-content">
+                <div className="production-kpi-label">{label}</div>
+                <div className="production-kpi-value production-kpi-value--neutral">
+                  {value == null ? "—" : `${Number(value).toLocaleString()} ${unit}`}
+                </div>
+              </div>
+            </div>
+          ))}
         </section>
       )}
 

@@ -22,6 +22,7 @@ const EMPTY_CONFIG = {
   kpi_targets: [],
   alert_thresholds: [],
   shift_patterns: [],
+  operation_profile: null,
 };
 
 
@@ -130,6 +131,9 @@ export const ConfigProvider = ({ children }) => {
 
         shift_patterns:
           data?.shift_patterns || [],
+
+        operation_profile:
+          data?.operation_profile || null,
       });
     } catch (error) {
       if (!isCurrent()) return;

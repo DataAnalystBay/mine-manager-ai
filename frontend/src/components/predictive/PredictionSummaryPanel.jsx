@@ -94,6 +94,7 @@ function translateExecutiveMessage(
   value,
   uiLanguage,
   isSxewOperation,
+  isCoalOperation,
 ) {
   const text = String(value || "").trim();
 
@@ -117,7 +118,17 @@ function translateExecutiveMessage(
       );
   }
 
-  const kpiReplacements = isSxewOperation
+  const kpiReplacements = isCoalOperation
+    ? [
+        [/ROM Coal Production/gi, "ROM нүүрсний олборлолт"],
+        [/CHPP Performance/gi, "Нүүрс боловсруулах үйлдвэрийн гүйцэтгэл"],
+        [/Waste Movement/gi, "Хөрс хуулалт"],
+        [/Fleet Performance/gi, "Техникийн гүйцэтгэл"],
+        [/Safety Performance/gi, "Аюулгүй ажиллагааны гүйцэтгэл"],
+        [/Mine Health Score/gi, "Уурхайн нэгдсэн төлөвийн үнэлгээ"],
+        [/Mine Health/gi, "Уурхайн нэгдсэн төлөв"],
+      ]
+    : isSxewOperation
     ? [
         [/Cathode Production/gi, "Катодын зэсийн үйлдвэрлэл"],
         [/Ore Production/gi, "Катодын зэсийн үйлдвэрлэл"],
@@ -442,6 +453,7 @@ function PredictionSummaryPanel({
 
   const isSxewOperation =
     operationProfile === "sxew_copper";
+  const isCoalOperation = operationProfile === "coal_surface_v1";
 
 
   const operationProfileLabel = useMemo(() => {
@@ -868,6 +880,7 @@ function PredictionSummaryPanel({
                   predictionData.executive_message,
                   uiLanguage,
                   isSxewOperation,
+                  isCoalOperation,
                 )}
               </p>
 
