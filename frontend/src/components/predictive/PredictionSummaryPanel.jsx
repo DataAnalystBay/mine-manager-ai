@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -17,6 +18,8 @@ import {
 } from "../../api/predictionsApi";
 
 import { useLanguage } from "../../context/LanguageContext";
+import { useConfig } from "../../context/ConfigContext";
+import { dashboardCache } from "../../services/dashboardCache";
 import ExecutiveForecastRiskStrip from "./ExecutiveForecastRiskStrip";
 import PredictionCard from "./PredictionCard";
 
@@ -341,20 +344,27 @@ function getPredictionPriority(
 function PredictionSummaryPanel({
   mineName = "Oyu Tolgoi Surface",
 }) {
+  const { dashboardScope } = useConfig();
   const {
     language: uiLanguage,
     t,
   } = useLanguage();
 
+  const cacheKey = useMemo(
+    () => `predictions:${String(mineName || "").trim()}`,
+    [mineName],
+  );
+  const initialCache = dashboardCache.getResource(dashboardScope, cacheKey);
+
   const [
     predictionData,
     setPredictionData,
-  ] = useState(null);
+  ] = useState(() => initialCache.data);
 
   const [
     isLoading,
     setIsLoading,
-  ] = useState(true);
+  ] = useState(() => !initialCache.data);
 
   const [
     error,
@@ -364,22 +374,37 @@ function PredictionSummaryPanel({
   const [
     generatedAt,
     setGeneratedAt,
-  ] = useState(null);
+  ] = useState(() => initialCache.updatedAt
+    ? new Date(initialCache.updatedAt)
+    : null);
+  const loadRequestIdRef = useRef(0);
 
   const loadPredictions =
-    useCallback(async () => {
+    useCallback(async (force = false) => {
+      if (!force && dashboardCache.isFresh(dashboardScope, cacheKey)) {
+        return;
+      }
+      const requestId = ++loadRequestIdRef.current;
       setIsLoading(true);
       setError("");
 
       try {
-        const result =
-          await getPredictionSummary(
-            mineName,
-          );
+        const load = () => getPredictionSummary(mineName);
+        const loaded = await (force
+          ? dashboardCache.refresh(dashboardScope, cacheKey, load)
+          : dashboardCache.ensure(dashboardScope, cacheKey, load));
+        const cached = dashboardCache.getResource(dashboardScope, cacheKey);
 
-        setPredictionData(result);
+        if (loadRequestIdRef.current !== requestId) return;
+
+        if (!loaded && !cached.data) {
+          throw cached.error || new Error("Prediction summary load failed");
+        }
+
+        setPredictionData(cached.data);
         setGeneratedAt(new Date());
       } catch (requestError) {
+        if (loadRequestIdRef.current !== requestId) return;
         console.error(
           "Prediction summary load failed:",
           requestError,
@@ -391,12 +416,16 @@ function PredictionSummaryPanel({
           ),
         );
       } finally {
-        setIsLoading(false);
+        if (loadRequestIdRef.current === requestId) {
+          setIsLoading(false);
+        }
       }
-    }, [mineName, t]);
+    }, [dashboardScope, cacheKey, mineName, t]);
 
   useEffect(() => {
-    loadPredictions();
+    // The async loader owns the request lifecycle state for this mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadPredictions(false);
   }, [loadPredictions]);
 
   const operationProfile = useMemo(
@@ -723,7 +752,7 @@ function PredictionSummaryPanel({
           <button
             type="button"
             className="prediction-summary__refresh"
-            onClick={loadPredictions}
+            onClick={() => loadPredictions(true)}
             disabled={isLoading}
             aria-label={
               isLoading
@@ -797,7 +826,7 @@ function PredictionSummaryPanel({
 
           <button
             type="button"
-            onClick={loadPredictions}
+            onClick={() => loadPredictions(true)}
           >
             {t(
               "predictionSummary.tryAgain",
