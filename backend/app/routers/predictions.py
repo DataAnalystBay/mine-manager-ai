@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.database import SessionLocal
-from app.models.company import CompanySettings
-from app.models.mine import MineSettings
+from app.models.user import User
 from app.services.kpi_calculation_service import calculate_health_score
 from app.services.predictive.prediction_engine import calculate_prediction
+from app.services.tenant_service import resolve_authenticated_tenant
 from app.services.trend_engine_service import get_health_history_service
 
 
@@ -44,15 +44,15 @@ def get_db():
 
 def resolve_prediction_tenant(
     db: Session,
+    current_user: User,
     mine_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Resolve the tenant and mine used by Predictive Intelligence.
 
-    Rules:
-    1. If mine_name is supplied, use that mine.
-    2. If mine_name is omitted, use the latest configured mine.
-       This matches the current active Achit-Ikht demo behaviour.
+    The authenticated user's company/mine assignment is authoritative.
+    mine_name is retained only for frontend compatibility and may identify
+    the already-authenticated mine; it can never select another tenant.
     """
 
     requested_mine_name = (
@@ -61,50 +61,37 @@ def resolve_prediction_tenant(
         else None
     )
 
-    mine = None
-
-    if requested_mine_name:
-        mine = (
-            db.query(MineSettings)
-            .filter(MineSettings.mine_name == requested_mine_name)
-            .first()
-        )
-
-    if mine is None and requested_mine_name is None:
-        mine = (
-            db.query(MineSettings)
-            .order_by(MineSettings.id.desc())
-            .first()
-        )
-
-    if mine is None:
-        return {
-            "company_id": None,
-            "mine_id": None,
-            "company_name": None,
-            "mine_name": requested_mine_name,
-            "mine_type": None,
-            "operation_profile": "generic",
-            "requested_mine_name": requested_mine_name,
-        }
-
-    company = (
-        db.query(CompanySettings)
-        .filter(CompanySettings.id == mine.company_id)
-        .first()
+    tenant = resolve_authenticated_tenant(
+        db=db,
+        current_user=current_user,
     )
 
+    allowed_mine_names = {
+        str(value).strip().casefold()
+        for value in (
+            tenant.get("mine_name"),
+            tenant.get("mine_name_en"),
+            tenant.get("mine_name_mn"),
+        )
+        if str(value or "").strip()
+    }
+
+    if (
+        requested_mine_name
+        and requested_mine_name.casefold() not in allowed_mine_names
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requested mine is outside the authenticated tenant",
+        )
+
     operation_profile = resolve_operation_profile(
-        mine_type=mine.mine_type,
-        mine_name=mine.mine_name,
+        mine_type=tenant.get("mine_type"),
+        mine_name=tenant.get("mine_name"),
     )
 
     return {
-        "company_id": company.id if company else mine.company_id,
-        "mine_id": mine.id,
-        "company_name": company.company_name if company else None,
-        "mine_name": mine.mine_name,
-        "mine_type": mine.mine_type,
+        **tenant,
         "operation_profile": operation_profile,
         "requested_mine_name": requested_mine_name,
     }
@@ -690,6 +677,7 @@ def build_data_quality_summary(
 def get_prediction_summary(
     mine_name: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return tenant-aware and operation-profile-aware Predictive Intelligence.
@@ -704,6 +692,7 @@ def get_prediction_summary(
 
     tenant = resolve_prediction_tenant(
         db=db,
+        current_user=current_user,
         mine_name=mine_name,
     )
 
@@ -743,6 +732,9 @@ def get_prediction_summary(
     history_response = get_health_history_service(
         mine_name=resolved_mine_name,
         db=db,
+        company_id=tenant["company_id"],
+        mine_id=tenant["mine_id"],
+        operation_profile=tenant["operation_profile"],
     )
 
     records = normalize_history_response(
