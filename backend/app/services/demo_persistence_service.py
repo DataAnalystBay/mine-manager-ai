@@ -388,7 +388,11 @@ def _copy_production(
             ore_plan NUMERIC,
             ore_actual NUMERIC,
             waste_plan NUMERIC,
-            waste_actual NUMERIC
+            waste_actual NUMERIC,
+            product_coal NUMERIC,
+            ash_pct NUMERIC,
+            moisture_pct NUMERIC,
+            calorific_value NUMERIC
         )
         ON COMMIT DROP
         """
@@ -421,6 +425,8 @@ def _copy_production(
                     "waste_actual"
                 )
             ),
+            record.get("product_coal"), record.get("ash_pct"),
+            record.get("moisture_pct"), record.get("calorific_value"),
         ]
         for record in records
     ]
@@ -437,7 +443,11 @@ def _copy_production(
             ore_plan,
             ore_actual,
             waste_plan,
-            waste_actual
+            waste_actual,
+            product_coal,
+            ash_pct,
+            moisture_pct,
+            calorific_value
         )
         FROM STDIN
         WITH
@@ -484,7 +494,8 @@ def _copy_plant(
             report_date DATE NOT NULL,
             throughput_plan NUMERIC,
             throughput_actual NUMERIC,
-            recovery NUMERIC
+            recovery NUMERIC,
+            availability NUMERIC
         )
         ON COMMIT DROP
         """
@@ -512,6 +523,7 @@ def _copy_plant(
                     "recovery"
                 )
             ),
+            record.get("availability"),
         ]
         for record in records
     ]
@@ -527,7 +539,8 @@ def _copy_plant(
             report_date,
             throughput_plan,
             throughput_actual,
-            recovery
+            recovery,
+            availability
         )
         FROM STDIN
         WITH
@@ -787,7 +800,11 @@ def _upsert_production(
             ore_plan,
             ore_actual,
             waste_plan,
-            waste_actual
+            waste_actual,
+            product_coal,
+            ash_pct,
+            moisture_pct,
+            calorific_value
         )
         SELECT
             %s,
@@ -797,7 +814,11 @@ def _upsert_production(
             ore_plan,
             ore_actual,
             waste_plan,
-            waste_actual
+            waste_actual,
+            product_coal,
+            ash_pct,
+            moisture_pct,
+            calorific_value
         FROM demo_stage_production
 
         ON CONFLICT
@@ -821,6 +842,11 @@ def _upsert_production(
 
             waste_actual =
                 EXCLUDED.waste_actual,
+
+            product_coal = EXCLUDED.product_coal,
+            ash_pct = EXCLUDED.ash_pct,
+            moisture_pct = EXCLUDED.moisture_pct,
+            calorific_value = EXCLUDED.calorific_value,
 
             created_at =
                 CURRENT_TIMESTAMP
@@ -872,7 +898,8 @@ def _upsert_plant(
             report_date,
             throughput_plan,
             throughput_actual,
-            recovery
+            recovery,
+            availability
         )
         SELECT
             %s,
@@ -881,7 +908,8 @@ def _upsert_plant(
             report_date,
             throughput_plan,
             throughput_actual,
-            recovery
+            recovery,
+            availability
         FROM demo_stage_plant
 
         ON CONFLICT
@@ -902,6 +930,8 @@ def _upsert_plant(
 
             recovery =
                 EXCLUDED.recovery,
+
+            availability = EXCLUDED.availability,
 
             created_at =
                 CURRENT_TIMESTAMP

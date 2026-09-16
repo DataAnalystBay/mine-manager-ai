@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
+from app.operation_profiles.coal_surface_profile import COAL_SURFACE_PROFILE
 
 from app.services.analytics_engine_service import (
     get_shared_analytics,
@@ -2235,6 +2237,73 @@ def _get_demo_executive_summary(
 # Main Executive Insight Orchestrator
 # --------------------------------------------------
 
+def _get_coal_surface_summary(db, company_id, mine_id, mine_name, language, generated_at):
+    row = db.execute(text("""
+        SELECT p.report_date, p.ore_plan, p.ore_actual, p.waste_plan, p.waste_actual,
+               p.ash_pct, p.moisture_pct, p.calorific_value,
+               f.availability AS fleet_availability,
+               pl.availability AS plant_availability
+        FROM public.production_daily p
+        LEFT JOIN public.fleet_daily f ON f.company_id=p.company_id AND f.mine_id=p.mine_id AND f.report_date=p.report_date
+        LEFT JOIN public.plant_daily pl ON pl.company_id=p.company_id AND pl.mine_id=p.mine_id AND pl.report_date=p.report_date
+        WHERE p.company_id=:company_id AND p.mine_id=:mine_id
+        ORDER BY p.report_date DESC LIMIT 1
+    """), {"company_id": company_id, "mine_id": mine_id}).mappings().first()
+    base = _build_base_response(mine_name=mine_name, scenario=None, generated_at=generated_at)
+    if not row:
+        return {**base, "status": "no_data", "operation_profile": "coal_surface_v1",
+                "total_insights": 0, "insights": []}
+    profile_targets = {
+        code: target
+        for code, _, _, target, _, _, _ in COAL_SURFACE_PROFILE["kpis"]
+    }
+    configured_targets = {
+        target_row["kpi_code"]: _safe_float(target_row["target_value"])
+        for target_row in db.execute(text("""
+            SELECT kpi_code, target_value
+            FROM public.kpi_targets
+            WHERE mine_id = :mine_id
+              AND kpi_code IS NOT NULL
+              AND target_value IS NOT NULL
+              AND COALESCE(is_active, TRUE) = TRUE
+        """), {"mine_id": mine_id}).mappings().all()
+    }
+    target = lambda code: configured_targets.get(code, profile_targets[code])
+    coal_gap = 100 - _safe_float(row["ore_actual"]) / max(_safe_float(row["ore_plan"]), 1) * 100
+    waste_gap = 100 - _safe_float(row["waste_actual"]) / max(_safe_float(row["waste_plan"]), 1) * 100
+    fleet = _safe_float(row["fleet_availability"])
+    plant = _safe_float(row["plant_availability"])
+    if language == "mn":
+        summary = (f"ROM нүүрсний олборлолт төлөвлөгөөнөөс ойролцоогоор {coal_gap:.1f}% доогуур, хөрс хуулалт "
+                   f"{waste_gap:.1f}% доогуур байна. Техникийн бэлэн байдал {fleet:.1f}% байгаа нь {target('fleet_availability'):.0f}%-ийн "
+                   "зорилтоос доогуур бөгөөд үйл ажиллагааны үндсэн хязгаарлалт болж байна. Үйлдвэрийн "
+                   f"бэлэн байдал {plant:.1f}% буюу зорилтод ойр, нүүрсний чанар стандартын шаардлагад нийцэж байна.")
+        recommendation = "Техникийн бэлэн байдлыг сайжруулж, нүүрс ил гаргалтын төлөвлөгөөний биелэлтийг хангах."
+    else:
+        summary = (f"ROM coal production is approximately {coal_gap:.1f}% below plan while waste movement is "
+                   f"approximately {waste_gap:.1f}% below plan. Fleet availability at {fleet:.1f}% is below "
+                   f"the {target('fleet_availability'):.0f}% target and is the primary operational constraint. Plant availability at {plant:.1f}% "
+                   "remains close to target while coal quality remains within specification.")
+        recommendation = "Restore haul-fleet availability and protect near-term coal exposure."
+    insight = {"insight_key": "coal-surface-performance",
+               "title": "Нүүрсний ил уурхайн үйл ажиллагаа" if language == "mn" else "Coal Surface Operations",
+               "kpi_name": "Техникийн бэлэн байдал" if language == "mn" else "Fleet Availability",
+               "category": "Fleet", "severity": "high",
+               "summary": summary,
+               "likely_driver": "Техникийн бэлэн байдал зорилтоос доогуур" if language == "mn" else "Haul-fleet availability below target",
+               "recommended_priority": recommendation, "priority": "High", "confidence": 1.0,
+               "confidence_label": "Rule-based", "trend": {"direction": "declining", "summary": summary}}
+    return {**base, "status": "success", "report_date": str(row["report_date"]),
+            "operation_profile": "coal_surface_v1", "executive_headline": summary,
+            "operational_context": {"commodity": "Coal", "mining_method": "Open Pit / Surface",
+                                    "operation": "Coal mining + CHPP", "coal_target_t": target("rom_coal_production"),
+                                    "waste_target_bcm": target("waste_movement"), "fleet_availability_target_pct": target("fleet_availability"),
+                                    "plant_availability_target_pct": target("plant_availability"), "stripping_ratio_max": target("stripping_ratio"),
+                                    "ash_max_pct": target("ash"), "moisture_max_pct": target("total_moisture"),
+                                    "calorific_value_min_kcal_kg": target("calorific_value")},
+            "total_insights": 1, "severity_counts": {"critical": 0, "high": 1, "medium": 0, "low": 0},
+            "insights": [insight]}
+
 def get_executive_summary_v2(
     mine_name: str,
     db: Session,
@@ -2257,6 +2326,10 @@ def get_executive_summary_v2(
     normalized_operation_profile = str(
         operation_profile or "standard_mine"
     ).strip().lower()
+
+    if normalized_operation_profile == "coal_surface_v1" and not normalized_scenario:
+        return _get_coal_surface_summary(db, company_id, mine_id, mine_name,
+                                         normalized_language, generated_at)
 
     if normalized_scenario:
         try:

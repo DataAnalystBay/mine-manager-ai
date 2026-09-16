@@ -6,7 +6,9 @@ from app.services.kpi_calculation_service import (
     calculate_fleet_score,
     calculate_plant_score,
     calculate_health_score,
+    calculate_coal_quality_summary,
 )
+from app.operation_profiles.coal_surface_profile import COAL_SURFACE_PROFILE
 
 
 # ============================================================
@@ -95,6 +97,9 @@ def get_health_history_service(
                     p.ore_actual,
                     p.waste_plan,
                     p.waste_actual,
+                    p.ash_pct,
+                    p.moisture_pct,
+                    p.calorific_value,
 
                     f.availability,
                     f.utilization,
@@ -102,6 +107,7 @@ def get_health_history_service(
                     pl.throughput_plan,
                     pl.throughput_actual,
                     pl.recovery,
+                    pl.availability AS plant_availability,
 
                     s.safety_score
 
@@ -173,6 +179,9 @@ def get_health_history_service(
                     p.ore_actual,
                     p.waste_plan,
                     p.waste_actual,
+                    p.ash_pct,
+                    p.moisture_pct,
+                    p.calorific_value,
 
                     f.availability,
                     f.utilization,
@@ -180,6 +189,7 @@ def get_health_history_service(
                     pl.throughput_plan,
                     pl.throughput_actual,
                     pl.recovery,
+                    pl.availability AS plant_availability,
 
                     s.safety_score
 
@@ -248,15 +258,29 @@ def get_health_history_service(
             row["safety_score"] or 0
         )
 
+        quality_score = None
+        health_weights = None
+        health_plant = plant
+        if normalized_operation_profile == "coal_surface_v1":
+            quality_score = calculate_coal_quality_summary(
+                ash_pct=row["ash_pct"],
+                moisture_pct=row["moisture_pct"],
+                calorific_value=row["calorific_value"],
+            )["score"]
+            health_weights = COAL_SURFACE_PROFILE["health_weights"]
+            health_plant = float(row["plant_availability"] or 0)
+
         health = calculate_health_score(
             ore=ore,
             waste=waste,
             fleet=fleet,
-            plant=plant,
+            plant=health_plant,
             safety_score=safety_score,
             operation_profile=(
                 normalized_operation_profile
             ),
+            quality_score=quality_score,
+            health_weights=health_weights,
         )
 
         history.append(
@@ -272,6 +296,7 @@ def get_health_history_service(
                 "throughput": throughput,
                 "recovery": recovery,
                 "safety_score": safety_score,
+                "coal_quality": quality_score,
                 "operation_profile": (
                     normalized_operation_profile
                 ),

@@ -173,6 +173,7 @@ def load_demo_data(
                     normalized_mine_name,
 
                 days=None,
+                operation_profile=tenant["operation_profile"],
             )
         )
 

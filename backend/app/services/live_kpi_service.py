@@ -6,7 +6,9 @@ from app.services.kpi_calculation_service import (
     calculate_fleet_score,
     calculate_plant_score,
     calculate_health_score,
+    calculate_coal_quality_summary,
 )
+from app.operation_profiles.coal_surface_profile import COAL_SURFACE_PROFILE
 
 
 def empty_live_kpi_summary(
@@ -29,6 +31,7 @@ def empty_live_kpi_summary(
         normalized_operation_profile
         == "sxew_copper"
     )
+    is_coal = normalized_operation_profile == "coal_surface_v1"
 
     return {
         "company_id": company_id,
@@ -127,6 +130,7 @@ def get_live_kpi_summary(
         normalized_operation_profile
         == "sxew_copper"
     )
+    is_coal = normalized_operation_profile == "coal_surface_v1"
 
     tenant_params = {
         "company_id": int(
@@ -387,6 +391,19 @@ def get_live_kpi_summary(
             else 0
         )
 
+    elif is_coal:
+        quality_summary = calculate_coal_quality_summary(
+            ash_pct=production.get("ash_pct"),
+            moisture_pct=production.get("moisture_pct"),
+            calorific_value=production.get("calorific_value"),
+        )
+        quality_score = quality_summary["score"]
+        coal_plant_score = (float(plant_result.get("availability") or 0)
+                            if plant_result else 0)
+        health = calculate_health_score(ore=ore, waste=waste, fleet=fleet, plant=coal_plant_score,
+                                        safety_score=safety_score, operation_profile=normalized_operation_profile,
+                                        quality_score=quality_score,
+                                        health_weights=COAL_SURFACE_PROFILE["health_weights"])
     else:
         health = (
             calculate_health_score(
@@ -470,8 +487,12 @@ def get_live_kpi_summary(
         "production_label": (
             "Cathode Production"
             if is_sxew
-            else "Ore Production"
+            else ("ROM Coal Production" if is_coal else "Ore Production")
         ),
+        "coal_quality": ({"ash": quality_summary["values"]["ash"],
+                          "moisture": quality_summary["values"]["total_moisture"],
+                          "calorific_value": quality_summary["values"]["calorific_value"],
+                          "score": quality_score} if is_coal and quality_score is not None else None),
 
         "waste_applicable":
             not is_sxew,

@@ -179,6 +179,10 @@ def _fetch_production_data(
             ore_actual,
             waste_plan,
             waste_actual,
+            product_coal,
+            ash_pct,
+            moisture_pct,
+            calorific_value,
             created_at
         FROM public.production_daily
         WHERE company_id = :company_id
@@ -274,6 +278,7 @@ def _fetch_plant_data(
             throughput_plan,
             throughput_actual,
             recovery,
+            availability,
             created_at
         FROM public.plant_daily
         WHERE company_id = :company_id
@@ -1617,6 +1622,7 @@ def _create_production_sheet(
     is_sxew = _is_sxew_operation(
         operation_profile
     )
+    is_coal = _normalize_operation_profile(operation_profile) == "coal_surface_v1"
 
     worksheet = workbook.create_sheet(
         (
@@ -1661,6 +1667,18 @@ def _create_production_sheet(
         ]
 
         total_columns = 7
+
+    elif is_coal:
+        title = "Нүүрсний үйлдвэрлэл ба чанар" if normalize_report_language(language) == "mn" else "Coal Production and Quality"
+        subtitle = f"{branding.company_name} | {branding.mine_name} | Coal / CHPP"
+        headers = (["Огноо", "Уурхай", "ROM төлөвлөгөө", "ROM гүйцэтгэл", "Гүйцэтгэл %",
+                    "Хөрс төлөвлөгөө", "Хөрс гүйцэтгэл", "Бүтээгдэхүүн нүүрс", "Үнслэг %",
+                    "Чийглэг %", "Илчлэг kcal/kg", "Үүсгэсэн огноо"]
+                   if normalize_report_language(language) == "mn" else
+                   ["Report Date", "Mine", "ROM Coal Plan", "ROM Coal Actual", "Achievement %",
+                    "Waste Plan", "Waste Actual", "Product Coal", "Ash %", "Moisture %",
+                    "Calorific Value kcal/kg", "Created At"])
+        total_columns = 12
 
     else:
         title = (
@@ -1747,6 +1765,15 @@ def _create_production_sheet(
                     "created_at"
                 ),
             ]
+
+        elif is_coal:
+            waste_plan = _number(record.get("waste_plan"))
+            waste_actual = _number(record.get("waste_actual"))
+            values = [record.get("report_date"), branding.mine_name, ore_plan, ore_actual,
+                      _safe_ratio(ore_actual, ore_plan), waste_plan, waste_actual,
+                      record.get("product_coal"), record.get("ash_pct"),
+                      record.get("moisture_pct"), record.get("calorific_value"),
+                      record.get("created_at")]
 
         else:
             waste_plan = _number(

@@ -928,6 +928,8 @@ def generate_daily_executive_pdf(
         if production_label_key
         else source_production_label
     )
+    if operation_profile == "coal_surface_v1":
+        production_label = "ROM нүүрсний олборлолт" if is_mongolian else "ROM Coal Production"
     report_period = str(live_kpis.get("report_date") or generated_at.date())
 
     health = float(live_kpis.get("health") or 0)
@@ -1134,6 +1136,27 @@ def generate_daily_executive_pdf(
         critical_risks=critical_risks,
         language=report_language,
     )
+    if operation_profile == "coal_surface_v1" and live_kpis.get("coal_quality"):
+        quality = live_kpis["coal_quality"]
+        measurements = []
+        if quality.get("ash") is not None:
+            measurements.append(
+                (f"үнслэг {quality['ash']:.1f}%" if is_mongolian
+                 else f"ash {quality['ash']:.1f}%")
+            )
+        if quality.get("moisture") is not None:
+            measurements.append(
+                (f"чийглэг {quality['moisture']:.1f}%" if is_mongolian
+                 else f"moisture {quality['moisture']:.1f}%")
+            )
+        if quality.get("calorific_value") is not None:
+            measurements.append(
+                (f"илчлэг {quality['calorific_value']:.0f} kcal/kg" if is_mongolian
+                 else f"calorific value {quality['calorific_value']:.0f} kcal/kg")
+            )
+        if measurements:
+            label = " Нүүрсний чанарын үзүүлэлтүүд: " if is_mongolian else " Available coal quality measurements: "
+            brief += label + ", ".join(measurements) + "."
 
     production_context = (
         (

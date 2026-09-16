@@ -126,6 +126,9 @@ def resolve_operation_profile(
     if "achit" in mine_name_value:
         return "sxew_copper"
 
+    if "coal" in mine_type_value:
+        return "coal_surface_v1"
+
     open_pit_terms = [
         "open pit",
         "open-pit",
@@ -189,6 +192,16 @@ def get_profile_configuration(
                 "plant": "Plant Performance",
                 "safety": "Safety Performance",
             },
+        }
+
+    if operation_profile == "coal_surface_v1":
+        return {
+            "profile_name": "Coal Surface Mining Operation",
+            "applicability": {"mine_health": True, "production": True, "waste": True,
+                              "fleet": True, "plant": True, "recovery": False, "safety": True},
+            "labels": {"mine_health": "Mine Health", "production": "ROM Coal Production",
+                       "waste": "Waste Movement", "fleet": "Fleet Performance",
+                       "plant": "CHPP Performance", "safety": "Safety Performance"},
         }
 
     return {

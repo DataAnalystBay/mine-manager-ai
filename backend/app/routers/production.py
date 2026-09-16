@@ -111,6 +111,11 @@ def build_production_metadata(
         existing ore/waste terminology is preserved.
     """
 
+    if tenant["operation_profile"] == "coal_surface_v1":
+        return {"production_label": "ROM Coal Production", "production_unit": "t",
+                "ore_label": "ROM Coal Production", "waste_label": "Waste Movement",
+                "waste_applicable": True, "quality_applicable": True}
+
     if (
         tenant[
             "operation_profile"
@@ -227,6 +232,7 @@ def get_today_production(
                 ore_actual,
                 waste_plan,
                 waste_actual
+                , product_coal, ash_pct, moisture_pct, calorific_value
             FROM public.production_daily
             WHERE company_id = :company_id
               AND mine_id = :mine_id
@@ -413,6 +419,10 @@ def get_today_production(
 
             "waste_variance":
                 waste_variance,
+            "product_coal": float(result["product_coal"]) if result["product_coal"] is not None else None,
+            "ash_pct": float(result["ash_pct"]) if result["ash_pct"] is not None else None,
+            "moisture_pct": float(result["moisture_pct"]) if result["moisture_pct"] is not None else None,
+            "calorific_value": float(result["calorific_value"]) if result["calorific_value"] is not None else None,
         }
 
     except HTTPException:

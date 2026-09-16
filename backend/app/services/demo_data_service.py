@@ -1993,6 +1993,7 @@ def generate_all_demo_data(
     scenario: str = DEFAULT_SCENARIO,
     mine_name: str = DEFAULT_MINE_NAME,
     days: Optional[int] = None,
+    operation_profile: str = "standard_mine",
 ) -> Dict[str, Any]:
     """
     Generate the complete Mine Manager AI synthetic dataset.
@@ -2021,6 +2022,9 @@ def generate_all_demo_data(
     normalized_days = _normalize_days(
         days
     )
+
+    if str(operation_profile).strip().lower() == "coal_surface_v1":
+        return generate_coal_surface_demo(normalized_mine_name, min(normalized_days, 30))
 
     if (
         normalized_scenario
@@ -2381,3 +2385,40 @@ def generate_all_demo_data(
         "workforce":
             workforce,
     }
+
+
+def generate_coal_surface_demo(mine_name: str, days: int = 30) -> Dict[str, Any]:
+    """Deterministic, mine-agnostic data for the configured coal profile."""
+    days = max(14, min(int(days or 30), 30))
+    end = date.today()
+    production, fleet, plant, safety = [], [], [], []
+    for index in range(days):
+        report_date = end - timedelta(days=days - index - 1)
+        wave = math.sin(index * 0.73)
+        production.append({
+            "report_date": report_date.isoformat(), "ore_plan": 12000,
+            "ore_actual": round(11480 + 260 * wave), "waste_plan": 48000,
+            "waste_actual": round(45800 + 950 * math.cos(index * .61)),
+            "product_coal": round(10050 + 180 * wave),
+            "ash_pct": round(14.0 + .25 * math.sin(index * .4), 1),
+            "moisture_pct": round(10.6 + .3 * math.cos(index * .5), 1),
+            "calorific_value": round(5600 + 55 * math.sin(index * .33)),
+        })
+        fleet.append({"report_date": report_date.isoformat(), "equipment": "Coal haul fleet",
+                      "availability": round(87 + 2 * wave, 1), "utilization": round(81 + 1.5 * wave, 1)})
+        plant.append({"report_date": report_date.isoformat(), "throughput_plan": 850,
+                      "throughput_actual": round(825 + 12 * wave), "recovery": round(91 + .5 * wave, 1),
+                      "availability": round(92 + .8 * wave, 1)})
+        safety.append({"report_date": report_date.isoformat(), "recordable_incidents": 0,
+                       "near_misses": 0, "critical_risks": 0, "safety_score": 100})
+    production[-1].update({"ore_actual": 10980, "waste_actual": 45000,
+                           "product_coal": 10500, "ash_pct": 14.2,
+                           "moisture_pct": 10.8, "calorific_value": 5630})
+    fleet[-1].update({"availability": 84.0, "utilization": 82.0})
+    plant[-1].update({"availability": 91.0, "throughput_actual": 842, "recovery": 90.0})
+    return {"scenario": "Coal Surface Mining — Demo v1.0", "scenario_status": "coal_surface_demo",
+            "mine_name": mine_name, "historical_start_date": production[0]["report_date"],
+            "historical_end_date": production[-1]["report_date"], "reporting_days": days,
+            "synthetic_data": True, "synthetic_targets": {}, "generated_performance": {},
+            "latest_30_day_performance": {}, "production": production, "fleet": fleet,
+            "plant": plant, "safety": safety, "maintenance": [], "workforce": []}

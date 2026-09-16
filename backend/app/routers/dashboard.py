@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.database import SessionLocal
 from app.models.user import User
+from app.models.kpi_target import KpiTarget
 
 from app.services.tenant_service import resolve_authenticated_tenant
 from app.services.analytics_engine_service import get_shared_analytics
@@ -17,12 +18,14 @@ from app.services.kpi_calculation_service import (
     calculate_fleet_score,
     calculate_plant_score,
     calculate_health_score,
+    calculate_coal_quality_summary,
 )
 
 from app.services.trend_engine_service import (
     get_health_history_service,
     get_trend_analysis_service,
 )
+from app.operation_profiles.coal_surface_profile import COAL_SURFACE_PROFILE, evaluate_status
 
 
 router = APIRouter(
@@ -310,14 +313,59 @@ def get_executive_summary(
     # Mine Health
     # --------------------------------------------------------
 
+    quality_summary = None
+    quality = None
+    if operation_profile == "coal_surface_v1":
+        quality_summary = calculate_coal_quality_summary(
+            ash_pct=production.get("ash_pct"),
+            moisture_pct=production.get("moisture_pct"),
+            calorific_value=production.get("calorific_value"),
+        )
+        quality = quality_summary["score"]
+
     health = calculate_health_score(
         ore=ore,
         waste=waste,
         fleet=fleet,
-        plant=plant,
+        plant=(float(plant_result.get("availability") or 0)
+               if operation_profile == "coal_surface_v1" and plant_result else plant),
         safety_score=safety_score,
         operation_profile=operation_profile,
+        quality_score=quality,
+        health_weights=(COAL_SURFACE_PROFILE["health_weights"] if operation_profile == "coal_surface_v1" else None),
     )
+
+    coal_kpi_details = None
+    if operation_profile == "coal_surface_v1":
+        profile_targets = {
+            code: target
+            for code, _, _, target, _, _, _ in COAL_SURFACE_PROFILE["kpis"]
+        }
+        configured_targets = {
+            row.kpi_code: float(row.target_value)
+            for row in (
+                db.query(KpiTarget)
+                .filter(
+                    KpiTarget.mine_id == mine_id,
+                    KpiTarget.kpi_code.in_(profile_targets),
+                )
+                .all()
+            )
+            if row.is_active is not False and row.target_value is not None
+        }
+        target = lambda code: configured_targets.get(code, profile_targets[code])
+        coal_kpi_details = {
+            "rom_coal_production": {"value": float(production["ore_actual"] or 0), "target": target("rom_coal_production"),
+                "unit": "t", "status": evaluate_status(ore, 95, 90)},
+            "waste_movement": {"value": float(production["waste_actual"] or 0), "target": target("waste_movement"),
+                "unit": "bcm", "status": evaluate_status(waste, 95, 90)},
+            "fleet_availability": {"value": availability, "target": target("fleet_availability"), "unit": "%",
+                "status": evaluate_status(availability, 90, 85)},
+            "plant_availability": {"value": float(plant_result.get("availability") or 0) if plant_result else None,
+                "target": target("plant_availability"), "unit": "%", "status": evaluate_status(float(plant_result.get("availability") or 0), 92, 87) if plant_result else "unavailable"},
+            "serious_safety_incidents": {"value": incidents, "target": target("serious_safety_incidents"), "unit": "count",
+                "status": evaluate_status(incidents, 0, 0, "lower_is_better")},
+        }
 
     return {
         "company_id": company_id,
@@ -346,6 +394,19 @@ def get_executive_summary(
         "safety_score": safety_score,
         "near_misses": near_misses,
         "critical_risks": critical_risks,
+        "executive_kpis": ([item[0] for item in COAL_SURFACE_PROFILE["kpis"] if item[6]]
+                           if operation_profile == "coal_surface_v1" else None),
+        "executive_kpi_details": coal_kpi_details,
+        "actuals": ({"rom_coal_production": float(production["ore_actual"] or 0),
+                     "waste_movement": float(production["waste_actual"] or 0),
+                     "fleet_availability": availability,
+                     "plant_availability": float(plant_result.get("availability") or 0) if plant_result else None,
+                     "serious_safety_incidents": incidents} if operation_profile == "coal_surface_v1" else None),
+        "coal_quality": ({"ash": quality_summary["values"]["ash"],
+                          "total_moisture": quality_summary["values"]["total_moisture"],
+                          "calorific_value": quality_summary["values"]["calorific_value"],
+                          "statuses": quality_summary["statuses"], "score": quality}
+                         if operation_profile == "coal_surface_v1" and quality is not None else None),
         "status": "Connected to PostgreSQL",
     }
 
@@ -391,6 +452,7 @@ def get_ai_briefing(
         summary.get("operation_profile")
         == "sxew_copper"
     )
+    is_coal = summary.get("operation_profile") == "coal_surface_v1"
 
     production_label = (
         "Cathode production"
@@ -805,7 +867,7 @@ def get_risk_register(
             title=(
                 "Cathode production below target"
                 if is_sxew
-                else "Ore production below target"
+                else ("ROM coal production below plan" if is_coal else "Ore production below target")
             ),
             mitigation=(
                 (
@@ -814,8 +876,12 @@ def get_risk_register(
                 )
                 if is_sxew
                 else (
-                    "Review mining sequence, shovel allocation, and "
-                    "short-interval control performance."
+                    "Restore haul-fleet availability and protect near-term coal exposure."
+                    if is_coal
+                    else (
+                        "Review mining sequence, shovel allocation, and "
+                        "short-interval control performance."
+                    )
                 )
             ),
             score=16,

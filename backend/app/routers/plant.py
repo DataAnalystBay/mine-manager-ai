@@ -88,6 +88,11 @@ def build_plant_metadata(
         Existing Plant terminology is preserved.
     """
 
+    if tenant.get("operation_profile") == "coal_surface_v1":
+        return {"plant_label": "Coal Handling / Preparation Plant",
+                "throughput_label": "Throughput", "recovery_label": "Coal Recovery",
+                "throughput_unit": "t/h", "recovery_unit": "%", "plant_applicable": True}
+
     if (
         tenant.get("operation_profile")
         == "sxew_copper"
@@ -160,6 +165,7 @@ def get_today_plant(
                 throughput_plan,
                 throughput_actual,
                 recovery
+                , availability
             FROM public.plant_daily
             WHERE company_id = :company_id
               AND mine_id = :mine_id
@@ -302,6 +308,7 @@ def get_today_plant(
                 plant_performance,
                 1,
             ),
+            "availability": float(result["availability"]) if result["availability"] is not None else None,
         }
 
     except HTTPException:
