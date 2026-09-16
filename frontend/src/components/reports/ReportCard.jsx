@@ -140,9 +140,11 @@ function ReportCard({
             <Stack
               direction="row"
               spacing={0.7}
-              alignItems="center"
               useFlexGap
-              flexWrap="wrap"
+              sx={{
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
             >
               <Chip
                 icon={

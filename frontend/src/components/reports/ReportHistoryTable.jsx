@@ -285,7 +285,9 @@ function ReportHistoryTable({ refreshKey = 0 }) {
         <Stack
           direction="row"
           spacing={1}
-          alignItems="center"
+          sx={{
+            alignItems: "center",
+          }}
         >
           <Box
             sx={{
@@ -339,7 +341,9 @@ function ReportHistoryTable({ refreshKey = 0 }) {
         <Stack
           direction="row"
           spacing={0.8}
-          alignItems="center"
+          sx={{
+            alignItems: "center",
+          }}
         >
           {!loading && history.length > 0 && (
             <Box

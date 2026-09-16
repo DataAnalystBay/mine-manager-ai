@@ -117,9 +117,11 @@ function ExportCard({ onClick, disabled = false }) {
               <Stack
                 direction="row"
                 spacing={0.7}
-                alignItems="center"
                 useFlexGap
-                flexWrap="wrap"
+                sx={{
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
               >
                 <Typography
                   sx={{
@@ -170,9 +172,9 @@ function ExportCard({ onClick, disabled = false }) {
             direction="row"
             spacing={1.3}
             useFlexGap
-            flexWrap="wrap"
             sx={{
               alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
             {includedItems.map((item) => (

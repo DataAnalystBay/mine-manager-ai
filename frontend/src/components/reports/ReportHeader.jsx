@@ -56,8 +56,8 @@ function ReportHeader() {
           <Stack
             direction="row"
             spacing={0.7}
-            alignItems="center"
             sx={{
+              alignItems: "center",
               mb: 0.7,
             }}
           >
@@ -145,8 +145,8 @@ function ReportHeader() {
         <Stack
           direction="row"
           spacing={1}
-          alignItems="stretch"
           sx={{
+            alignItems: "stretch",
             flexShrink: 0,
           }}
         >
