@@ -1586,12 +1586,12 @@ setKpiDialogOpen(false);
  
       if (activeKpiKey) {
         navigate(
-          `/executive-actions?kpi_key=${encodeURIComponent(activeKpiKey)}`
+          `/app/executive-actions?kpi_key=${encodeURIComponent(activeKpiKey)}`
         );
         return;
       }
  
-      navigate("/executive-actions");
+      navigate("/app/executive-actions");
     },
     [navigate, selectedKpiKey]
   );
@@ -1772,32 +1772,32 @@ setKpiDialogOpen(false);
 
  
   const handleViewAllActions = useCallback(() => {
-    navigate("/executive-actions");
+    navigate("/app/executive-actions");
   }, [navigate]);
  
   const handleViewFullBriefing = useCallback(() => {
-    navigate("/reports");
+    navigate("/app/reports");
   }, [navigate]);
  
-  const handleOpenOre = useCallback(() => navigate("/production"), [navigate]);
+  const handleOpenOre = useCallback(() => navigate("/app/production"), [navigate]);
   const handleOpenWaste = useCallback(
-    () => navigate("/production"),
+    () => navigate("/app/production"),
     [navigate]
   );
   const handleOpenFleet = useCallback(
-    () => navigate("/fleet"),
+    () => navigate("/app/fleet"),
     [navigate]
   );
   const handleOpenPlant = useCallback(
-    () => navigate("/plant"),
+    () => navigate("/app/plant"),
     [navigate]
   );
   const handleOpenRecovery = useCallback(
-    () => navigate("/plant"),
+    () => navigate("/app/plant"),
     [navigate]
   );
   const handleOpenSafety = useCallback(
-    () => navigate("/safety"),
+    () => navigate("/app/safety"),
     [navigate]
   );
   const handleOpenMineHealth = useCallback(

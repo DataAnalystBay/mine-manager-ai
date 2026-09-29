@@ -127,7 +127,7 @@ function Settings() {
     if (companyForm.logo_url?.startsWith("/static")) {
       return `${API_BASE_URL}${companyForm.logo_url}`;
     }
-    return companyForm.logo_url || "/images/logo.png";
+    return companyForm.logo_url || `${import.meta.env.BASE_URL}images/logo.png`;
   };
 
   const handleSave = async () => {
@@ -328,7 +328,7 @@ function Settings() {
                           {selectedLogo ? selectedLogo.name : t("settings.currentLogo")}
                         </Typography>
                         <Typography sx={{ fontSize: 13, color: "#64748b", mt: 0.5 }}>
-                          {companyForm.logo_url || "/images/logo.png"}
+                          {companyForm.logo_url || `${import.meta.env.BASE_URL}images/logo.png`}
                         </Typography>
                         {selectedLogo && (
                           <Chip label={t("settings.newLogoSelected")} size="small" sx={{ mt: 1, bgcolor: "#dcfce7", color: "#166534", fontWeight: 800 }} />

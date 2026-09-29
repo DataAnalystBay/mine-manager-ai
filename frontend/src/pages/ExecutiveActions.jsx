@@ -74,7 +74,7 @@ function getKpiReturnRoute(kpiKey) {
     normalizeValue(kpiKey);
 
   if (normalizedKey === "mine_health") {
-    return "/?kpi_key=mine_health";
+    return "/app?kpi_key=mine_health";
   }
 
   if (
@@ -87,7 +87,7 @@ function getKpiReturnRoute(kpiKey) {
       "production_performance",
     ].includes(normalizedKey)
   ) {
-    return "/production";
+    return "/app/production";
   }
 
   if (
@@ -96,7 +96,7 @@ function getKpiReturnRoute(kpiKey) {
       "fleet_performance",
     ].includes(normalizedKey)
   ) {
-    return "/fleet";
+    return "/app/fleet";
   }
 
   if (
@@ -109,7 +109,7 @@ function getKpiReturnRoute(kpiKey) {
       "throughput_performance",
     ].includes(normalizedKey)
   ) {
-    return "/plant";
+    return "/app/plant";
   }
 
   if (
@@ -119,10 +119,10 @@ function getKpiReturnRoute(kpiKey) {
       "safety_incidents",
     ].includes(normalizedKey)
   ) {
-    return "/safety";
+    return "/app/safety";
   }
 
-  return "/";
+  return "/app";
 }
 
 
@@ -1224,7 +1224,7 @@ function ExecutiveActions() {
         return;
       }
 
-      navigate("/");
+      navigate("/app");
     };
 
 

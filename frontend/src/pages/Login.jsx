@@ -33,7 +33,7 @@ function Login() {
         language,
       });
 
-      navigate("/");
+      navigate("/app", { replace: true });
     } catch (error) {
       console.error("Login flow failed:", error);
 
@@ -67,7 +67,7 @@ function Login() {
         <section className="login-brand-panel">
           <div className="brand-top">
             <img
-              src="/images/logo.png"
+              src={`${import.meta.env.BASE_URL}images/logo.png`}
               alt={t("login.logoAlt")}
               className="brand-logo"
             />

@@ -10,6 +10,7 @@ import {
 
 import {
   NavLink,
+  useNavigate,
 } from "react-router-dom";
 
 import {
@@ -102,7 +103,7 @@ const navItems = [
       "navigation.dashboard",
 
     path:
-      "/",
+      "/app",
 
     icon:
       DashboardIcon,
@@ -113,7 +114,7 @@ const navItems = [
       "navigation.uploadReports",
 
     path:
-      "/upload",
+      "/app/upload",
 
     icon:
       CloudUploadIcon,
@@ -124,7 +125,7 @@ const navItems = [
       "navigation.production",
 
     path:
-      "/production",
+      "/app/production",
 
     icon:
       BarChartIcon,
@@ -135,7 +136,7 @@ const navItems = [
       "navigation.fleet",
 
     path:
-      "/fleet",
+      "/app/fleet",
 
     icon:
       LocalShippingIcon,
@@ -146,7 +147,7 @@ const navItems = [
       "navigation.plant",
 
     path:
-      "/plant",
+      "/app/plant",
 
     icon:
       FactoryIcon,
@@ -157,7 +158,7 @@ const navItems = [
       "navigation.safety",
 
     path:
-      "/safety",
+      "/app/safety",
 
     icon:
       HealthAndSafetyIcon,
@@ -168,7 +169,7 @@ const navItems = [
       "navigation.executiveActions",
 
     path:
-      "/executive-actions",
+      "/app/executive-actions",
 
     icon:
       AssignmentTurnedInIcon,
@@ -179,7 +180,7 @@ const navItems = [
       "navigation.executiveReports",
 
     path:
-      "/reports",
+      "/app/reports",
 
     icon:
       DescriptionIcon,
@@ -195,7 +196,7 @@ const navItems = [
       "navigation.userManagement",
 
     path:
-      "/users",
+      "/app/users",
 
     icon:
       ManageAccountsIcon,
@@ -209,7 +210,7 @@ const navItems = [
       "navigation.auditTrail",
 
     path:
-      "/audit-trail",
+      "/app/audit-trail",
 
     icon:
       HistoryIcon,
@@ -223,7 +224,7 @@ const navItems = [
       "navigation.systemHealth",
 
     path:
-      "/system-health",
+      "/app/system-health",
 
     icon:
       MonitorHeartIcon,
@@ -237,7 +238,7 @@ const navItems = [
       "navigation.supportDiagnostics",
 
     path:
-      "/support-diagnostics",
+      "/app/support-diagnostics",
 
     icon:
       SupportAgentIcon,
@@ -251,7 +252,7 @@ const navItems = [
       "navigation.security",
 
     path:
-      "/security-configuration",
+      "/app/security-configuration",
 
     icon:
       SecurityIcon,
@@ -265,7 +266,7 @@ const navItems = [
       "navigation.settings",
 
     path:
-      "/settings",
+      "/app/settings",
 
     icon:
       SettingsIcon,
@@ -274,6 +275,9 @@ const navItems = [
       true,
   },
 ];
+
+const DEFAULT_LOGO_URL =
+  `${import.meta.env.BASE_URL}images/logo.png`;
 
 
 const LOCALIZED_ROLE_KEYS = new Set([
@@ -339,6 +343,8 @@ const resolveRoleLabel = (
    ============================================================ */
 
 function Sidebar({ onNavigate }) {
+  const navigate = useNavigate();
+
   const [
     accountOpen,
     setAccountOpen,
@@ -450,7 +456,7 @@ function Sidebar({ onNavigate }) {
 
 
     if (!configuredLogo) {
-      return "/images/logo.png";
+      return DEFAULT_LOGO_URL;
     }
 
 
@@ -489,7 +495,7 @@ function Sidebar({ onNavigate }) {
         null;
 
       event.currentTarget.src =
-        "/images/logo.png";
+        DEFAULT_LOGO_URL;
     };
 
 
@@ -516,8 +522,9 @@ function Sidebar({ onNavigate }) {
   const handleLogout = () => {
     logout();
 
-    window.location.href =
-      "/login";
+    navigate("/login", {
+      replace: true,
+    });
   };
 
 
@@ -799,7 +806,7 @@ function Sidebar({ onNavigate }) {
 
                   end={
                     item.path ===
-                    "/"
+                    "/app"
                   }
 
                   onClick={

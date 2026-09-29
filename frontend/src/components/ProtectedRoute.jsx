@@ -42,7 +42,7 @@ function ProtectedRoute({
   ) {
     return (
       <Navigate
-        to="/"
+        to="/app"
         replace
       />
     );
