@@ -5,6 +5,7 @@ import {
 
 import {
   BrowserRouter,
+  Navigate,
   Route,
   Routes,
 } from "react-router-dom";
@@ -261,6 +262,7 @@ function App() {
                 =============================================== */}
 
             <Route
+              path="/app"
               element={
                 <ProtectedRoute>
                   <MainLayout />
@@ -273,7 +275,7 @@ function App() {
                   ============================================= */}
 
               <Route
-                path="/"
+                index
                 element={
                   <Dashboard />
                 }
@@ -285,7 +287,7 @@ function App() {
                   ============================================= */}
 
               <Route
-                path="/upload"
+                path="upload"
                 element={
                   <UploadReports />
                 }
@@ -293,7 +295,7 @@ function App() {
 
 
               <Route
-                path="/production"
+                path="production"
                 element={
                   <Production />
                 }
@@ -301,7 +303,7 @@ function App() {
 
 
               <Route
-                path="/fleet"
+                path="fleet"
                 element={
                   <Fleet />
                 }
@@ -309,7 +311,7 @@ function App() {
 
 
               <Route
-                path="/plant"
+                path="plant"
                 element={
                   <Plant />
                 }
@@ -317,7 +319,7 @@ function App() {
 
 
               <Route
-                path="/safety"
+                path="safety"
                 element={
                   <Safety />
                 }
@@ -329,7 +331,7 @@ function App() {
                   ============================================= */}
 
               <Route
-                path="/reports"
+                path="reports"
                 element={
                   <ExecutiveReports />
                 }
@@ -337,7 +339,7 @@ function App() {
 
 
               <Route
-                path="/executive-actions"
+                path="executive-actions"
                 element={
                   <ExecutiveActions />
                 }
@@ -349,7 +351,7 @@ function App() {
                   ============================================= */}
 
               <Route
-                path="/users"
+                path="users"
                 element={
                   <AdminRoute>
                     <UserManagement />
@@ -359,7 +361,7 @@ function App() {
 
 
               <Route
-                path="/audit-trail"
+                path="audit-trail"
                 element={
                   <AdminRoute>
                     <AuditTrail />
@@ -369,7 +371,7 @@ function App() {
 
 
               <Route
-                path="/system-health"
+                path="system-health"
                 element={
                   <AdminRoute>
                     <SystemHealth />
@@ -379,7 +381,7 @@ function App() {
 
 
               <Route
-                path="/support-diagnostics"
+                path="support-diagnostics"
                 element={
                   <AdminRoute>
                     <SupportDiagnostics />
@@ -389,7 +391,7 @@ function App() {
 
 
               <Route
-                path="/security-configuration"
+                path="security-configuration"
                 element={
                   <AdminRoute>
                     <SecurityConfiguration />
@@ -399,7 +401,7 @@ function App() {
 
 
               <Route
-                path="/settings"
+                path="settings"
                 element={
                   <AdminRoute>
                     <Settings />
@@ -407,7 +409,33 @@ function App() {
                 }
               />
 
+              <Route
+                path="*"
+                element={
+                  <Navigate
+                    to="/app"
+                    replace
+                  />
+                }
+              />
+
             </Route>
+
+            {/* Legacy root routes retained for existing bookmarks. */}
+            <Route path="/" element={<Navigate to="/app" replace />} />
+            <Route path="/upload" element={<Navigate to="/app/upload" replace />} />
+            <Route path="/production" element={<Navigate to="/app/production" replace />} />
+            <Route path="/fleet" element={<Navigate to="/app/fleet" replace />} />
+            <Route path="/plant" element={<Navigate to="/app/plant" replace />} />
+            <Route path="/safety" element={<Navigate to="/app/safety" replace />} />
+            <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
+            <Route path="/executive-actions" element={<Navigate to="/app/executive-actions" replace />} />
+            <Route path="/users" element={<Navigate to="/app/users" replace />} />
+            <Route path="/audit-trail" element={<Navigate to="/app/audit-trail" replace />} />
+            <Route path="/system-health" element={<Navigate to="/app/system-health" replace />} />
+            <Route path="/support-diagnostics" element={<Navigate to="/app/support-diagnostics" replace />} />
+            <Route path="/security-configuration" element={<Navigate to="/app/security-configuration" replace />} />
+            <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
 
           </Routes>
         </Suspense>

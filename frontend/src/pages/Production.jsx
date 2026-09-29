@@ -2448,7 +2448,7 @@ function Production() {
           actionId
         ) {
           navigate(
-            `/executive-actions?action_id=${encodeURIComponent(
+            `/app/executive-actions?action_id=${encodeURIComponent(
               actionId
             )}`
           );
@@ -2457,7 +2457,7 @@ function Production() {
         }
 
         navigate(
-          "/executive-actions"
+          "/app/executive-actions"
         );
       },
       [
@@ -3083,7 +3083,7 @@ function Production() {
             type="button"
             className="production-back-button"
             onClick={() =>
-              navigate("/")
+              navigate("/app")
             }
             aria-label={
               language === "MN"
@@ -4480,7 +4480,7 @@ function Production() {
               )}
 
               <Link
-                to="/executive-actions"
+                to="/app/executive-actions"
                 className="production-related-actions-link"
               >
                 <span>

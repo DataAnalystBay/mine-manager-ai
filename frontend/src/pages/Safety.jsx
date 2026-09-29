@@ -486,8 +486,8 @@ function Safety() {
   const handleViewAction = useCallback((action) => {
     const actionId = action?.id || action?.action_id;
     navigate(actionId
-      ? `/executive-actions?action_id=${encodeURIComponent(actionId)}`
-      : "/executive-actions");
+      ? `/app/executive-actions?action_id=${encodeURIComponent(actionId)}`
+      : "/app/executive-actions");
   }, [navigate]);
 
   const handleSaveAction = useCallback(async (payload) => {
@@ -573,7 +573,7 @@ function Safety() {
           <button
             type="button"
             className="plant-back-button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/app")}
             aria-label={t("safety.backToDashboard")}
           >
             <FiArrowLeft /><span>{t("safety.backToDashboard")}</span>
@@ -875,7 +875,7 @@ function Safety() {
                   </Button>
                 )}
 
-                <Link to="/executive-actions" className="plant-related-actions-link">
+                <Link to="/app/executive-actions" className="plant-related-actions-link">
                   <span>{t("safety.openActionCenter")}</span>
                   <FiArrowRight />
                 </Link>

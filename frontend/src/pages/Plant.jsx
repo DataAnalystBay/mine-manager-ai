@@ -743,8 +743,8 @@ function Plant() {
       const actionId = executiveAction?.id || executiveAction?.action_id;
       navigate(
         actionId
-          ? `/executive-actions?action_id=${encodeURIComponent(actionId)}`
-          : "/executive-actions"
+          ? `/app/executive-actions?action_id=${encodeURIComponent(actionId)}`
+          : "/app/executive-actions"
       );
     },
     [navigate]
@@ -853,7 +853,7 @@ function Plant() {
           <button
             type="button"
             className="plant-back-button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/app")}
             aria-label={t("plant.backToDashboard")}
           >
             <FiArrowLeft />
@@ -1317,7 +1317,7 @@ function Plant() {
                 </Button>
               )}
 
-              <Link to="/executive-actions" className="plant-related-actions-link">
+              <Link to="/app/executive-actions" className="plant-related-actions-link">
                 <span>{t("plant.openActionCenter")}</span>
                 <FiArrowRight />
               </Link>
