@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/app/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/app/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
+      "source": "/app/favicon.svg",
+      "destination": "/favicon.svg"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
