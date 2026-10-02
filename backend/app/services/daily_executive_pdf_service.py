@@ -903,10 +903,11 @@ def generate_daily_executive_pdf(
     generated_at = datetime.now()
     styles = _daily_styles(report_language)
 
-    mine_name = resolve_customer_display_identity(
+    customer_identity = resolve_customer_display_identity(
         live_kpis,
         report_language,
-    ).operation_name
+    )
+    mine_name = f"{customer_identity.company_name} | {customer_identity.operation_name}"
     operation_profile = str(
         live_kpis.get("operation_profile") or "standard_mine"
     ).strip().lower()
