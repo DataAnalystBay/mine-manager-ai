@@ -16,6 +16,9 @@ import ProtectedRoute
 import MainLayout
   from "./layout/MainLayout";
 
+import WebsiteLayout
+  from "./website/layout/WebsiteLayout";
+
 
 /* ============================================================
    Lazy-loaded Pages
@@ -26,6 +29,18 @@ const Login = lazy(
     import(
       "./pages/Login"
     )
+);
+
+const HomePage = lazy(
+  () => import("./website/pages/HomePage")
+);
+
+const ProductPage = lazy(
+  () => import("./website/pages/ProductPage")
+);
+
+const ContactPage = lazy(
+  () => import("./website/pages/ContactPage")
 );
 
 
@@ -245,9 +260,12 @@ function App() {
         >
           <Routes>
 
-            {/* ===============================================
-                Public Routes
-                =============================================== */}
+            {/* Website V2 public routes. */}
+            <Route element={<WebsiteLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="/product" element={<ProductPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+            </Route>
 
             <Route
               path="/login"
@@ -422,7 +440,6 @@ function App() {
             </Route>
 
             {/* Legacy root routes retained for existing bookmarks. */}
-            <Route path="/" element={<Navigate to="/app" replace />} />
             <Route path="/upload" element={<Navigate to="/app/upload" replace />} />
             <Route path="/production" element={<Navigate to="/app/production" replace />} />
             <Route path="/fleet" element={<Navigate to="/app/fleet" replace />} />
