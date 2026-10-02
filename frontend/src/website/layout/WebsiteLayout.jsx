@@ -10,7 +10,7 @@ function WebsiteLayout() {
     <ScopedCssBaseline sx={{ minHeight: "100vh" }}>
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default" }}>
       <WebsiteHeader />
-      <Box component="main" sx={{ flex: 1 }}><Outlet /></Box>
+      <Box component="main"><Outlet /></Box>
       <WebsiteFooter />
     </Box>
     </ScopedCssBaseline>

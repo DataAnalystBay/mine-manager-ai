@@ -29,11 +29,10 @@ test("dashboard uses an OS-neutral frame without decorative window controls", as
   assert.match(hero, /border:\s*"1px solid"/);
 });
 
-test("homepage contains only the approved Phase 2 sections", async () => {
+test("homepage renders approved sections in order through Phase 3", async () => {
   const home = await read("../src/website/pages/HomePage.jsx");
-  assert.match(home, /<HeroSection\s*\/>/);
-  assert.match(home, /<TrustRail\s*\/>/);
-  assert.doesNotMatch(home, /Challenge|MorningMeeting|Integration|FinalCta/);
+  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>/);
+  assert.doesNotMatch(home, /MorningMeeting|Integration|FinalCta/);
 });
 
 test("document title is the approved Website V2 title", async () => {
