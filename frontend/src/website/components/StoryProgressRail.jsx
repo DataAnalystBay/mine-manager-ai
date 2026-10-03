@@ -22,7 +22,7 @@ function StoryProgressRail() {
 
         if (visible[0]) setActiveId(visible[0].target.id);
       },
-      { rootMargin: `-${HEADER_OFFSET}px 0px -55% 0px`, threshold: [0, 0.15, 0.35] },
+      { rootMargin: `-${HEADER_OFFSET}px 0px -65% 0px`, threshold: [0, 0.1] },
     );
 
     sections.forEach((section) => observer.observe(section));
@@ -47,14 +47,14 @@ function StoryProgressRail() {
         position: "fixed",
         zIndex: 20,
         top: "46%",
-        left: "max(12px, calc((100vw - 1280px) / 2 - 128px))",
+        left: "max(8px, calc((100vw - 1280px) / 2 - 154px))",
         display: "none",
-        width: 116,
+        width: 146,
         transform: "translateY(-50%)",
-        "@media (min-width: 1560px)": { display: "block" },
+        "@media (min-width: 1600px)": { display: "block" },
       }}
     >
-      <Box aria-hidden="true" sx={{ position: "absolute", top: 7, bottom: 7, left: 5, width: "1px", bgcolor: "#d4ddd8" }} />
+      <Box aria-hidden="true" sx={{ position: "absolute", top: 7, bottom: 7, left: 4, width: "1px", bgcolor: "#e1e7e3" }} />
       {homeSections.map(({ id, labels }) => {
         const active = activeId === id;
         const label = labels[language] ?? labels.MN;
@@ -70,11 +70,11 @@ function StoryProgressRail() {
             sx={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: "12px minmax(0, 1fr)",
+              gridTemplateColumns: "10px minmax(0, 1fr)",
               alignItems: "center",
               gap: 1,
               minHeight: 36,
-              color: active ? "primary.main" : "#7a8781",
+              color: active ? "primary.main" : "#8b9691",
               borderRadius: 1,
               "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: 3 },
             }}
@@ -84,16 +84,15 @@ function StoryProgressRail() {
               sx={{
                 position: "relative",
                 zIndex: 1,
-                width: active ? 11 : 9,
-                height: active ? 11 : 9,
-                ml: active ? 0 : "1px",
-                border: "1.5px solid",
-                borderColor: active ? "primary.main" : "#aeb9b3",
+                width: active ? 9 : 8,
+                height: active ? 9 : 8,
+                border: "1px solid",
+                borderColor: active ? "primary.main" : "#c4cdc8",
                 borderRadius: "50%",
                 bgcolor: active ? "primary.main" : "background.paper",
               }}
             />
-            <Typography component="span" sx={{ fontSize: 12, fontWeight: active ? 650 : 400, lineHeight: 1.25 }}>
+            <Typography component="span" sx={{ whiteSpace: "nowrap", fontSize: active ? 12.5 : 11.5, fontWeight: active ? 600 : 400, lineHeight: 1.25 }}>
               {label}
             </Typography>
           </MuiLink>

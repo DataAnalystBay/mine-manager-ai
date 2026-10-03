@@ -53,7 +53,8 @@ test("homepage story rail targets the stable implemented section ids", async () 
   assert.match(rail, /IntersectionObserver/);
   assert.match(rail, /prefers-reduced-motion: reduce/);
   assert.match(rail, /aria-current/);
-  assert.match(rail, /min-width: 1560px/);
+  assert.match(rail, /min-width: 1600px/);
+  assert.match(rail, /whiteSpace: "nowrap"/);
 });
 
 test("morning meeting uses the approved authentic product screenshot", async () => {
