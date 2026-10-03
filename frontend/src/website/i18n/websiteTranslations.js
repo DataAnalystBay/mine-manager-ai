@@ -77,6 +77,13 @@ export const websiteTranslations = {
       sources: { excel: "Excel жишээ өгөгдлийн эх үүсвэр", powerBi: "Power BI жишээ өгөгдлийн эх үүсвэр", sap: "SAP жишээ өгөгдлийн эх үүсвэр", fleet: "Fleet Systems ерөнхий ангилал", mining: "Mining Systems ерөнхий ангилал", databaseApi: "Database болон API ерөнхий ангилал" },
       platformDetail: "Нэгтгэнэ · Дүгнэнэ · Priority тодорхойлно",
     },
+    finalDemo: {
+      eyebrow: "ДЕМО",
+      title: "Танай уурхайн management workflow дээр\nMine Manager AI-г харъя.",
+      body: "Танай KPI, reporting process болон удирдлагын priority-д тулгуурласан demo үзүүлнэ.",
+      cta: "Демо захиалах",
+      reassurance: "Таны одоогийн систем, тайлангийн бүтэцтэй уялдуулан танилцуулна.",
+    },
   },
   EN: {
     navigation: { home: "Home", product: "Product", contact: "Contact", login: "Log in", demo: "Book a Demo", menu: "Menu", closeMenu: "Close menu", language: "Select language" },
@@ -155,6 +162,13 @@ export const websiteTranslations = {
       sourcesTitle: "Example data sources",
       sources: { excel: "Excel example data source", powerBi: "Power BI example data source", sap: "SAP example data source", fleet: "Generic Fleet Systems category", mining: "Generic Mining Systems category", databaseApi: "Generic Database and API category" },
       platformDetail: "Consolidate · Analyze · Set priorities",
+    },
+    finalDemo: {
+      eyebrow: "DEMO",
+      title: "See Mine Manager AI in your mine’s\nmanagement workflow.",
+      body: "We’ll tailor the demo around your KPIs, reporting process, and management priorities.",
+      cta: "Book a demo",
+      reassurance: "We’ll align the walkthrough with your current systems and reporting structure.",
     },
   },
 };

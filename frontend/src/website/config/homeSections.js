@@ -5,4 +5,5 @@ export const homeSections = [
   { id: "use-case", labels: { MN: "Хэрэглээний жишээ", EN: "Use case" } },
   { id: "leadership", labels: { MN: "Удирдлагын түвшин", EN: "Leadership levels" } },
   { id: "integration", labels: { MN: "Интеграц", EN: "Integration" } },
+  { id: "demo", labels: { MN: "Демо", EN: "Demo" } },
 ];

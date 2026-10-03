@@ -15,6 +15,23 @@ function StoryProgressRail() {
     const sections = homeSections
       .map(({ id }) => document.getElementById(id))
       .filter(Boolean);
+    const finalSection = sections.at(-1);
+    let finalSectionVisible = false;
+
+    const selectActiveSection = () => {
+      if (finalSectionVisible && finalSection) {
+        setActiveId(finalSection.id);
+        return;
+      }
+
+      for (let index = homeSections.length - 1; index >= 0; index -= 1) {
+        const { id } = homeSections[index];
+        if (visibleIds.has(id)) {
+          setActiveId(id);
+          break;
+        }
+      }
+    };
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -23,20 +40,24 @@ function StoryProgressRail() {
           else visibleIds.delete(entry.target.id);
         });
 
-        for (let index = homeSections.length - 1; index >= 0; index -= 1) {
-          const { id } = homeSections[index];
-          if (visibleIds.has(id)) {
-            setActiveId(id);
-            break;
-          }
-        }
+        selectActiveSection();
       },
       { rootMargin: `-${HEADER_OFFSET}px 0px -65% 0px`, threshold: [0, 0.1] },
     );
 
+    const finalSectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        finalSectionVisible = entry.isIntersecting;
+        selectActiveSection();
+      },
+      { rootMargin: `-${HEADER_OFFSET}px 0px -55% 0px`, threshold: [0, 0.1] },
+    );
+
     sections.forEach((section) => observer.observe(section));
+    if (finalSection) finalSectionObserver.observe(finalSection);
     return () => {
       observer.disconnect();
+      finalSectionObserver.disconnect();
       visibleIds.clear();
     };
   }, []);

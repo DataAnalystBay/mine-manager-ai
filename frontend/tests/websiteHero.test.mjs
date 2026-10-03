@@ -29,11 +29,10 @@ test("dashboard uses an OS-neutral frame without decorative window controls", as
   assert.match(hero, /border:\s*"1px solid"/);
 });
 
-test("homepage renders approved sections in order through Phase 6", async () => {
+test("homepage renders the complete approved Website V2 story in order", async () => {
   const home = await read("../src/website/pages/HomePage.jsx");
   assert.match(home, /<StoryProgressRail\s*\/>/);
-  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>\s*<IntegrationSection\s*\/>/);
-  assert.doesNotMatch(home, /FinalCta/);
+  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>\s*<IntegrationSection\s*\/>\s*<FinalDemoCtaSection\s*\/>/);
 });
 
 test("homepage story rail targets the stable implemented section ids", async () => {
@@ -46,19 +45,37 @@ test("homepage story rail targets the stable implemented section ids", async () 
     read("../src/website/sections/home/MorningMeetingSection.jsx"),
     read("../src/website/sections/home/LeadershipLevelsSection.jsx"),
     read("../src/website/sections/home/IntegrationSection.jsx"),
+    read("../src/website/sections/home/FinalDemoCtaSection.jsx"),
   ]);
 
-  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership", "integration"]) {
+  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership", "integration", "demo"]) {
     assert.match(config, new RegExp(`id: ["']${id}["']`));
     assert.ok(files.some((file) => new RegExp(`id=["']${id}["']`).test(file)));
   }
   assert.match(rail, /IntersectionObserver/);
   assert.match(rail, /visibleIds\.add/);
   assert.match(rail, /homeSections\.length - 1/);
+  assert.match(rail, /finalSectionObserver/);
+  assert.match(rail, /-55%/);
   assert.match(rail, /prefers-reduced-motion: reduce/);
   assert.match(rail, /aria-current/);
   assert.match(rail, /min-width: 1600px/);
   assert.match(rail, /whiteSpace: "nowrap"/);
+});
+
+test("final demo CTA uses one conversion action and approved localized copy", async () => {
+  const section = await read("../src/website/sections/home/FinalDemoCtaSection.jsx");
+  const translations = await read("../src/website/i18n/websiteTranslations.js");
+  assert.match(section, /id="demo"/);
+  assert.equal((section.match(/<Button/g) ?? []).length, 1);
+  assert.match(section, /to="\/contact\?intent=demo"/);
+  assert.match(section, /component="h2"/);
+  assert.match(section, /\/website-v2\/illustrations\/cta\/final-demo-mine\.png/);
+  assert.match(section, /backgroundSize: "cover"/);
+  assert.doesNotMatch(section, /repeating-radial-gradient/);
+  await access(new URL("../public/website-v2/illustrations/cta/final-demo-mine.png", import.meta.url));
+  assert.match(translations, /Танай уурхайн management workflow дээр/);
+  assert.match(translations, /See Mine Manager AI in your mine’s/);
 });
 
 test("integration section presents the approved commercial flow", async () => {
