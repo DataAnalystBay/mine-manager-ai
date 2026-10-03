@@ -29,11 +29,11 @@ test("dashboard uses an OS-neutral frame without decorative window controls", as
   assert.match(hero, /border:\s*"1px solid"/);
 });
 
-test("homepage renders approved sections in order through Phase 5B", async () => {
+test("homepage renders approved sections in order through Phase 6", async () => {
   const home = await read("../src/website/pages/HomePage.jsx");
   assert.match(home, /<StoryProgressRail\s*\/>/);
-  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>/);
-  assert.doesNotMatch(home, /Integration|FinalCta/);
+  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>\s*<IntegrationSection\s*\/>/);
+  assert.doesNotMatch(home, /FinalCta/);
 });
 
 test("homepage story rail targets the stable implemented section ids", async () => {
@@ -45,9 +45,10 @@ test("homepage story rail targets the stable implemented section ids", async () 
     read("../src/website/sections/home/InsightWorkflowSection.jsx"),
     read("../src/website/sections/home/MorningMeetingSection.jsx"),
     read("../src/website/sections/home/LeadershipLevelsSection.jsx"),
+    read("../src/website/sections/home/IntegrationSection.jsx"),
   ]);
 
-  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership"]) {
+  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership", "integration"]) {
     assert.match(config, new RegExp(`id: ["']${id}["']`));
     assert.ok(files.some((file) => new RegExp(`id=["']${id}["']`).test(file)));
   }
@@ -58,6 +59,22 @@ test("homepage story rail targets the stable implemented section ids", async () 
   assert.match(rail, /aria-current/);
   assert.match(rail, /min-width: 1600px/);
   assert.match(rail, /whiteSpace: "nowrap"/);
+});
+
+test("integration section presents the approved commercial flow", async () => {
+  const section = await read("../src/website/sections/home/IntegrationSection.jsx");
+  const translations = await read("../src/website/i18n/websiteTranslations.js");
+  for (const source of ["Excel", "Power BI", "SAP", "Fleet Systems", "Mining Systems", "Database / API"]) assert.match(section, new RegExp(`label: ["']${source.replace("/", "\\/")}["']`));
+  for (const asset of ["excel.jpeg", "power-bi.jpeg", "sap.jpeg"]) {
+    const expected = `/website-v2/integrations/${asset}`;
+    assert.match(section, new RegExp(expected.replaceAll("/", "\\/")));
+    await access(new URL(`../public${expected}`, import.meta.url));
+  }
+  assert.match(section, /id="integration"/);
+  assert.match(section, /\/brand\/mine-manager-ai-logo\.png/);
+  assert.match(translations, /Одоо байгаа системийг\\nсолихгүй\./);
+  assert.match(translations, /Keep your existing systems\./);
+  assert.doesNotMatch(section, /Management Decision|Final CTA|Demo/);
 });
 
 test("morning meeting uses the approved authentic product screenshot", async () => {

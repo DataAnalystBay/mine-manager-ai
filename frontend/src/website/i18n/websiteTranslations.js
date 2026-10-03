@@ -67,6 +67,16 @@ export const websiteTranslations = {
         dataAnalyst: { title: "REPORTING / DATA ANALYST", focus: "Өгөгдөл · тайлан · дүн шинжилгээ", question: "“Удирдлагад зөв мэдээллийг цаг тухайд нь хэрхэн хүргэх вэ?”", imageAlt: "Тайлан, өгөгдлийн шинжээчийн дүрслэл" },
       },
     },
+    integration: {
+      eyebrow: "ИНТЕГРАЦ",
+      title: "Одоо байгаа системийг\nсолихгүй.",
+      secondary: "Удирдлагын шийдвэрт нэгтгэнэ.",
+      body: "Excel, Power BI, ERP, fleet system, database болон API зэрэг эх үүсвэрийн мэдээллийг нэгтгэн удирдлагын түвшинд ашиглана.",
+      flowLabel: "Жишээ өгөгдлийн эх үүсвэрүүдийг Mine Manager AI-д нэгтгэх урсгал",
+      sourcesTitle: "Жишээ өгөгдлийн эх үүсвэрүүд",
+      sources: { excel: "Excel жишээ өгөгдлийн эх үүсвэр", powerBi: "Power BI жишээ өгөгдлийн эх үүсвэр", sap: "SAP жишээ өгөгдлийн эх үүсвэр", fleet: "Fleet Systems ерөнхий ангилал", mining: "Mining Systems ерөнхий ангилал", databaseApi: "Database болон API ерөнхий ангилал" },
+      platformDetail: "Нэгтгэнэ · Дүгнэнэ · Priority тодорхойлно",
+    },
   },
   EN: {
     navigation: { home: "Home", product: "Product", contact: "Contact", login: "Log in", demo: "Book a Demo", menu: "Menu", closeMenu: "Close menu", language: "Select language" },
@@ -135,6 +145,16 @@ export const websiteTranslations = {
         superintendent: { title: "SUPERINTENDENT", focus: "Daily operations · action · safety", question: "“What action needs to be taken today?”", imageAlt: "Superintendent illustration" },
         dataAnalyst: { title: "REPORTING / DATA ANALYST", focus: "Data · reporting · analysis", question: "“How do we deliver the right information to management on time?”", imageAlt: "Reporting and data analyst illustration" },
       },
+    },
+    integration: {
+      eyebrow: "INTEGRATION",
+      title: "Keep your existing systems.",
+      secondary: "Bring them together for management decisions.",
+      body: "Bring together information from sources such as Excel, Power BI, ERP, fleet systems, databases, and APIs for management use.",
+      flowLabel: "Flow from example data sources into Mine Manager AI",
+      sourcesTitle: "Example data sources",
+      sources: { excel: "Excel example data source", powerBi: "Power BI example data source", sap: "SAP example data source", fleet: "Generic Fleet Systems category", mining: "Generic Mining Systems category", databaseApi: "Generic Database and API category" },
+      platformDetail: "Consolidate · Analyze · Set priorities",
     },
   },
 };
