@@ -17,7 +17,7 @@ const steps = [
 function InsightWorkflowSection() {
   const { t } = useWebsiteCopy();
   return (
-    <Box component="section" aria-labelledby="workflow-title" sx={{ bgcolor: "#0b1815", color: "#ffffff", py: { xs: 10, md: 12 } }}>
+    <Box id="solution" component="section" aria-labelledby="workflow-title" sx={{ bgcolor: "#0b1815", color: "#ffffff", py: { xs: 10, md: 12 }, scrollMarginTop: "88px" }}>
       <Container maxWidth={false} sx={{ maxWidth: 1280 }}>
         <Box sx={{ maxWidth: 760 }}>
           <Typography sx={{ color: "#76d5aa", fontSize: 12, fontWeight: 800, letterSpacing: "0.15em" }}>{t("workflow.eyebrow")}</Typography>

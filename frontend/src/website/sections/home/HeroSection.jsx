@@ -11,9 +11,10 @@ function HeroSection() {
   const { t } = useWebsiteCopy();
   return (
     <Box
+      id="mine-manager-ai"
       component="section"
       aria-labelledby="website-hero-title"
-      sx={{ position: "relative", overflow: "hidden", bgcolor: "background.paper" }}
+      sx={{ position: "relative", overflow: "hidden", bgcolor: "background.paper", scrollMarginTop: "88px" }}
     >
       <Box
         component="img"

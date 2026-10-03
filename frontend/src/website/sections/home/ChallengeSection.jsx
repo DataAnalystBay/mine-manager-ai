@@ -15,7 +15,7 @@ const challenges = [
 function ChallengeSection() {
   const { t } = useWebsiteCopy();
   return (
-    <Box component="section" aria-labelledby="challenge-title" sx={{ bgcolor: "background.paper", py: { xs: 10, md: 15 } }}>
+    <Box id="challenge" component="section" aria-labelledby="challenge-title" sx={{ bgcolor: "background.paper", py: { xs: 10, md: 15 }, scrollMarginTop: "88px" }}>
       <Container maxWidth={false} sx={{ maxWidth: 1280 }}>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.35fr) minmax(280px, 0.65fr)" }, alignItems: "end", gap: { xs: 3, md: 8 } }}>
           <Box>
