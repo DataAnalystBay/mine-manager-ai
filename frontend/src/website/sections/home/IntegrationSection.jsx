@@ -53,7 +53,7 @@ function IntegrationSection() {
             {sources.map(({ key, label, image, Icon }) => (
               <Box key={key} aria-label={t(`integration.sources.${key}`)} sx={{ minWidth: 0, minHeight: { xs: 112, md: 122 }, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1.25, px: 1.5, py: 2, border: "1px solid", borderColor: "divider", borderRadius: `${websiteTokens.radius.medium}px`, bgcolor: "#ffffff" }}>
                 {image ? (
-                  <Box component="img" src={image} alt="" aria-hidden="true" sx={{ display: "block", width: 48, height: 48, objectFit: "contain" }} />
+                  <Box component="img" src={image} alt="" aria-hidden="true" loading="lazy" decoding="async" sx={{ display: "block", width: 48, height: 48, objectFit: "contain" }} />
                 ) : (
                   <Icon aria-hidden="true" sx={{ width: 48, height: 48, p: 1, color: "primary.main" }} />
                 )}
@@ -65,7 +65,7 @@ function IntegrationSection() {
           <AggregationConnector />
 
           <Box sx={{ maxWidth: 390, mx: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", px: 3, py: 3, border: "1px solid", borderColor: "rgba(15, 92, 66, 0.3)", borderRadius: `${websiteTokens.radius.medium}px`, bgcolor: "rgba(15, 92, 66, 0.06)", textAlign: "center" }}>
-            <Box component="img" src="/brand/mine-manager-ai-logo.png" alt="" aria-hidden="true" sx={{ width: 50, height: 50, objectFit: "contain" }} />
+            <Box component="img" src="/brand/mine-manager-ai-logo.png" alt="" aria-hidden="true" loading="lazy" decoding="async" sx={{ width: 50, height: 50, objectFit: "contain" }} />
             <Typography component="h3" sx={{ mt: 1.5, color: "primary.main", fontSize: 17, fontWeight: 800, letterSpacing: "0.035em" }}>MINE MANAGER AI</Typography>
             <Typography sx={{ mt: 1, color: "text.secondary", fontSize: 13.5, lineHeight: 1.5 }}>{t("integration.platformDetail")}</Typography>
           </Box>

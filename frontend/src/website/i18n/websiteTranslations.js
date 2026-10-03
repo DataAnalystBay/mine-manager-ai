@@ -77,6 +77,37 @@ export const websiteTranslations = {
       sources: { excel: "Excel жишээ өгөгдлийн эх үүсвэр", powerBi: "Power BI жишээ өгөгдлийн эх үүсвэр", sap: "SAP жишээ өгөгдлийн эх үүсвэр", fleet: "Fleet Systems ерөнхий ангилал", mining: "Mining Systems ерөнхий ангилал", databaseApi: "Database болон API ерөнхий ангилал" },
       platformDetail: "Нэгтгэнэ · Дүгнэнэ · Priority тодорхойлно",
     },
+    faq: {
+      eyebrow: "ТҮГЭЭМЭЛ АСУУЛТ",
+      title: "Шийдвэр гаргахаас өмнө\nмэдэх хэрэгтэй зүйлс.",
+      body: "Mine Manager AI-ийн хэрэглээ, тохиргоо, өгөгдөл болон demo/pilot-ийн талаар түгээмэл асуултууд.",
+      items: {
+        systems: {
+          question: "Mine Manager AI одоо байгаа системийг солих уу?",
+          answer: "Үгүй. Mine Manager AI нь Excel, Power BI, ERP, fleet system, database болон API зэрэг одоо ашиглаж байгаа мэдээллийн эх үүсвэрийг удирдлагын түвшинд нэгтгэн ашиглахад зориулагдсан. Холболтын арга нь тухайн компанийн систем, өгөгдлийн боломж болон тохиргооноос хамаарна.",
+        },
+        problems: {
+          question: "Mine Manager AI ямар асуудлыг шийдэх вэ?",
+          answer: "Тархай мэдээллийг нэгтгэх, удирдлагын гол асуудал ба эрсдэлийг эрт харах, management priority-ийг тодорхой болгох, priority action-ийг нэг цэгээс хянахад тусална.",
+        },
+        configuration: {
+          question: "Манай уурхайн KPI болон workflow-д тохируулж болох уу?",
+          answer: "Тийм. KPI, target, threshold, reporting structure, shift, management priority болон удирдлагын workflow-ийг уурхайн хэрэгцээнд нийцүүлэн тохируулах боломжтой.",
+        },
+        data: {
+          question: "Манай өгөгдөл хэрхэн хамгаалагдах вэ?",
+          answer: "Хэрэглэгчийн эрхийг үүргээр хязгаарлах, үйлдлийн бүртгэл хөтлөх болон системийн хандалтыг удирдах боломжуудыг ашиглан мэдээллийн хандалтыг хянана. Тухайн байгууллагын security болон deployment шаардлагыг demo/pilot-ийн үеэр тусад нь тодорхойлно.",
+        },
+        demoPilot: {
+          question: "Демо эсвэл pilot хэрхэн эхлэх вэ?",
+          answer: "Эхлээд танай KPI, reporting process, management workflow болон боломжит data source-уудыг ойлгоно. Үүний дараа тохирсон demo эсвэл pilot scope, шаардлагатай өгөгдөл болон дараагийн алхмыг хамт тодорхойлно.",
+        },
+        chatbot: {
+          question: "Mine Manager AI зөвхөн AI chatbot уу?",
+          answer: "Үгүй. Mine Manager AI нь KPI, operational data, AI insight, management priority болон priority action-ийг нэг workflow-д нэгтгэсэн уурхайн удирдлагын decision-support platform юм.",
+        },
+      },
+    },
     finalDemo: {
       eyebrow: "ДЕМО",
       title: "Танай уурхайн management workflow дээр\nMine Manager AI-г харъя.",
@@ -162,6 +193,37 @@ export const websiteTranslations = {
       sourcesTitle: "Example data sources",
       sources: { excel: "Excel example data source", powerBi: "Power BI example data source", sap: "SAP example data source", fleet: "Generic Fleet Systems category", mining: "Generic Mining Systems category", databaseApi: "Generic Database and API category" },
       platformDetail: "Consolidate · Analyze · Set priorities",
+    },
+    faq: {
+      eyebrow: "FAQ",
+      title: "What you should know\nbefore getting started.",
+      body: "Common questions about Mine Manager AI, configuration, data, and demo/pilot setup.",
+      items: {
+        systems: {
+          question: "Does Mine Manager AI replace our existing systems?",
+          answer: "No. Mine Manager AI is designed to use information from existing sources such as Excel, Power BI, ERP, fleet systems, databases, and APIs for management-level decision support. The connection method depends on each company’s systems, data availability, and configuration.",
+        },
+        problems: {
+          question: "What problems does Mine Manager AI help solve?",
+          answer: "It helps bring fragmented information together, surface key management issues and risks earlier, clarify management priorities, and track priority actions from one place.",
+        },
+        configuration: {
+          question: "Can it be configured for our mine’s KPIs and workflow?",
+          answer: "Yes. KPIs, targets, thresholds, reporting structure, shifts, management priorities, and management workflows can be configured around the operation’s requirements.",
+        },
+        data: {
+          question: "How is our data access controlled?",
+          answer: "Access can be controlled through role-based permissions, audit logging, and user-access management. Organization-specific security and deployment requirements are confirmed during the demo or pilot process.",
+        },
+        demoPilot: {
+          question: "How do we start a demo or pilot?",
+          answer: "We first understand your KPIs, reporting process, management workflow, and available data sources. From there, we define an appropriate demo or pilot scope, required data, and next steps together.",
+        },
+        chatbot: {
+          question: "Is Mine Manager AI just an AI chatbot?",
+          answer: "No. Mine Manager AI is a mining management decision-support platform that brings KPIs, operational data, AI insights, management priorities, and priority actions into one workflow.",
+        },
+      },
     },
     finalDemo: {
       eyebrow: "DEMO",

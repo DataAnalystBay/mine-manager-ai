@@ -59,8 +59,8 @@ function MorningMeetingSection() {
         </Box>
 
         <Box sx={{ gridArea: "visual", minWidth: 0 }}>
-          <Box component="img" src={ROOM_PATH} alt={t("morningMeeting.visualAlt")} sx={{ display: { xs: "none", md: "block" }, width: "100%", height: "auto", objectFit: "contain", borderRadius: `${websiteTokens.radius.large}px` }} />
-          <Box component="img" src={SCREENSHOT_PATH} alt={t("morningMeeting.screenshotAlt")} sx={{ display: { xs: "block", md: "none" }, width: "100%", height: "auto", border: "1px solid", borderColor: "divider", borderRadius: `${websiteTokens.radius.medium}px`, boxShadow: websiteTokens.shadows.card }} />
+          <Box component="img" src={ROOM_PATH} alt={t("morningMeeting.visualAlt")} loading="lazy" decoding="async" sx={{ display: { xs: "none", md: "block" }, width: "100%", height: "auto", objectFit: "contain", borderRadius: `${websiteTokens.radius.large}px` }} />
+          <Box component="img" src={SCREENSHOT_PATH} alt={t("morningMeeting.screenshotAlt")} loading="lazy" decoding="async" sx={{ display: { xs: "block", md: "none" }, width: "100%", height: "auto", border: "1px solid", borderColor: "divider", borderRadius: `${websiteTokens.radius.medium}px`, boxShadow: websiteTokens.shadows.card }} />
         </Box>
 
         <Box sx={{ gridArea: "cues", alignSelf: "start", display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>

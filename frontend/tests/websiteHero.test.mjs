@@ -32,7 +32,7 @@ test("dashboard uses an OS-neutral frame without decorative window controls", as
 test("homepage renders the complete approved Website V2 story in order", async () => {
   const home = await read("../src/website/pages/HomePage.jsx");
   assert.match(home, /<StoryProgressRail\s*\/>/);
-  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>\s*<IntegrationSection\s*\/>\s*<FinalDemoCtaSection\s*\/>/);
+  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>\s*<IntegrationSection\s*\/>\s*<FaqSection\s*\/>\s*<FinalDemoCtaSection\s*\/>/);
 });
 
 test("homepage story rail targets the stable implemented section ids", async () => {
@@ -45,10 +45,11 @@ test("homepage story rail targets the stable implemented section ids", async () 
     read("../src/website/sections/home/MorningMeetingSection.jsx"),
     read("../src/website/sections/home/LeadershipLevelsSection.jsx"),
     read("../src/website/sections/home/IntegrationSection.jsx"),
+    read("../src/website/sections/home/FaqSection.jsx"),
     read("../src/website/sections/home/FinalDemoCtaSection.jsx"),
   ]);
 
-  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership", "integration", "demo"]) {
+  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership", "integration", "faq", "demo"]) {
     assert.match(config, new RegExp(`id: ["']${id}["']`));
     assert.ok(files.some((file) => new RegExp(`id=["']${id}["']`).test(file)));
   }
@@ -61,6 +62,34 @@ test("homepage story rail targets the stable implemented section ids", async () 
   assert.match(rail, /aria-current/);
   assert.match(rail, /min-width: 1600px/);
   assert.match(rail, /whiteSpace: "nowrap"/);
+});
+
+test("FAQ renders six localized accessible accordion items before the final demo", async () => {
+  const home = await read("../src/website/pages/HomePage.jsx");
+  const section = await read("../src/website/sections/home/FaqSection.jsx");
+  const config = await read("../src/website/config/homeSections.js");
+  const translations = await read("../src/website/i18n/websiteTranslations.js");
+
+  assert.match(home, /<IntegrationSection\s*\/>\s*<FaqSection\s*\/>\s*<FinalDemoCtaSection\s*\/>/);
+  assert.match(section, /id="faq"/);
+  assert.match(section, /component="h2"/);
+  assert.match(section, /const faqItems = \["systems", "problems", "configuration", "data", "demoPilot", "chatbot"\]/);
+  assert.match(section, /expanded === key/);
+  assert.match(section, /aria-controls=\{detailsId\}/);
+  assert.match(section, /aria-labelledby=\{summaryId\}/);
+  assert.match(config, /id: "faq"[\s\S]*id: "demo"/);
+
+  for (const question of [
+    "Mine Manager AI одоо байгаа системийг солих уу?",
+    "Mine Manager AI ямар асуудлыг шийдэх вэ?",
+    "Манай уурхайн KPI болон workflow-д тохируулж болох уу?",
+    "Манай өгөгдөл хэрхэн хамгаалагдах вэ?",
+    "Демо эсвэл pilot хэрхэн эхлэх вэ?",
+    "Mine Manager AI зөвхөн AI chatbot уу?",
+  ]) assert.match(translations, new RegExp(question.replace(/[?]/g, "\\?")));
+
+  assert.match(section, /useState\(faqItems\[0\]\)/);
+  assert.equal((section.match(/component="img"/g) ?? []).length, 0);
 });
 
 test("final demo CTA uses one conversion action and approved localized copy", async () => {

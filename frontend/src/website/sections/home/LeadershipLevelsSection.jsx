@@ -28,7 +28,7 @@ function LeadershipLevelsSection() {
           {roles.map(({ key, image }) => (
             <Box key={key} sx={{ minWidth: 0, minHeight: { xs: 390, lg: 430 }, overflow: "hidden", display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: `${websiteTokens.radius.medium}px`, bgcolor: "#ffffff" }}>
               <Box sx={{ height: 170, flexShrink: 0, borderBottom: "1px solid", borderColor: "divider", bgcolor: "#f3f6f4" }}>
-                <Box component="img" src={image} alt={t(`leadership.roles.${key}.imageAlt`)} sx={{ display: "block", width: "100%", height: "100%", objectFit: "contain", objectPosition: "center center" }} />
+                <Box component="img" src={image} alt={t(`leadership.roles.${key}.imageAlt`)} loading="lazy" decoding="async" sx={{ display: "block", width: "100%", height: "100%", objectFit: "contain", objectPosition: "center center" }} />
               </Box>
               <Box sx={{ display: "flex", flex: 1, flexDirection: "column", px: { xs: 2.5, lg: 2.25 }, py: 3 }}>
                 <Typography component="h3" sx={{ color: "text.primary", fontSize: { xs: 17, lg: 16 }, fontWeight: 800, lineHeight: 1.3, letterSpacing: "0.025em" }}>{t(`leadership.roles.${key}.title`)}</Typography>

@@ -1,5 +1,6 @@
 import ChallengeSection from "../sections/home/ChallengeSection";
 import StoryProgressRail from "../components/StoryProgressRail";
+import FaqSection from "../sections/home/FaqSection";
 import FinalDemoCtaSection from "../sections/home/FinalDemoCtaSection";
 import HeroSection from "../sections/home/HeroSection";
 import InsightWorkflowSection from "../sections/home/InsightWorkflowSection";
@@ -18,6 +19,7 @@ function HomePage() {
     <MorningMeetingSection />
     <LeadershipLevelsSection />
     <IntegrationSection />
+    <FaqSection />
     <FinalDemoCtaSection />
   </>;
 }
