@@ -8,7 +8,7 @@ import { useWebsiteCopy } from "../../i18n/useWebsiteCopy";
 import { websiteTokens } from "../../styles/websiteTokens";
 
 const SCREENSHOT_PATH = "/website-v2/screenshots/meeting/morning-management-meeting-real.png";
-const ROOM_PATH = "/website-v2/screenshots/meeting/meeting-room-reference.png";
+const ROOM_PATH = "/website-v2/screenshots/meeting/meeting-room-reference-v2.png";
 
 const cues = [
   { key: "time", Icon: AccessTimeOutlinedIcon },
@@ -59,12 +59,7 @@ function MorningMeetingSection() {
         </Box>
 
         <Box sx={{ gridArea: "visual", minWidth: 0 }}>
-          <Box
-            sx={{ position: "relative", minWidth: 0, overflow: "hidden", display: { xs: "none", md: "block" }, borderRadius: `${websiteTokens.radius.large}px`, bgcolor: "#e8edeb", boxShadow: websiteTokens.shadows.card, aspectRatio: "1672 / 944" }}
-          >
-            <Box component="img" src={ROOM_PATH} alt="" aria-hidden="true" sx={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
-            <Box component="img" src={SCREENSHOT_PATH} alt={t("morningMeeting.screenshotAlt")} sx={{ position: "absolute", zIndex: 1, top: "15%", left: "58.7%", display: "block", width: "39.2%", height: "auto", borderRadius: "3px" }} />
-          </Box>
+          <Box component="img" src={ROOM_PATH} alt={t("morningMeeting.visualAlt")} sx={{ display: { xs: "none", md: "block" }, width: "100%", height: "auto", objectFit: "contain", borderRadius: `${websiteTokens.radius.large}px` }} />
           <Box component="img" src={SCREENSHOT_PATH} alt={t("morningMeeting.screenshotAlt")} sx={{ display: { xs: "block", md: "none" }, width: "100%", height: "auto", border: "1px solid", borderColor: "divider", borderRadius: `${websiteTokens.radius.medium}px`, boxShadow: websiteTokens.shadows.card }} />
         </Box>
 

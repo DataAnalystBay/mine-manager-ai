@@ -2,6 +2,7 @@ import ChallengeSection from "../sections/home/ChallengeSection";
 import StoryProgressRail from "../components/StoryProgressRail";
 import HeroSection from "../sections/home/HeroSection";
 import InsightWorkflowSection from "../sections/home/InsightWorkflowSection";
+import LeadershipLevelsSection from "../sections/home/LeadershipLevelsSection";
 import MorningMeetingSection from "../sections/home/MorningMeetingSection";
 import TrustRail from "../sections/home/TrustRail";
 
@@ -13,6 +14,7 @@ function HomePage() {
     <ChallengeSection />
     <InsightWorkflowSection />
     <MorningMeetingSection />
+    <LeadershipLevelsSection />
   </>;
 }
 export default HomePage;

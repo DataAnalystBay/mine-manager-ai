@@ -63,11 +63,14 @@ test("homepage story rail targets the stable implemented section ids", async () 
 test("morning meeting uses the approved authentic product screenshot", async () => {
   const section = await read("../src/website/sections/home/MorningMeetingSection.jsx");
   const expected = "/website-v2/screenshots/meeting/morning-management-meeting-real.png";
-  const room = "/website-v2/screenshots/meeting/meeting-room-reference.png";
+  const room = "/website-v2/screenshots/meeting/meeting-room-reference-v2.png";
   assert.match(section, new RegExp(expected.replaceAll("/", "\\/")));
   assert.match(section, new RegExp(room.replaceAll("/", "\\/")));
   await access(new URL(`../public${expected}`, import.meta.url));
   await access(new URL(`../public${room}`, import.meta.url));
+  assert.doesNotMatch(section, /top: "15%"|left: "58\.7%"|width: "39\.2%"/);
+  assert.match(section, /morningMeeting\.visualAlt/);
+  assert.match(section, /objectFit: "contain"/);
   assert.doesNotMatch(section, /macOS|address bar|window controls/i);
 });
 
