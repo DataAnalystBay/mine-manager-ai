@@ -1,5 +1,5 @@
 import { Box, Link as MuiLink, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { homeSections } from "../config/homeSections";
 import { useWebsiteCopy } from "../i18n/useWebsiteCopy";
 
@@ -8,25 +8,37 @@ const HEADER_OFFSET = 88;
 function StoryProgressRail() {
   const { language } = useWebsiteCopy();
   const [activeId, setActiveId] = useState(homeSections[0].id);
+  const intersectingIds = useRef(new Set());
 
   useEffect(() => {
+    const visibleIds = intersectingIds.current;
     const sections = homeSections
       .map(({ id }) => document.getElementById(id))
       .filter(Boolean);
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => Math.abs(a.boundingClientRect.top - HEADER_OFFSET) - Math.abs(b.boundingClientRect.top - HEADER_OFFSET));
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) visibleIds.add(entry.target.id);
+          else visibleIds.delete(entry.target.id);
+        });
 
-        if (visible[0]) setActiveId(visible[0].target.id);
+        for (let index = homeSections.length - 1; index >= 0; index -= 1) {
+          const { id } = homeSections[index];
+          if (visibleIds.has(id)) {
+            setActiveId(id);
+            break;
+          }
+        }
       },
       { rootMargin: `-${HEADER_OFFSET}px 0px -65% 0px`, threshold: [0, 0.1] },
     );
 
     sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      visibleIds.clear();
+    };
   }, []);
 
   const navigateTo = (event, id) => {

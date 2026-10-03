@@ -29,10 +29,10 @@ test("dashboard uses an OS-neutral frame without decorative window controls", as
   assert.match(hero, /border:\s*"1px solid"/);
 });
 
-test("homepage renders approved sections in order through Phase 4", async () => {
+test("homepage renders approved sections in order through Phase 5B", async () => {
   const home = await read("../src/website/pages/HomePage.jsx");
   assert.match(home, /<StoryProgressRail\s*\/>/);
-  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>/);
+  assert.match(home, /<HeroSection\s*\/>\s*<TrustRail\s*\/>\s*<ChallengeSection\s*\/>\s*<InsightWorkflowSection\s*\/>\s*<MorningMeetingSection\s*\/>\s*<LeadershipLevelsSection\s*\/>/);
   assert.doesNotMatch(home, /Integration|FinalCta/);
 });
 
@@ -44,13 +44,16 @@ test("homepage story rail targets the stable implemented section ids", async () 
     read("../src/website/sections/home/ChallengeSection.jsx"),
     read("../src/website/sections/home/InsightWorkflowSection.jsx"),
     read("../src/website/sections/home/MorningMeetingSection.jsx"),
+    read("../src/website/sections/home/LeadershipLevelsSection.jsx"),
   ]);
 
-  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case"]) {
+  for (const id of ["mine-manager-ai", "challenge", "solution", "use-case", "leadership"]) {
     assert.match(config, new RegExp(`id: ["']${id}["']`));
     assert.ok(files.some((file) => new RegExp(`id=["']${id}["']`).test(file)));
   }
   assert.match(rail, /IntersectionObserver/);
+  assert.match(rail, /visibleIds\.add/);
+  assert.match(rail, /homeSections\.length - 1/);
   assert.match(rail, /prefers-reduced-motion: reduce/);
   assert.match(rail, /aria-current/);
   assert.match(rail, /min-width: 1600px/);
@@ -66,6 +69,23 @@ test("morning meeting uses the approved authentic product screenshot", async () 
   await access(new URL(`../public${expected}`, import.meta.url));
   await access(new URL(`../public${room}`, import.meta.url));
   assert.doesNotMatch(section, /macOS|address bar|window controls/i);
+});
+
+test("leadership cards use all five approved role illustrations", async () => {
+  const section = await read("../src/website/sections/home/LeadershipLevelsSection.jsx");
+  for (const filename of [
+    "executive-leadership.png",
+    "operations-manager.png",
+    "technical-services-manager.png",
+    "superintendent.png",
+    "reporting-data-analyst.png",
+  ]) {
+    const expected = `/website-v2/illustrations/roles/${filename}`;
+    assert.match(section, new RegExp(expected.replaceAll("/", "\\/")));
+    await access(new URL(`../public${expected}`, import.meta.url));
+  }
+  assert.match(section, /objectFit: "contain"/);
+  assert.doesNotMatch(section, /data-illustration-slot/);
 });
 
 test("document title is the approved Website V2 title", async () => {
