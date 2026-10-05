@@ -124,6 +124,7 @@ class PublicLeadEndpointTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.stored_leads(), [])
+        self.notification_mock.assert_not_called()
 
     def test_invalid_email_or_phone_is_rejected(self):
         response = self.client.post(
@@ -132,6 +133,7 @@ class PublicLeadEndpointTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.stored_leads(), [])
+        self.notification_mock.assert_not_called()
 
     def test_unknown_intent_normalizes_to_contact(self):
         response = self.client.post(
@@ -168,6 +170,29 @@ class PublicLeadEndpointTests(unittest.TestCase):
         self.assertTrue(any("notification failed" in entry.lower() for entry in logs.output))
         self.assertFalse(any("mail provider details" in entry for entry in logs.output))
 
+    def test_graph_status_and_timeout_failures_keep_lead_and_return_201(self):
+        failures = ("401", "403", "429", "500", "timeout")
+        for failure in failures:
+            with self.subTest(failure=failure):
+                public_leads._reset_lead_rate_limiter_for_tests()
+                with self.Session() as db:
+                    db.query(PublicLead).delete()
+                    db.commit()
+                self.notification_mock.reset_mock()
+                self.notification_mock.side_effect = RuntimeError(
+                    f"private Graph {failure} details"
+                )
+
+                with self.assertLogs("app.routers.public_leads", level="ERROR") as logs:
+                    response = self.client.post("/api/public/leads", json=VALID_PAYLOAD)
+
+                self.assertEqual(response.status_code, 201)
+                self.assertEqual(len(self.stored_leads()), 1)
+                self.assertNotIn("private Graph", response.text)
+                self.assertFalse(
+                    any("private Graph" in entry for entry in logs.output)
+                )
+
     def test_rate_limit_is_deterministic_and_per_client(self):
         for index in range(public_leads.RATE_LIMIT_ATTEMPTS):
             response = self.client.post(
@@ -201,6 +226,7 @@ class PublicLeadEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json(), {"detail": "Unable to process request."})
         self.assertNotIn("database internals", response.text)
+        self.notification_mock.assert_not_called()
 
 
 class PublicLeadMigrationTests(unittest.TestCase):
