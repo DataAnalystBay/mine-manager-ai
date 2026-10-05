@@ -4,12 +4,13 @@ import { Box, Button, Container, Link, Stack, TextField, Typography } from "@mui
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useWebsiteCopy } from "../i18n/useWebsiteCopy";
+import { submitPublicLead } from "../services/publicLeadApi";
 import { websiteTokens } from "../styles/websiteTokens";
 
 const BACKGROUND_PATH = "/website-v2/contact/contact-hero-mine.png";
 const PHONE_DISPLAY = "+976 9910 5308";
 const PHONE_HREF = "tel:+97699105308";
-const INITIAL_VALUES = { name: "", company: "", role: "", contact: "", operation: "", improve: "" };
+const INITIAL_VALUES = { name: "", company: "", role: "", contact: "", operation: "", improve: "", website: "" };
 
 const fieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -65,11 +66,12 @@ function SectionIntro({ eyebrow, title, id }) {
 }
 
 function ContactPage() {
-  const { t } = useWebsiteCopy();
+  const { language, t } = useWebsiteCopy();
   const [searchParams] = useSearchParams();
   const [values, setValues] = useState(INITIAL_VALUES);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isDemoIntent = searchParams.get("intent") === "demo";
 
   const updateField = (event) => {
@@ -96,11 +98,33 @@ function ContactPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isSubmitting) return;
     setStatus("");
     if (!validate()) return;
-    setStatus("unavailable");
+
+    setIsSubmitting(true);
+    try {
+      await submitPublicLead({
+        name: values.name.trim(),
+        company: values.company.trim(),
+        role: values.role.trim() || null,
+        email_or_phone: values.contact.trim(),
+        operation_type: values.operation.trim() || null,
+        improvement_request: values.improve.trim() || null,
+        intent: isDemoIntent ? "demo" : "contact",
+        language,
+        website: values.website,
+      });
+      setValues(INITIAL_VALUES);
+      setErrors({});
+      setStatus("success");
+    } catch {
+      setStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const reassuranceKeys = ["duration", "data", "commitment"];
@@ -158,6 +182,17 @@ function ContactPage() {
             <Typography component="h2" sx={{ fontSize: { xs: 25, sm: 29 }, fontWeight: 750, letterSpacing: "-0.025em" }}>{t("pages.contact.form.title")}</Typography>
             <Typography color="text.secondary" sx={{ mt: 0.75, mb: 3, fontSize: 15 }}>{t("pages.contact.form.intro")}</Typography>
             <Box component="form" noValidate onSubmit={handleSubmit} aria-describedby="contact-form-note">
+              <Box
+                component="input"
+                type="text"
+                name="website"
+                value={values.website}
+                onChange={updateField}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                sx={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}
+              />
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, columnGap: 2 }}>
                 <ContactField id="name" label={t("pages.contact.form.name")} value={values.name} onChange={updateField} error={errors.name ? t(`pages.contact.form.${errors.name}`) : undefined} required />
                 <ContactField id="company" label={t("pages.contact.form.company")} value={values.company} onChange={updateField} error={errors.company ? t(`pages.contact.form.${errors.company}`) : undefined} required />
@@ -166,12 +201,19 @@ function ContactPage() {
                 <Box sx={{ gridColumn: { sm: "1 / -1" } }}><ContactField id="operation" label={t("pages.contact.form.operation")} value={values.operation} onChange={updateField} /></Box>
                 <Box sx={{ gridColumn: { sm: "1 / -1" } }}><ContactField id="improve" label={t("pages.contact.form.improve")} value={values.improve} onChange={updateField} multiline /></Box>
               </Box>
-              <Button type="submit" variant="contained" size="large" fullWidth sx={{ minHeight: 52, mt: 0.5 }}>{t("pages.contact.form.submit")}</Button>
+              <Button type="submit" variant="contained" size="large" fullWidth disabled={isSubmitting} sx={{ minHeight: 52, mt: 0.5 }}>
+                {t(isSubmitting ? "pages.contact.form.sending" : "pages.contact.form.submit")}
+              </Button>
               <Stack spacing={0.25} sx={{ mt: 2.5, alignItems: "center" }}>
                 <Typography color="text.secondary" sx={{ fontSize: 13 }}>{t("pages.contact.form.direct")}</Typography>
                 <Link href={PHONE_HREF} color="primary.main" underline="hover" sx={{ fontSize: 18, fontWeight: 800 }}>{PHONE_DISPLAY}</Link>
               </Stack>
-              {status && <Typography role="status" aria-live="polite" sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: "#f7f3e8", color: "#6e5620", fontSize: 13.5, lineHeight: 1.5 }}>{t(`pages.contact.form.${status}`)}</Typography>}
+              {status && (
+                <Box role={status === "error" ? "alert" : "status"} aria-live="polite" sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: status === "success" ? "#edf7f2" : "#f7f3e8", color: status === "success" ? "primary.dark" : "#6e5620" }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 750 }}>{t(`pages.contact.form.${status}Title`)}</Typography>
+                  <Typography sx={{ mt: 0.35, fontSize: 13.5, lineHeight: 1.5 }}>{t(`pages.contact.form.${status}Body`)}</Typography>
+                </Box>
+              )}
               <Typography id="contact-form-note" color="text.secondary" sx={{ mt: 2, fontSize: 12.5, lineHeight: 1.55 }}>{t("pages.contact.form.microcopy")}</Typography>
             </Box>
           </Box>

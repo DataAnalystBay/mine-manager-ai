@@ -27,12 +27,45 @@ test("contact form exposes the approved fields, phone link, and accessible valid
   }
   assert.match(contact, /tel:\+97699105308/);
   assert.match(contact, /aria-invalid/);
-  assert.match(contact, /role="status"/);
+  assert.match(contact, /role=\{status === "error" \? "alert" : "status"\}/);
   assert.match(contact, /values\.name\.trim\(\)/);
   assert.match(contact, /values\.company\.trim\(\)/);
   assert.match(contact, /contact\.replace\(\/\\D\/g/);
-  assert.match(translations, /Онлайн хүсэлт хүлээн авах холболт хараахан идэвхжээгүй/);
-  assert.doesNotMatch(translations, /Хүсэлт хүлээн авлаа/);
+  assert.match(translations, /Хүсэлт хүлээн авлаа/);
+  assert.match(translations, /Request received/);
+  assert.doesNotMatch(translations, /Онлайн хүсэлт хүлээн авах холболт хараахан идэвхжээгүй/);
+});
+
+test("contact form submits the normalized public lead payload and tracks request states", async () => {
+  const contact = await read("../src/website/pages/ContactPage.jsx");
+  const service = await read("../src/website/services/publicLeadApi.js");
+
+  assert.match(service, /api\.post\("\/api\/public\/leads", payload\)/);
+  for (const field of ["name", "company", "role", "email_or_phone", "operation_type", "improvement_request", "intent", "website"]) {
+    assert.match(contact, new RegExp(`${field}:`));
+  }
+  assert.match(contact, /^\s*language,$/m);
+  assert.match(contact, /isDemoIntent \? "demo" : "contact"/);
+  assert.match(contact, /disabled=\{isSubmitting\}/);
+  assert.match(contact, /setStatus\("success"\)/);
+  assert.match(contact, /setValues\(INITIAL_VALUES\)/);
+  assert.match(contact, /setStatus\("error"\)/);
+  assert.match(contact, /catch \{/);
+  assert.match(contact, /type="text"[\s\S]*name="website"/);
+  assert.match(contact, /tabIndex=\{-1\}/);
+  assert.match(contact, /aria-hidden="true"/);
+});
+
+test("failed requests preserve values and retain the phone fallback", async () => {
+  const contact = await read("../src/website/pages/ContactPage.jsx");
+  const translations = await read("../src/website/i18n/websiteTranslations.js");
+
+  const catchBlock = contact.match(/catch \{([\s\S]*?)\} finally/)?.[1] ?? "";
+  assert.match(catchBlock, /setStatus\("error"\)/);
+  assert.doesNotMatch(catchBlock, /setValues/);
+  assert.match(contact, /tel:\+97699105308/);
+  assert.match(translations, /дахин оролдох эсвэл \+976 9910 5308/);
+  assert.match(translations, /try again or contact us directly at \+976 9910 5308/);
 });
 
 test("public launch navigation skips Product while preserving its route", async () => {
