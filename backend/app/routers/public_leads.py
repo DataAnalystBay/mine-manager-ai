@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.public_lead import PublicLead
 from app.schemas.public_lead import PublicLeadCreate, PublicLeadResponse
+from app.services.public_lead_notification_service import notify_new_public_lead
 
 
 logger = logging.getLogger(__name__)
@@ -111,4 +112,15 @@ def create_public_lead(
         lead.intent,
         lead.language,
     )
+
+    try:
+        notify_new_public_lead(lead)
+    except Exception:
+        logger.error(
+            "Public lead notification failed lead_id=%s intent=%s language=%s",
+            lead.id,
+            lead.intent,
+            lead.language,
+        )
+
     return PublicLeadResponse(lead_id=lead.id)

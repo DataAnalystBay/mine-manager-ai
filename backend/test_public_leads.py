@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -65,9 +66,18 @@ class PublicLeadEndpointTests(unittest.TestCase):
 
     def setUp(self):
         public_leads._reset_lead_rate_limiter_for_tests()
+        self.notification_patcher = patch.object(
+            public_leads,
+            "notify_new_public_lead",
+            return_value=False,
+        )
+        self.notification_mock = self.notification_patcher.start()
         with self.Session() as db:
             db.query(PublicLead).delete()
             db.commit()
+
+    def tearDown(self):
+        self.notification_patcher.stop()
 
     def stored_leads(self):
         with self.Session() as db:
@@ -85,6 +95,18 @@ class PublicLeadEndpointTests(unittest.TestCase):
         self.assertEqual(leads[0].intent, "demo")
         self.assertEqual(leads[0].language, "EN")
         self.assertIsNotNone(leads[0].created_at)
+        self.notification_mock.assert_called_once()
+        self.assertEqual(self.notification_mock.call_args.args[0].id, leads[0].id)
+
+    def test_contact_lead_triggers_notification_after_persistence(self):
+        response = self.client.post(
+            "/api/public/leads",
+            json={**VALID_PAYLOAD, "intent": "contact"},
+        )
+        self.assertEqual(response.status_code, 201)
+        notified_lead = self.notification_mock.call_args.args[0]
+        self.assertEqual(notified_lead.intent, "contact")
+        self.assertIsNotNone(notified_lead.id)
 
     def test_blank_required_field_is_rejected(self):
         response = self.client.post(
@@ -93,6 +115,7 @@ class PublicLeadEndpointTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.stored_leads(), [])
+        self.notification_mock.assert_not_called()
 
     def test_oversized_value_is_rejected(self):
         response = self.client.post(
@@ -132,6 +155,18 @@ class PublicLeadEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json(), {"success": True, "message": "Lead received"})
         self.assertEqual(self.stored_leads(), [])
+        self.notification_mock.assert_not_called()
+
+    def test_notification_failure_keeps_lead_and_returns_201(self):
+        self.notification_mock.side_effect = RuntimeError("mail provider details")
+        with self.assertLogs("app.routers.public_leads", level="ERROR") as logs:
+            response = self.client.post("/api/public/leads", json=VALID_PAYLOAD)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(self.stored_leads()), 1)
+        self.assertNotIn("mail provider details", response.text)
+        self.assertTrue(any("notification failed" in entry.lower() for entry in logs.output))
+        self.assertFalse(any("mail provider details" in entry for entry in logs.output))
 
     def test_rate_limit_is_deterministic_and_per_client(self):
         for index in range(public_leads.RATE_LIMIT_ATTEMPTS):
