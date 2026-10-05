@@ -9,6 +9,7 @@ from app.models.shift_pattern import ShiftPattern
 from app.models.executive_action import ExecutiveAction
 from app.models.report_history import ReportHistory
 from app.models.audit_log import AuditLog
+from app.models.public_lead import PublicLead
 
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "ExecutiveAction",
     "ReportHistory",
     "AuditLog",
+    "PublicLead",
 ]

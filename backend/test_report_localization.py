@@ -418,8 +418,12 @@ class ReportLocalizationTests(unittest.TestCase):
                 generate_daily_executive_pdf(daily_data, language="mn"),
             )
         self.assertEqual(
-            header.call_args.kwargs["mine_name"],
-            "Ачит-Ихт Зэсийн Катодын Үйлдвэр",
+            [call.kwargs["mine_name"] for call in header.call_args_list],
+            [
+                "Mine Manager AI | Achit-Ikht Copper Cathode Operation",
+                "Mine Manager AI | Achit-Ikht Copper Cathode Operation",
+                "Mine Manager AI | Ачит-Ихт Зэсийн Катодын Үйлдвэр",
+            ],
         )
         page_counts = [
             len(re.findall(rb"/Type\s*/Page(?!s)", buffer.getvalue()))

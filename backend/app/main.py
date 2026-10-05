@@ -33,6 +33,7 @@ from app.routers import (
     predictions,
     deployment_readiness,
     support_diagnostics,
+    public_leads,
 )
 
 
@@ -196,6 +197,12 @@ app.add_middleware(
 # --------------------------------------------------
 # Routers
 # --------------------------------------------------
+
+# Intentionally public commercial lead capture
+
+app.include_router(
+    public_leads.router
+)
 
 # Authentication and administration
 

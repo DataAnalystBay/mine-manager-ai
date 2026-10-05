@@ -5,6 +5,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import (
     KeepTogether,
     Paragraph,
@@ -358,6 +359,25 @@ def _report_header(
     language: str = "en",
 ):
     report_language = normalize_report_language(language)
+    identity_width = 159 * mm
+    identity_style = styles["mine"]
+    identity_text_width = stringWidth(
+        str(mine_name or ""),
+        identity_style.fontName,
+        identity_style.fontSize,
+    )
+    if identity_text_width > identity_width:
+        fitted_font_size = max(
+            11.5,
+            identity_style.fontSize * identity_width * 0.98 / identity_text_width,
+        )
+        identity_style = ParagraphStyle(
+            "DailyV2MineFitted",
+            parent=identity_style,
+            fontSize=fitted_font_size,
+            leading=fitted_font_size * 1.2,
+        )
+
     top = Table(
         [[
             Paragraph(
@@ -382,7 +402,7 @@ def _report_header(
 
     metadata = Table(
         [
-            [Paragraph(_safe(mine_name), styles["mine"]), ""],
+            [Paragraph(_safe(mine_name), identity_style), ""],
             [
                 Paragraph(
                     (
@@ -903,10 +923,11 @@ def generate_daily_executive_pdf(
     generated_at = datetime.now()
     styles = _daily_styles(report_language)
 
-    mine_name = resolve_customer_display_identity(
+    customer_identity = resolve_customer_display_identity(
         live_kpis,
         report_language,
-    ).operation_name
+    )
+    mine_name = f"{customer_identity.company_name} | {customer_identity.operation_name}"
     operation_profile = str(
         live_kpis.get("operation_profile") or "standard_mine"
     ).strip().lower()
