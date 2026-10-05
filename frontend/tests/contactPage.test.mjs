@@ -36,6 +36,27 @@ test("contact form exposes the approved fields, phone link, and accessible valid
   assert.doesNotMatch(translations, /Онлайн хүсэлт хүлээн авах холболт хараахан идэвхжээгүй/);
 });
 
+test("contact form renders exactly one MUI required marker for clean MN and EN labels", async () => {
+  const contact = await read("../src/website/pages/ContactPage.jsx");
+  const translations = await read("../src/website/i18n/websiteTranslations.js");
+
+  assert.match(contact, /label=\{label\}/);
+  assert.doesNotMatch(contact, /required \? " \*"/);
+  assert.equal(contact.match(/<ContactField[^>]+\srequired\s*\/?>/g)?.length, 3);
+
+  for (const label of [
+    "Нэр",
+    "Байгууллага",
+    "И-мэйл эсвэл утас",
+    "Name",
+    "Company",
+    "Email or phone",
+  ]) {
+    assert.match(translations, new RegExp(`(?:name|company|contact): "${label}"`));
+    assert.doesNotMatch(translations, new RegExp(`(?:name|company|contact): "${label} \\*"`));
+  }
+});
+
 test("contact form submits the normalized public lead payload and tracks request states", async () => {
   const contact = await read("../src/website/pages/ContactPage.jsx");
   const service = await read("../src/website/services/publicLeadApi.js");

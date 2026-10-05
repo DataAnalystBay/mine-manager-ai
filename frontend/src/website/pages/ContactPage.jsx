@@ -28,7 +28,7 @@ function ContactField({ id, label, value, onChange, error, required = false, mul
     <TextField
       id={id}
       name={id}
-      label={`${label}${required ? " *" : ""}`}
+      label={label}
       value={value}
       onChange={onChange}
       error={Boolean(error)}
