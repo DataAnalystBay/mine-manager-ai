@@ -66,7 +66,7 @@ function HeroSection() {
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 3.5, alignItems: { sm: "center" } }}>
             <DemoCta fullWidth={false} />
-            <Button component={Link} to="/product" variant="outlined">{t("pages.home.productCta")}</Button>
+            <Button component={Link} to="/contact" variant="outlined">{t("pages.home.contactCta")}</Button>
           </Stack>
         </Box>
 
