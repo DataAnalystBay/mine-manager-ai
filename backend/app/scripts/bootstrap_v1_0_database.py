@@ -9,6 +9,7 @@ from typing import Any
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, Engine, make_url
 
@@ -16,6 +17,7 @@ import app.database as database_module
 from app.database import DATABASE_URL
 from app.scripts.v1_0_schema_contract import (
     CONTRACT_REVISION,
+    TABLE_COLUMNS,
     verify_schema_contract,
 )
 
@@ -134,6 +136,28 @@ def _alembic_config() -> Config:
     return config
 
 
+def alembic_head() -> str:
+    """Return the single migration head, which must descend from the baseline."""
+
+    script = ScriptDirectory.from_config(_alembic_config())
+    heads = script.get_heads()
+    if len(heads) != 1:
+        raise RuntimeError(
+            f"Expected exactly one Alembic head; found {sorted(heads)}."
+        )
+    head = heads[0]
+    lineage = {
+        revision.revision
+        for revision in script.walk_revisions(base="base", head=head)
+    }
+    if CONTRACT_REVISION not in lineage:
+        raise RuntimeError(
+            f"Alembic head {head} does not descend from the V1.0 baseline "
+            f"{CONTRACT_REVISION}."
+        )
+    return head
+
+
 def _run_alembic(database_url: str, operation: str) -> None:
     """Run Alembic against the already-confirmed bootstrap target URL."""
 
@@ -172,7 +196,7 @@ def bootstrap_database(
     database_url: str,
     confirmed_database_name: str,
 ) -> dict[str, Any]:
-    """Create, verify, stamp, and connect a fresh DB to Alembic history."""
+    """Create, verify, stamp, and upgrade a fresh DB to the Alembic head."""
 
     assert_safe_target(
         database_url=database_url,
@@ -180,6 +204,9 @@ def bootstrap_database(
     )
     if not SCHEMA_ARTIFACT.is_file():
         raise RuntimeError(f"Schema artifact not found: {SCHEMA_ARTIFACT}")
+    # Resolve the target before any DDL so a broken migration tree cannot
+    # leave a half-initialized database behind.
+    head_revision = alembic_head()
 
     schema_sql = SCHEMA_ARTIFACT.read_text(encoding="utf-8")
     engine = _make_engine(database_url)
@@ -221,23 +248,24 @@ def bootstrap_database(
                     + "\n- ".join(differences)
                 )
 
+        # Migrations after the baseline intentionally change the schema, so
+        # the baseline contract (checked before and after the stamp) is not
+        # re-checked once the upgrade has run.
         _run_alembic(database_url, "upgrade")
 
         with engine.connect() as connection:
             revision = _read_alembic_revision(connection)
-            differences = verify_schema_contract(
-                connection,
-                allow_alembic_version=True,
-            )
-        if revision != CONTRACT_REVISION or differences:
+        if revision != head_revision:
             raise RuntimeError(
-                "Schema/revision changed unexpectedly after alembic upgrade head."
+                "alembic upgrade head did not reach the migration head: "
+                f"database is at {revision!r}, head is {head_revision!r}."
             )
 
         return {
             "database": confirmed_database_name,
-            "schema_revision": CONTRACT_REVISION,
-            "required_tables": 15,
+            "baseline_revision": CONTRACT_REVISION,
+            "schema_revision": revision,
+            "baseline_tables": len(TABLE_COLUMNS),
             "status": "ready",
         }
     finally:
@@ -247,8 +275,9 @@ def bootstrap_database(
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Bootstrap an EMPTY new Mine Manager AI PostgreSQL database at "
-            f"the V1.0 {CONTRACT_REVISION} schema contract."
+            "Bootstrap an EMPTY new Mine Manager AI PostgreSQL database from "
+            f"the V1.0 {CONTRACT_REVISION} schema contract, then upgrade it "
+            "to the Alembic head."
         )
     )
     parser.add_argument(
@@ -277,8 +306,9 @@ def main() -> int:
     print(
         "V1.0 database bootstrap complete: "
         f"database={result['database']}, "
+        f"baseline={result['baseline_revision']}, "
         f"revision={result['schema_revision']}, "
-        f"tables={result['required_tables']}."
+        f"baseline_tables={result['baseline_tables']}."
     )
     return 0
 

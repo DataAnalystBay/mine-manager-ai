@@ -553,13 +553,14 @@ The command performs all of the following as one guarded workflow:
 4. Applies the immutable V1.0 schema artifact transactionally.
 5. Verifies tables, columns, types, nullability, keys, constraints, indexes,
    sequences, and important server defaults.
-6. Stamps `c4e91a7b2d30` only after verification succeeds.
-7. Runs `alembic upgrade head` to join normal forward migration management.
+6. Stamps the V1.0 baseline `c4e91a7b2d30` only after verification succeeds.
+7. Runs `alembic upgrade head` to apply every later migration, then confirms
+   the database is at the Alembic head.
 
-Expected final message:
+Expected final message, where `<head>` is the value `alembic heads` reports:
 
 ```text
-V1.0 database bootstrap complete: database=mine_manager_ai, revision=c4e91a7b2d30, tables=15.
+V1.0 database bootstrap complete: database=mine_manager_ai, baseline=c4e91a7b2d30, revision=<head>, baseline_tables=15.
 ```
 
 Do not run `alembic upgrade head` directly on an empty database. The historical

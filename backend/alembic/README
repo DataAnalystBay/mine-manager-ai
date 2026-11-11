@@ -19,6 +19,11 @@ relations or Alembic state. It transactionally applies the immutable schema in
 `schema/v1_0_c4e91a7b2d30.sql`, verifies the versioned structural contract,
 stamps `c4e91a7b2d30`, and runs `alembic upgrade head`.
 
+The schema file and `app/scripts/v1_0_schema_contract.py` are frozen at
+`c4e91a7b2d30`. A new migration must never also be folded into them: the
+bootstrap would then try to add the same column twice and fail. The test
+`test_v1_0_database_bootstrap.py` checks this without a database.
+
 Never run the V1.0 bootstrap against an existing or partially initialized
 database. It is not an upgrade or repair command.
 
