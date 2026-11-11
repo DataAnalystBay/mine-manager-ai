@@ -7,6 +7,10 @@
 -- customer, user, credential, demo, or environment-specific data.
 -- The guarded bootstrap command verifies database emptiness before executing
 -- this artifact and verifies the complete schema before stamping Alembic.
+--
+-- Frozen at c4e91a7b2d30: never edit this file for a later migration. The
+-- bootstrap stamps c4e91a7b2d30 and then runs `alembic upgrade head`, so any
+-- column or table added here would make that later migration fail.
 
 CREATE TABLE public.companies (
     id serial NOT NULL,
@@ -77,15 +81,12 @@ CREATE TABLE public.kpi_targets (
     id serial NOT NULL,
     mine_id integer,
     kpi_name character varying(255) NOT NULL,
-    kpi_code character varying(100),
     kpi_category character varying(100),
     target_value numeric(18,2),
     unit character varying(50),
     warning_threshold numeric(18,2),
     critical_threshold numeric(18,2),
     direction character varying(50) DEFAULT 'higher_is_better'::character varying,
-    is_executive boolean DEFAULT false,
-    is_active boolean DEFAULT true,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT kpi_targets_pkey PRIMARY KEY (id),
@@ -137,10 +138,6 @@ CREATE TABLE public.production_daily (
     ore_actual numeric,
     waste_plan numeric,
     waste_actual numeric,
-    product_coal numeric,
-    ash_pct numeric,
-    moisture_pct numeric,
-    calorific_value numeric,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     mine_name character varying(100) NOT NULL,
     company_id integer NOT NULL,
@@ -197,7 +194,6 @@ CREATE TABLE public.plant_daily (
     throughput_plan numeric,
     throughput_actual numeric,
     recovery numeric,
-    availability numeric,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     company_id integer NOT NULL,
     mine_id integer NOT NULL,

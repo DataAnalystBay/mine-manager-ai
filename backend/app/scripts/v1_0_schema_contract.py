@@ -1,4 +1,9 @@
-"""Versioned PostgreSQL schema contract for the V1.0 bootstrap baseline."""
+"""Versioned PostgreSQL schema contract for the V1.0 bootstrap baseline.
+
+The contract and ``schema/v1_0_c4e91a7b2d30.sql`` describe the database at
+exactly ``CONTRACT_REVISION``. Later schema changes belong only in Alembic
+migrations; the bootstrap applies them with ``alembic upgrade head``.
+"""
 
 from __future__ import annotations
 
@@ -75,15 +80,12 @@ TABLE_COLUMNS: dict[
         "id": _column("integer", False, "nextval"),
         "mine_id": _column("integer", True),
         "kpi_name": _column("character varying(255)", False),
-        "kpi_code": _column("character varying(100)", True),
         "kpi_category": _column("character varying(100)", True),
         "target_value": _column("numeric(18,2)", True),
         "unit": _column("character varying(50)", True),
         "warning_threshold": _column("numeric(18,2)", True),
         "critical_threshold": _column("numeric(18,2)", True),
         "direction": _column("character varying(50)", True, "higher_is_better"),
-        "is_executive": _column("boolean", True, "false"),
-        "is_active": _column("boolean", True, "true"),
         "created_at": _column("timestamp without time zone", True, "current_timestamp"),
         "updated_at": _column("timestamp without time zone", True, "current_timestamp"),
     },
@@ -117,10 +119,6 @@ TABLE_COLUMNS: dict[
         "ore_actual": _column("numeric", True),
         "waste_plan": _column("numeric", True),
         "waste_actual": _column("numeric", True),
-        "product_coal": _column("numeric", True),
-        "ash_pct": _column("numeric", True),
-        "moisture_pct": _column("numeric", True),
-        "calorific_value": _column("numeric", True),
         "created_at": _column("timestamp without time zone", True, "current_timestamp"),
         "mine_name": _column("character varying(100)", False),
         "company_id": _column("integer", False),
@@ -143,7 +141,6 @@ TABLE_COLUMNS: dict[
         "throughput_plan": _column("numeric", True),
         "throughput_actual": _column("numeric", True),
         "recovery": _column("numeric", True),
-        "availability": _column("numeric", True),
         "created_at": _column("timestamp without time zone", True, "current_timestamp"),
         "company_id": _column("integer", False),
         "mine_id": _column("integer", False),

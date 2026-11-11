@@ -298,8 +298,8 @@ Select exactly one path:
 - [ ] Target is not Azure, production, customer, or otherwise blocked
 - [ ] Exact `DB_NAME` confirmation is recorded
 - [ ] Guarded V1.0 bootstrap succeeds
-- [ ] Schema fingerprint matches `c4e91a7b2d30`
-- [ ] `alembic current` reports `c4e91a7b2d30`
+- [ ] Schema fingerprint matches the V1.0 baseline `c4e91a7b2d30` before stamp
+- [ ] `alembic current` reports the same revision as `alembic heads`
 - [ ] `alembic upgrade head` succeeds as a no-op at the current head
 
 Verification:

@@ -1,24 +1,63 @@
 from __future__ import annotations
 
+import io
 import os
+import re
 import unittest
 from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 from app.scripts.bootstrap_v1_0_database import (
+    BACKEND_ROOT,
     BootstrapRefused,
     SCHEMA_ARTIFACT,
+    alembic_head,
     assert_empty_database,
     assert_safe_target,
     bootstrap_database,
 )
 from app.scripts.v1_0_schema_contract import (
     CONTRACT_REVISION,
+    INDEXES,
     TABLE_COLUMNS,
     verify_schema_contract,
 )
+
+
+def _objects_added_after_baseline() -> tuple[
+    set[str], set[tuple[str, str]], set[str],
+]:
+    """Render the migrations after the baseline offline; list what they add."""
+
+    buffer = io.StringIO()
+    # No ini file: env.py then skips fileConfig, which would disable the
+    # loggers other tests assert on.
+    config = Config(output_buffer=buffer)
+    config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
+    command.upgrade(config, f"{CONTRACT_REVISION}:head", sql=True)
+    sql = buffer.getvalue()
+    tables = set(re.findall(r'CREATE TABLE (?:public\.)?"?(\w+)"?', sql))
+    columns = set(
+        re.findall(
+            r'ALTER TABLE (?:public\.)?"?(\w+)"? ADD COLUMN "?(\w+)"?', sql
+        )
+    )
+    indexes = set(re.findall(r'CREATE (?:UNIQUE )?INDEX "?(\w+)"?', sql))
+    return tables, columns, indexes
+
+
+def _artifact_columns() -> dict[str, set[str]]:
+    sql = Path(SCHEMA_ARTIFACT).read_text(encoding="utf-8")
+    return {
+        table: set(re.findall(r"^ {4}(\w+)\b", body, flags=re.M)) - {"CONSTRAINT"}
+        for table, body in re.findall(
+            r"^CREATE TABLE public\.(\w+) \((.*?)^\);", sql, flags=re.M | re.S
+        )
+    }
 
 
 class BootstrapContractUnitTests(unittest.TestCase):
@@ -53,6 +92,35 @@ class BootstrapContractUnitTests(unittest.TestCase):
             executive_columns["category"],
             ("character varying(100)", True, None),
         )
+
+    def test_schema_artifact_columns_match_contract(self):
+        self.assertEqual(
+            _artifact_columns(),
+            {table: set(columns) for table, columns in TABLE_COLUMNS.items()},
+        )
+
+    def test_baseline_excludes_objects_added_by_later_migrations(self):
+        # The bootstrap stamps CONTRACT_REVISION and then runs every later
+        # migration, so the baseline must not already contain what they add.
+        tables, columns, indexes = _objects_added_after_baseline()
+        self.assertIn(("kpi_targets", "kpi_code"), columns)
+        self.assertEqual(tables & set(TABLE_COLUMNS), set())
+        self.assertEqual(
+            {
+                (table, column)
+                for table, column in columns
+                if column in TABLE_COLUMNS.get(table, {})
+            },
+            set(),
+        )
+        contract_indexes = {
+            name for table_indexes in INDEXES.values() for name in table_indexes
+        }
+        self.assertEqual(indexes & contract_indexes, set())
+
+    def test_migration_tree_has_one_head_descending_from_baseline(self):
+        head = alembic_head()
+        self.assertNotEqual(head, CONTRACT_REVISION)
 
     def test_schema_artifact_is_schema_only_and_customer_neutral(self):
         sql = Path(SCHEMA_ARTIFACT).read_text(encoding="utf-8").lower()
@@ -115,26 +183,54 @@ class BootstrapPostgresIntegrationTests(unittest.TestCase):
             connection.exec_driver_sql("DROP SCHEMA IF EXISTS public CASCADE")
             connection.exec_driver_sql("CREATE SCHEMA public")
 
-    def test_a_empty_database_bootstraps_and_stamps(self):
+    def test_a_empty_database_bootstraps_and_upgrades_to_head(self):
+        head = alembic_head()
         result = bootstrap_database(
             database_url=self.database_url,
             confirmed_database_name=self.database_name,
         )
         self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["baseline_revision"], CONTRACT_REVISION)
+        self.assertEqual(result["schema_revision"], head)
+        later_tables, later_columns, _ = _objects_added_after_baseline()
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(
                     text("SELECT version_num FROM public.alembic_version")
                 ).scalar_one(),
-                CONTRACT_REVISION,
+                head,
             )
-            self.assertEqual(
-                verify_schema_contract(
-                    connection,
-                    allow_alembic_version=True,
-                ),
-                [],
+            actual_columns = {
+                (row[0], row[1])
+                for row in connection.execute(
+                    text(
+                        "SELECT table_name, column_name "
+                        "FROM information_schema.columns "
+                        "WHERE table_schema = 'public'"
+                    )
+                )
+            }
+        actual_tables = {table for table, _ in actual_columns}
+        self.assertLessEqual(set(TABLE_COLUMNS) | later_tables, actual_tables)
+        self.assertLessEqual(later_columns, actual_columns)
+
+    def test_g_artifact_matches_contract_and_drift_is_detected(self):
+        with self.engine.begin() as connection:
+            connection.exec_driver_sql(
+                Path(SCHEMA_ARTIFACT).read_text(encoding="utf-8")
             )
+            self.assertEqual(verify_schema_contract(connection), [])
+            # Folding a later migration's column into the baseline is the
+            # drift that once broke fresh installs; the contract must see it.
+            connection.exec_driver_sql(
+                "ALTER TABLE public.kpi_targets "
+                "ADD COLUMN kpi_code character varying(100)"
+            )
+            differences = verify_schema_contract(connection)
+        self.assertTrue(
+            any("kpi_targets columns differ" in item for item in differences),
+            differences,
+        )
 
     def test_b_application_table_is_refused(self):
         with self.engine.begin() as connection:
